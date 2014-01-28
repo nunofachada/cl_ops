@@ -1,0 +1,10 @@
+*~
+.~*#
+.nfs*
+*.[oa]
+*.tsv
+doc/
+bin/
+obj/
+cf4ocl/
+*.dh.txt
