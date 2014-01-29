@@ -48,7 +48,8 @@ subplot(2,2,2);imagesc(out_mwc64x_gid);title('mwc64x');
 subplot(2,2,3);imagesc(out_xorshift64_gid);title('xorshift64');
 subplot(2,2,4);imagesc(out_xorshift128_gid);title('xorshift128');
 
-% Optinally use another colormap
-% colormap(bone)
 
+
+% Wait before quiting (useful for running this as an external octave
+% script)
 pause;
