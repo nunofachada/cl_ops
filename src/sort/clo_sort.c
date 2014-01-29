@@ -28,8 +28,10 @@
 CloSortInfo sort_infos[] = {
 	{"s-bitonic", "CLO_SORT_SBITONIC", 1, 
 		clo_sort_sbitonic_sort, 
-		clo_sort_sbitonic_kernels_create, clo_sort_sbitonic_kernelargs_set, clo_sort_sbitonic_kernels_free, 
-		clo_sort_sbitonic_events_create, clo_sort_sbitonic_events_free, clo_sort_sbitonic_events_profile}, 
+		clo_sort_sbitonic_kernels_create, clo_sort_sbitonic_kernelargs_set, 
+		clo_sort_sbitonic_localmem_usage, clo_sort_sbitonic_kernels_free, 
+		clo_sort_sbitonic_events_create, clo_sort_sbitonic_events_free, 
+		clo_sort_sbitonic_events_profile}, 
 	{NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 };
 

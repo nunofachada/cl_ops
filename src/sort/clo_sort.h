@@ -60,6 +60,16 @@ typedef int (*clo_sort_sort)(cl_command_queue *queues, cl_kernel *krnls, cl_even
  */
 typedef int (*clo_sort_kernels_create)(cl_kernel **krnls, cl_program program, GError **err);
 
+/** 
+ * @brief Get local memory usage for the specified kernel. 
+ * 
+ * @param kernel_name Name of kernel to get the local memory usage from.
+ * @param lws_max Maximum local worksize for the specified kernel.
+ * @param numel Number of elements to sort.
+ * @return Local memory usage (in bytes) for the specified kernel.
+ * */
+typedef size_t (*clo_sort_localmem_usage)(gchar* kernel_name, size_t lws_max, unsigned int numel);
+
 /**
  * @brief Set sort kernels arguments.
  * 
@@ -120,6 +130,7 @@ typedef struct clo_sort_info {
 	unsigned int num_queues;  /**< Number of OpenCL command queues required for the algorithm. */
 	clo_sort_sort sort;   /**< The sorting function. */
 	clo_sort_kernels_create kernels_create; /**< Create sort kernels function. */
+	clo_sort_localmem_usage localmem_usage; /**< Function which returns the local memory usage for the specified kernel. */
 	clo_sort_kernelargs_set kernelargs_set; /**< Set sort kernels arguments function. */
 	clo_sort_kernels_free kernels_free;     /**< Free sort kernels function. */
 	clo_sort_events_create events_create;   /**< Create sort events function.*/

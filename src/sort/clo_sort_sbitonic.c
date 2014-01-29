@@ -132,6 +132,25 @@ finish:
 }
 
 /** 
+ * @brief Get local memory usage for the simple bitonic sort kernels.
+ * 
+ * Simple bitonic sort only uses one kernel which doesn't require
+ * local memory. 
+ * 
+ * @see clo_sort_localmem_usage()
+ * */
+size_t clo_sort_sbitonic_localmem_usage(gchar* kernel_name, size_t lws_max, unsigned int numel) {
+	
+	/* Avoid compiler warnings. */
+	kernel_name = kernel_name;
+	lws_max = lws_max;
+	numel = numel;
+	
+	/* Simple bitonic sort doesn't use local memory. */
+	return 0;
+}
+
+/** 
  * @brief Set kernels arguments for the simple bitonic sort. 
  * 
  * @see clo_sort_kernelargs_set()
