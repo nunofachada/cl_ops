@@ -2,20 +2,19 @@
  * This file is part of CL-Ops.
  * 
  * CL-Ops is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 3 of the 
- * License, or (at your option) any later version.
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  * 
  * CL-Ops is distributed in the hope that it will be useful, 
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  * 
- * You should have received a copy of the GNU Lesser General Public 
- * License along with CL-Ops. If not, see 
- * <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
- 
+
 /** 
  * @file
  * @brief Test sorting algorithms.
@@ -53,7 +52,7 @@ static GOptionEntry entries[] = {
 
 
 /** Information about the requested random number generation algorithm. */
-static CloSortInfo sort_info = {NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+static CloSortInfo sort_info = {NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
 /**
  * @brief Main program.
@@ -181,7 +180,7 @@ int main(int argc, char **argv)
 		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Error writing data to device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		
 		/* Set kernel parameters. */
-		status = sort_info.kernelargs_set(&krnls, dev_data, lws, num_elems * bytes, &err);
+		status = sort_info.kernelargs_set(&krnls, dev_data, lws, num_elems * bytes, CL_TRUE, &err);
 		gef_if_error_goto(err, CLO_LIBRARY_ERROR, status, error_handler); /// @todo Is this a library error?
 		
 		/* Start timming. */

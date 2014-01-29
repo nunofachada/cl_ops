@@ -2,19 +2,19 @@
  * This file is part of CL-Ops.
  * 
  * CL-Ops is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 3 of the 
- * License, or (at your option) any later version.
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  * 
  * CL-Ops is distributed in the hope that it will be useful, 
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  * 
- * You should have received a copy of the GNU Lesser General Public 
- * License along with CL-Ops. If not, see 
- * <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
+
  
 /** 
  * @file
@@ -43,6 +43,8 @@
  * @param krnls Sort kernels.
  * @param evts Associated events.
  * @param lws_max Maximum local worksize.
+ * @param numel Number of elements to sort.
+ * @param profile TRUE if profiling is to be performed, FALSE otherwise.
  * @param err GError error reporting object.
  * @return @link clo_error_codes::CLO_SUCCESS @endlink if function 
  * terminates successfully, or an error code otherwise.
@@ -77,11 +79,12 @@ typedef size_t (*clo_sort_localmem_usage)(gchar* kernel_name, size_t lws_max, un
  * @param buffersDevice Device buffers (agents, cells, etc.).
  * @param err GError error reporting object.
  * @param lws Local work size.
- * @param agent_len Agent length, 4 or 8 bytes.
+ * @param len Element width, 1, 2, 4 or 8 bytes.
+ * @param dir_asc Sorting direction (TRUE is ascending, FALSE descending).
  * @return @link clo_error_codes::CLO_SUCCESS @endlink if function 
  * terminates successfully, or an error code otherwise.
  */
-typedef int (*clo_sort_kernelargs_set)(cl_kernel **krnls, cl_mem data, size_t lws, size_t agent_len, GError **err);
+typedef int (*clo_sort_kernelargs_set)(cl_kernel **krnls, cl_mem data, size_t lws, size_t len, cl_uchar dir_asc, GError **err);
 
 /**
  * @brief Free sort kernels.

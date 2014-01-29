@@ -2,19 +2,19 @@
  * This file is part of CL-Ops.
  * 
  * CL-Ops is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 3 of the 
- * License, or (at your option) any later version.
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  * 
  * CL-Ops is distributed in the hope that it will be useful, 
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  * 
- * You should have received a copy of the GNU Lesser General Public 
- * License along with CL-Ops. If not, see 
- * <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
+
  
 /** 
  * @file
@@ -58,10 +58,10 @@ int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 		cl_uint step = currentStage;
 		for (cl_uint currentStep = step; currentStep > 0; currentStep--) {
 			
-			ocl_status = clSetKernelArg(krnls[0], 1, sizeof(cl_uint), (void *) &currentStage);
+			ocl_status = clSetKernelArg(krnls[0], 2, sizeof(cl_uint), (void *) &currentStage);
 			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_LIBRARY_ERROR, error_handler, "arg 1 of sort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 			
-			ocl_status = clSetKernelArg(krnls[0], 2, sizeof(cl_uint), (void *) &currentStep);
+			ocl_status = clSetKernelArg(krnls[0], 3, sizeof(cl_uint), (void *) &currentStep);
 			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_LIBRARY_ERROR, error_handler, "arg 2 of sort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 			
 			evt = profile ? &evts[0][sbitonic_evt_idx] : NULL;
@@ -155,18 +155,22 @@ size_t clo_sort_sbitonic_localmem_usage(gchar* kernel_name, size_t lws_max, unsi
  * 
  * @see clo_sort_kernelargs_set()
  * */
-int clo_sort_sbitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws, size_t agent_len, GError **err) {
+int clo_sort_sbitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws, size_t len, cl_uchar dir_asc, GError **err) {
 	
 	/* Aux. var. */
 	int status, ocl_status;
 	
-	/* LWS and agent_len not used here. */
+	/* LWS and len not used here. */
 	lws = lws;
-	agent_len = agent_len;
+	len = len;
 	
 	/* Set kernel arguments. */
 	ocl_status = clSetKernelArg(*krnls[0], 0, sizeof(cl_mem), &data);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Set arg 0 of sbitonic_sort kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	
+	ocl_status = clSetKernelArg(*krnls[0], 1, sizeof(cl_uchar), &dir_asc);
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Set arg 1 of sbitonic_sort kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	
 
 	/* If we got here, everything is OK. */
 	status = CLO_SUCCESS;
