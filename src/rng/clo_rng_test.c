@@ -24,8 +24,8 @@
 #include "clo_rng_test.h"
 
 #define CLO_RNG_DEFAULT "lcg"
-#define CLO_RNG_OUTPUT "out"
-#define CLO_RNG_OUTPUT_TYPE "tsv"
+#define CLO_RNG_OUTPUT_PREFIX "out"
+#define CLO_RNG_OUTPUT "file-tsv"
 #define CLO_RNG_GWS 262144
 #define CLO_RNG_LWS 256
 #define CLO_RNG_RUNS 10
@@ -40,7 +40,6 @@
 /* Command line arguments and respective default values. */
 static gchar *rng = NULL;
 static gchar *output = NULL;
-static gchar *output_type = NULL;
 static size_t gws = CLO_RNG_GWS;
 static size_t lws = CLO_RNG_LWS;
 static unsigned int runs = CLO_RNG_RUNS;
@@ -49,24 +48,21 @@ static guint32 rng_seed = CLO_DEFAULT_SEED;
 static gboolean gid_seed = FALSE;
 static unsigned int bits = CLO_RNG_BITS;
 static unsigned int maxint = 0;
-static gboolean host_mt = FALSE;
 static gchar *path = NULL;
 
 /* Valid command line options. */
 static GOptionEntry entries[] = {
-	{"rng",          'r', 0, G_OPTION_ARG_STRING,   &rng,           "Random number generator: " CLO_RNGS,                                             "RNG"},
-	{"output-file",  'o', 0, G_OPTION_ARG_FILENAME, &output,        "Output file w/o extension (default is " CLO_RNG_OUTPUT ")",                      "FILENAME"},
-	{"output-type",  't', 0, G_OPTION_ARG_STRING,   &output_type,   "Output type: tsv or dieharder (default is " CLO_RNG_OUTPUT_TYPE ")",             "TYPE"},
-	{"globalsize",   'g', 0, G_OPTION_ARG_INT,      &gws,           "Global work size (default is " STR(CLO_RNG_GWS) ")",                             "SIZE"},
-	{"localsize",    'l', 0, G_OPTION_ARG_INT,      &lws,           "Local work size (default is " STR(CLO_RNG_LWS) ")",                              "SIZE"},
-	{"runs",         'n', 0, G_OPTION_ARG_INT,      &runs,          "Number of random numbers per workitem (default is " STR(CLO_RNG_RUNS) ")",       "SIZE"},
-	{"device",       'd', 0, G_OPTION_ARG_INT,      &dev_idx,       "Device index",                                                                   "INDEX"},
-	{"rng-seed",     's', 0, G_OPTION_ARG_INT,      &rng_seed,      "Seed for random number generator (default is " STR(CLO_DEFAULT_SEED) ")",        "SEED"},
-	{"use-gid-seed", 'u', 0, G_OPTION_ARG_NONE,     &gid_seed,      "Use GID-based workitem seeds instead of MT derived seeds from host.",            NULL},
-	{"bits",         'b', 0, G_OPTION_ARG_INT,      &bits,          "Number of bits in unsigned integers to produce (default " STR(CLO_RNG_BITS) ")", NULL},
-	{"max",          'm', 0, G_OPTION_ARG_INT,      &maxint,        "Maximum integer to produce, overrides --bits option",                            NULL},
-	{"host-mt",      'h', 0, G_OPTION_ARG_NONE,     &host_mt,       "Create dieharder example file with Mersenne Twister random numbers.",            NULL},
-	{"path",         'p', 0, G_OPTION_ARG_STRING,   &path,          "Path of OpenCL source files (default is " CLO_DEFAULT_PATH,                      "PATH"},  
+	{"rng",          'r', 0, G_OPTION_ARG_STRING, &rng,      "Random number generator: " CLO_RNGS " (default is " CLO_RNG_DEFAULT ")",           "RNG"},
+	{"output",       'o', 0, G_OPTION_ARG_STRING, &output,   "Output: file-tsv, file-dh, stdout-bin, stdout-uint (default: " CLO_RNG_OUTPUT ")", "OUTPUT"},
+	{"globalsize",   'g', 0, G_OPTION_ARG_INT,    &gws,      "Global work size (default is " STR(CLO_RNG_GWS) ")",                               "SIZE"},
+	{"localsize",    'l', 0, G_OPTION_ARG_INT,    &lws,      "Local work size (default is " STR(CLO_RNG_LWS) ")",                                "SIZE"},
+	{"runs",         'n', 0, G_OPTION_ARG_INT,    &runs,     "Random numbers per workitem (0 is non-stop, default is " STR(CLO_RNG_RUNS) ")",    "SIZE"},
+	{"device",       'd', 0, G_OPTION_ARG_INT,    &dev_idx,  "Device index",                                                                     "INDEX"},
+	{"rng-seed",     's', 0, G_OPTION_ARG_INT,    &rng_seed, "Seed for random number generator (default is " STR(CLO_DEFAULT_SEED) ")",          "SEED"},
+	{"use-gid-seed", 'u', 0, G_OPTION_ARG_NONE,   &gid_seed, "Use GID-based workitem seeds instead of MT derived seeds from host.",              NULL},
+	{"bits",         'b', 0, G_OPTION_ARG_INT,    &bits,     "Number of bits in unsigned integers to produce (default " STR(CLO_RNG_BITS) ")",   NULL},
+	{"max",          'm', 0, G_OPTION_ARG_INT,    &maxint,   "Maximum integer to produce, overrides --bits option",                              NULL},
+	{"path",         'p', 0, G_OPTION_ARG_STRING, &path,     "Path of OpenCL source files (default is " CLO_DEFAULT_PATH,                        "PATH"},  
 	{ NULL, 0, 0, 0, NULL, NULL, NULL }	
 };
 
@@ -122,13 +118,21 @@ int main(int argc, char **argv)
 	g_option_context_parse(context, &argc, &argv, &err);	
 	gef_if_error_goto(err, CLO_LIBRARY_ERROR, status, error_handler);
 	if (output == NULL) output = g_strdup(CLO_RNG_OUTPUT);
-	if (output_type == NULL) output_type = g_strdup(CLO_RNG_OUTPUT_TYPE);
 	if (rng == NULL) rng = g_strdup(CLO_RNG_DEFAULT);
 	if (path == NULL) path = g_strdup(CLO_DEFAULT_PATH);
 	CLO_ALG_GET(rng_info, rng_infos, rng);
-	gef_if_error_create_goto(err, CLO_ERROR, !rng_info.tag, status = CLO_INVALID_ARGS, error_handler, "Unknown random number generator '%s'.", rng);
-	gef_if_error_create_goto(err, CLO_ERROR, g_strcmp0(output_type, "tsv") && g_strcmp0(output_type, "dieharder"), status = CLO_INVALID_ARGS, error_handler, "Unknown output type '%s'.", output_type);
-	gef_if_error_create_goto(err, CLO_ERROR, (bits > 32) || (bits < 1), status = CLO_INVALID_ARGS, error_handler, "Number of bits must be between 1 and 32.");
+	gef_if_error_create_goto(err, CLO_ERROR, 
+		!rng_info.tag, 
+		status = CLO_INVALID_ARGS, error_handler, 
+		"Unknown random number generator '%s'.", rng);
+	gef_if_error_create_goto(err, CLO_ERROR, 
+		g_strcmp0(output, "file-tsv") && g_strcmp0(output, "file-dh") && g_strcmp0(output, "stdout-bin") && g_strcmp0(output, "stdout-uint"), 
+		status = CLO_INVALID_ARGS, error_handler, 
+		"Unknown output '%s'.", output);
+	gef_if_error_create_goto(err, CLO_ERROR, 
+		(bits > 32) || (bits < 1), 
+		status = CLO_INVALID_ARGS, error_handler, 
+		"Number of bits must be between 1 and 32.");
 	
 	/* Get the required CL zone. */
 	zone = clu_zone_new(CL_DEVICE_TYPE_ALL, 1, 0, clu_menu_device_selector, (dev_idx != -1 ? &dev_idx : NULL), &err);
@@ -178,17 +182,17 @@ int main(int argc, char **argv)
 	
 
 	/* Print options. */
-	printf("\n   =========================== Selected options ============================\n\n");
-	printf("     Random number generator (seed): %s (%u)\n", rng, rng_seed);
-	printf("     Seeds in workitems: %s\n", gid_seed ? "GID-based" : "Host-based (using Mersenne Twister)");
-	printf("     Global/local worksizes: %d/%d\n", (int) gws, (int) lws);
-	printf("     Number of runs: %d\n", runs);
-	printf("     Number of bits / Maximum integer: %d / %u\n", bits, (unsigned int) ((1ul << bits) - 1));
-	printf("     Compiler Options: %s\n", compilerOpts);
+	g_print("\n   =========================== Selected options ============================\n\n");
+	g_print("     Random number generator (seed): %s (%u)\n", rng, rng_seed);
+	g_print("     Seeds in workitems: %s\n", gid_seed ? "GID-based" : "Host-based (using Mersenne Twister)");
+	g_print("     Global/local worksizes: %d/%d\n", (int) gws, (int) lws);
+	g_print("     Number of runs: %d\n", runs);
+	g_print("     Number of bits / Maximum integer: %d / %u\n", bits, (unsigned int) ((1ul << bits) - 1));
+	g_print("     Compiler Options: %s\n", compilerOpts);
 	
 	/* Inform about execution. */
-	printf("\n   =========================== Execution status ============================\n\n");
-	printf("     Producing random numbers...\n");
+	g_print("\n   =========================== Execution status ============================\n\n");
+	g_print("     Producing random numbers...\n");
 	
 	/* Start timming. */
 	timer = g_timer_new();
@@ -287,11 +291,11 @@ int main(int argc, char **argv)
 	g_timer_stop(timer);
 	
 	/* Print timming. */
-	printf("     Finished, ellapsed time: %lfs\n", g_timer_elapsed(timer, NULL));
-	printf("     Saving to files...\n");
+	g_print("     Finished, ellapsed time: %lfs\n", g_timer_elapsed(timer, NULL));
+	g_print("     Saving to files...\n");
 
 	/* Output results to file. */
-	if (!g_strcmp0(output_type, "tsv")) {
+	if (!g_strcmp0(output, "file-tsv")) {
 		output_filename = g_strconcat(output, "_", rng, "_", gid_seed ? "gid" : "host",".tsv", NULL);
 		fp = fopen(output_filename, "w");
 		for (unsigned int i = 0; i < runs; i++) {
@@ -300,7 +304,7 @@ int main(int argc, char **argv)
 			}
 			fprintf(fp, "\n");
 		}
-	} else {
+	} else if (!g_strcmp0(output, "file-dh")) {
 		output_filename = g_strconcat(output, "_", rng, "_", gid_seed ? "gid" : "host", ".dh.txt", NULL);
 		fp = fopen(output_filename, "w");
 		fprintf(fp, "type: d\n");
@@ -314,22 +318,7 @@ int main(int argc, char **argv)
 	}
 	fclose(fp);
 
-	/* Create a file with random numbers from GLib's Mersenne Twister. */
-	if (host_mt) {
-		printf("     Creating example file with random numbers from a Mersenne Twister...\n");
-		GRand *rng_example = g_rand_new_with_seed(rng_seed);
-		FILE *fp_ex = fopen("example.dh.txt", "w");
-		fprintf(fp_ex, "type: d\n");
-		fprintf(fp_ex, "count: %d\n", (int) (gws * runs));
-		fprintf(fp_ex, "numbit: %d\n", bits);
-		for (unsigned int i = 0; i < runs * gws; i++) {
-			fprintf(fp_ex, "%u\n", g_rand_int(rng_example) >> (32 - bits));
-		}
-		g_rand_free(rng_example);
-		fclose(fp_ex);
-	}
-
-	printf("     Done...\n");
+	g_print("     Done...\n");
 
 	/* If we get here, everything went Ok. */
 	status = CLO_SUCCESS;
@@ -349,7 +338,6 @@ cleanup:
 	if (context) g_option_context_free(context);
 	if (rng) g_free(rng);
 	if (output) g_free(output);
-	if (output_type) g_free(output_type);
 	if (compilerOpts) g_free(compilerOpts);
 	if (path) g_free(path);
 	if (kernelFile) g_free(kernelFile);
