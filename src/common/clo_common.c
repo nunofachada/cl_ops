@@ -92,6 +92,17 @@ unsigned int clo_sum(unsigned int x)
 	return(x == 0 ? x : clo_sum(x - 1) + x);
 }
 
+/**
+ * @brief Implementation of GLib's GPrintFunc which does not print the
+ * string given as a parameter.
+ * 
+ * @param string String to ignore.
+ * */
+void clo_print_to_null(const gchar *string) {
+	string = string;
+	return;
+}
+
 /** 
  * @brief Resolves to error category identifying string, in this case an
  * error related to ocl-ops.

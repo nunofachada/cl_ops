@@ -98,12 +98,12 @@ int main(int argc, char **argv)
 	context = g_option_context_new (" - " CLO_SORT_DESCRIPTION);
 	g_option_context_add_main_entries(context, entries, NULL);
 	g_option_context_parse(context, &argc, &argv, &err);	
-	gef_if_error_goto(err, CLO_LIBRARY_ERROR, status, error_handler);
+	gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
 	if (algorithm == NULL) algorithm = g_strdup(CLO_DEFAULT_SORT);
 	if (path == NULL) path = g_strdup(CLO_DEFAULT_PATH);
 	CLO_ALG_GET(sort_info, sort_infos, algorithm);
-	gef_if_error_create_goto(err, CLO_ERROR, !sort_info.tag, status = CLO_INVALID_ARGS, error_handler, "Unknown sorting algorithm '%s'.", algorithm);
-	gef_if_error_create_goto(err, CLO_ERROR, (clo_ones32(bits) != 1) || (bits > 64) || (bits < 8), status = CLO_INVALID_ARGS, error_handler, "Number of bits must be 8, 16, 32 or 64.");
+	gef_if_error_create_goto(err, CLO_ERROR, !sort_info.tag, status = CLO_ERROR_ARGS, error_handler, "Unknown sorting algorithm '%s'.", algorithm);
+	gef_if_error_create_goto(err, CLO_ERROR, (clo_ones32(bits) != 1) || (bits > 64) || (bits < 8), status = CLO_ERROR_ARGS, error_handler, "Number of bits must be 8, 16, 32 or 64.");
 
 	/* Determine size in bytes of each element to sort. */
 	bytes = bits / 8;
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 	
 	/* Get the required CL zone. */
 	zone = clu_zone_new(CL_DEVICE_TYPE_ALL, 1, 0, clu_menu_device_selector, (dev_idx != -1 ? &dev_idx : NULL), &err);
-	gef_if_error_goto(err, CLO_LIBRARY_ERROR, status, error_handler);
+	gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
 	
 	/* Build compiler options. */
 	compilerOpts = g_strconcat(
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 
 	/* Build program. */
 	clu_program_create(zone, &kernelFile, 1, compilerOpts, &err);
-	gef_if_error_goto(err, CLO_LIBRARY_ERROR, status, error_handler);
+	gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
 	
 	/* Create sort kernel(s). */
 	status = sort_info.kernels_create(&krnls, zone->program, &err);
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 		
 		/* Create host buffers */
 		host_data = (gchar*) realloc(host_data, bytes * num_elems);
-		gef_if_error_create_goto(err, CLO_ERROR, host_data == NULL, status = CLO_ALLOC_MEM_FAIL, error_handler, "Unable to allocate memory for host data.");
+		gef_if_error_create_goto(err, CLO_ERROR, host_data == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for host data.");
 		
 		/* Initialize host buffer. */
 		for (unsigned int i = 0;  i < num_elems; i++) {
@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 		
 		/* Create device buffer. */
 		dev_data = clCreateBuffer(zone->context, CL_MEM_READ_WRITE, num_elems * bytes, NULL, &ocl_status);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Error creating device buffer: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Error creating device buffer: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		
 		/* Copy data to device. */
 		ocl_status = clEnqueueWriteBuffer(
@@ -177,11 +177,11 @@ int main(int argc, char **argv)
 			NULL, 
 			NULL
 		);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Error writing data to device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Error writing data to device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		
 		/* Set kernel parameters. */
 		status = sort_info.kernelargs_set(&krnls, dev_data, lws, num_elems * bytes, CL_TRUE, &err);
-		gef_if_error_goto(err, CLO_LIBRARY_ERROR, status, error_handler); /// @todo Is this a library error?
+		gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler); /// @todo Is this a library error?
 		
 		/* Start timming. */
 		g_timer_start(timer);
@@ -196,11 +196,11 @@ int main(int argc, char **argv)
 			FALSE,
 			&err
 		);
-		gef_if_error_goto(err, CLO_LIBRARY_ERROR, status, error_handler);
+		gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
 
 		/* Wait for the kernel to terminate... */
 		ocl_status = clFinish(zone->queues[0]);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Waiting for kernel to terminate, OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Waiting for kernel to terminate, OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		
 		/* Stop timming. */
 		g_timer_stop(timer);
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
 			NULL, 
 			NULL
 		);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Error reading data from device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Error reading data from device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		
 		/* Release device buffer. */
 		clReleaseMemObject(dev_data);

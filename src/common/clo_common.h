@@ -68,16 +68,17 @@
 /**
  * @brief Program error codes.
  * */ 
+/**
+ * @brief Error codes.
+ * */ 
 enum clo_error_codes {
-	CLO_SUCCESS = 0,                     /**< Successfull operation. */
-	CLO_UNKNOWN_ARGS = -1,               /**< Unknown arguments. */
-	CLO_INVALID_ARGS = -2,               /**< Arguments are known but invalid. */
-	CLO_LIBRARY_ERROR = -3,              /**< Error in external library. */
-	CLO_UNABLE_TO_OPEN_PARAMS_FILE = -4, /**< Parameters file not found. */
-	CLO_INVALID_PARAMS_FILE = -5,        /**< Invalid parameters file. */
-	CLO_UNABLE_SAVE_STATS = -6,          /**< Unable to save stats. */
-	CLO_ALLOC_MEM_FAIL = -7,             /**< Unable to allocate memory. */
-	CLO_OUT_OF_RESOURCES = -8            /**< Program state above limits. */
+	CLO_SUCCESS = 0,        /**< Successful operation. */
+	CLO_ERROR_NOALLOC = 1,  /**< Error code thrown when no memory allocation is possible. */
+	CLO_ERROR_OPENFILE = 2, /**< Error code thrown when it's not possible to open file. */
+	CLO_ERROR_ARGS = 3,     /**< Error code thrown when passed arguments are invalid. */
+	CLO_ERROR_DEVICE_NOT_FOUND = 4, /**< Error code thrown when no OpenCL device is found. */
+	CLO_ERROR_STREAM_WRITE = 5,     /**< Error code thrown when an error occurs while writing to a stream. */
+	CLO_ERROR_LIBRARY = 10          /**< An error ocurred in a third party library. */
 };
 
 /** @brief Returns the next larger power of 2 of the given value. */
@@ -91,6 +92,10 @@ unsigned int clo_tzc(register int x);
 
 /** @brief Returns the series (sum of sequence of 0 to) x. */
 unsigned int clo_sum(unsigned int x);
+
+/** @brief Implementation of GLib's GPrintFunc which does not print the
+ * string given as a parameter. */
+void clo_print_to_null(const gchar *string);
 
 /** @brief Resolves to error category identifying string, in this case
  *  an error related to ocl-ops. */

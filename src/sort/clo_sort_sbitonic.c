@@ -59,10 +59,10 @@ int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 		for (cl_uint currentStep = step; currentStep > 0; currentStep--) {
 			
 			ocl_status = clSetKernelArg(krnls[0], 2, sizeof(cl_uint), (void *) &currentStage);
-			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_LIBRARY_ERROR, error_handler, "arg 1 of sort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of sort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 			
 			ocl_status = clSetKernelArg(krnls[0], 3, sizeof(cl_uint), (void *) &currentStep);
-			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_LIBRARY_ERROR, error_handler, "arg 2 of sort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 2 of sort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 			
 			evt = profile ? &evts[0][sbitonic_evt_idx] : NULL;
 			
@@ -77,7 +77,7 @@ int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				NULL,
 				evt
 			);
-			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_LIBRARY_ERROR, error_handler, "Executing simple bitonic sort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing simple bitonic sort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 			sbitonic_evt_idx++;
 		}
 	}
@@ -109,11 +109,11 @@ int clo_sort_sbitonic_kernels_create(cl_kernel **krnls, cl_program program, GErr
 	
 	/* Allocate memory for single kernel required for simple bitonic sort. */
 	*krnls = (cl_kernel*) calloc(1, sizeof(cl_kernel));
-	gef_if_error_create_goto(*err, CLO_ERROR, *krnls == NULL, status = CLO_ALLOC_MEM_FAIL, error_handler, "Unable to allocate memory for simple bitonic sort kernel.");	
+	gef_if_error_create_goto(*err, CLO_ERROR, *krnls == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for simple bitonic sort kernel.");	
 	
 	/* Create kernel. */
 	(*krnls)[0] = clCreateKernel(program, "sbitonicSort", &ocl_status);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Create sbitonicSort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create sbitonicSort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
 	/* If we got here, everything is OK. */
 	status = CLO_SUCCESS;
@@ -166,10 +166,10 @@ int clo_sort_sbitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws,
 	
 	/* Set kernel arguments. */
 	ocl_status = clSetKernelArg(*krnls[0], 0, sizeof(cl_mem), &data);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Set arg 0 of sbitonic_sort kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of sbitonic_sort kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 	
 	ocl_status = clSetKernelArg(*krnls[0], 1, sizeof(cl_uchar), &dir_asc);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Set arg 1 of sbitonic_sort kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 1 of sbitonic_sort kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 	
 
 	/* If we got here, everything is OK. */
@@ -223,11 +223,11 @@ int clo_sort_sbitonic_events_create(cl_event ***evts, unsigned int iters, size_t
 	
 	/* Only one type of event required for the simple bitonic sort kernel. */
 	*evts = (cl_event**) calloc(1, sizeof(cl_event*));
-	gef_if_error_create_goto(*err, CLO_ERROR, *evts == NULL, status = CLO_ALLOC_MEM_FAIL, error_handler, "Unable to allocate memory for simple bitonic sort events (1).");	
+	gef_if_error_create_goto(*err, CLO_ERROR, *evts == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for simple bitonic sort events (1).");	
 	
 	/* Allocate memory for all occurrences of the event (i.e. executions of the simple bitonic sort kernel). */
 	(*evts)[0] = (cl_event*) calloc(num_evts, sizeof(cl_event));
-	gef_if_error_create_goto(*err, CLO_ERROR, (*evts)[0] == NULL, status = CLO_ALLOC_MEM_FAIL, error_handler, "Unable to allocate memory for simple bitonic sort events (2).");	
+	gef_if_error_create_goto(*err, CLO_ERROR, (*evts)[0] == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for simple bitonic sort events (2).");	
 	
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);
@@ -276,7 +276,7 @@ int clo_sort_sbitonic_events_profile(cl_event **evts, ProfCLProfile *profile, GE
 
 	for (unsigned int i = 0; i < sbitonic_evt_idx; i++) {
 		profcl_profile_add(profile, "SBitonic Sort", evts[0][i], err);
-		gef_if_error_goto(*err, CLO_LIBRARY_ERROR, status, error_handler);
+		gef_if_error_goto(*err, CLO_ERROR_LIBRARY, status, error_handler);
 	}
 
 	/* If we got here, everything is OK. */

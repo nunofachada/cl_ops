@@ -24,12 +24,13 @@
 #include "clo_rng_test.h"
 
 #define CLO_RNG_DEFAULT "lcg"
-#define CLO_RNG_OUTPUT_PREFIX "out"
+#define CLO_RNG_FILE_PREFIX "out"
 #define CLO_RNG_OUTPUT "file-tsv"
 #define CLO_RNG_GWS 262144
 #define CLO_RNG_LWS 256
 #define CLO_RNG_RUNS 10
 #define CLO_RNG_BITS 32
+#define CLO_FILE_BUFF_SIZE 1073741824 /* One gigabyte.*/
 
 /** A description of the program. */
 #define CLO_RNG_DESCRIPTION "Test RNGs"
@@ -56,7 +57,7 @@ static GOptionEntry entries[] = {
 	{"output",       'o', 0, G_OPTION_ARG_STRING, &output,   "Output: file-tsv, file-dh, stdout-bin, stdout-uint (default: " CLO_RNG_OUTPUT ")", "OUTPUT"},
 	{"globalsize",   'g', 0, G_OPTION_ARG_INT,    &gws,      "Global work size (default is " STR(CLO_RNG_GWS) ")",                               "SIZE"},
 	{"localsize",    'l', 0, G_OPTION_ARG_INT,    &lws,      "Local work size (default is " STR(CLO_RNG_LWS) ")",                                "SIZE"},
-	{"runs",         'n', 0, G_OPTION_ARG_INT,    &runs,     "Random numbers per workitem (0 is non-stop, default is " STR(CLO_RNG_RUNS) ")",    "SIZE"},
+	{"runs",         'n', 0, G_OPTION_ARG_INT,    &runs,     "Random numbers per workitem (default is " STR(CLO_RNG_RUNS) ", 0 means continuous generation)",    "SIZE"},
 	{"device",       'd', 0, G_OPTION_ARG_INT,    &dev_idx,  "Device index",                                                                     "INDEX"},
 	{"rng-seed",     's', 0, G_OPTION_ARG_INT,    &rng_seed, "Seed for random number generator (default is " STR(CLO_DEFAULT_SEED) ")",          "SEED"},
 	{"use-gid-seed", 'u', 0, G_OPTION_ARG_NONE,   &gid_seed, "Use GID-based workitem seeds instead of MT derived seeds from host.",              NULL},
@@ -92,10 +93,13 @@ int main(int argc, char **argv)
 			
 	/* Test data structures. */
 	cl_kernel init_rng = NULL, test_rng = NULL;
-	cl_uint **result_host = NULL;
+	cl_uint *result_host = NULL;
 	cl_ulong *seeds_host = NULL;
 	cl_mem seeds_dev = NULL, result_dev = NULL;
-	FILE *fp;
+	FILE *output_pointer = NULL;
+	char *output_buffer = NULL;
+	gboolean output_raw;
+	const char *output_sep_field, *output_sep_line;
 	gchar *output_filename = NULL;
 	gchar* compilerOpts = NULL;
 	size_t seeds_count;
@@ -116,27 +120,31 @@ int main(int argc, char **argv)
 	context = g_option_context_new (" - " CLO_RNG_DESCRIPTION);
 	g_option_context_add_main_entries(context, entries, NULL);
 	g_option_context_parse(context, &argc, &argv, &err);	
-	gef_if_error_goto(err, CLO_LIBRARY_ERROR, status, error_handler);
+	gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
 	if (output == NULL) output = g_strdup(CLO_RNG_OUTPUT);
 	if (rng == NULL) rng = g_strdup(CLO_RNG_DEFAULT);
 	if (path == NULL) path = g_strdup(CLO_DEFAULT_PATH);
 	CLO_ALG_GET(rng_info, rng_infos, rng);
 	gef_if_error_create_goto(err, CLO_ERROR, 
 		!rng_info.tag, 
-		status = CLO_INVALID_ARGS, error_handler, 
+		status = CLO_ERROR_ARGS, error_handler, 
 		"Unknown random number generator '%s'.", rng);
 	gef_if_error_create_goto(err, CLO_ERROR, 
 		g_strcmp0(output, "file-tsv") && g_strcmp0(output, "file-dh") && g_strcmp0(output, "stdout-bin") && g_strcmp0(output, "stdout-uint"), 
-		status = CLO_INVALID_ARGS, error_handler, 
+		status = CLO_ERROR_ARGS, error_handler, 
 		"Unknown output '%s'.", output);
 	gef_if_error_create_goto(err, CLO_ERROR, 
 		(bits > 32) || (bits < 1), 
-		status = CLO_INVALID_ARGS, error_handler, 
+		status = CLO_ERROR_ARGS, error_handler, 
 		"Number of bits must be between 1 and 32.");
+	gef_if_error_create_goto(err, CLO_ERROR,
+		(runs == 0) && (!g_ascii_strncasecmp("file", output, 4)),
+		status = CLO_ERROR_ARGS, error_handler, 
+		"Continuous generation can only be performed to stdout.");
 	
 	/* Get the required CL zone. */
 	zone = clu_zone_new(CL_DEVICE_TYPE_ALL, 1, 0, clu_menu_device_selector, (dev_idx != -1 ? &dev_idx : NULL), &err);
-	gef_if_error_goto(err, CLO_LIBRARY_ERROR, status, error_handler);
+	gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
 	
 	/* Build compiler options. */
 	compilerOpts = g_strconcat(
@@ -150,37 +158,97 @@ int main(int argc, char **argv)
 
 	/* Build program. */
 	clu_program_create(zone, &kernelFile, 1, compilerOpts, &err);
-	gef_if_error_goto(err, CLO_LIBRARY_ERROR, status, error_handler);
+	gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
 	
 	/* Create test kernel. */
 	test_rng = clCreateKernel(zone->program, "testRng", &ocl_status);
-	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Create kernel test_rng: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create kernel test_rng: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 	
 	/* Create host buffer */
-	result_host = (cl_uint**) malloc(sizeof(cl_uint*) * runs);
-	for (unsigned int i = 0; i < runs; i++) {
-		result_host[i] = (cl_uint*) malloc(sizeof(cl_uint) * gws);
-	}
+	result_host = (cl_uint*) malloc(sizeof(cl_uint) * gws);
 	
 	/* Create device buffer */
 	seeds_count = gws * rng_info.bytes / sizeof(cl_ulong);
 	seeds_dev = clCreateBuffer(zone->context, CL_MEM_READ_WRITE, seeds_count * sizeof(cl_ulong), NULL, &ocl_status);
-	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Create device buffer 1: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create device buffer 1: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 	
 	result_dev = clCreateBuffer(zone->context, CL_MEM_READ_WRITE, gws * sizeof(cl_int), NULL, &ocl_status);
-	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Create device buffer 2: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create device buffer 2: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 
 	/*  Set test kernel arguments. */
 	ocl_status = clSetKernelArg(test_rng, 0, sizeof(cl_mem), (void*) &seeds_dev);
-	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Set test kernel arg 0: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set test kernel arg 0: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 	
 	ocl_status = clSetKernelArg(test_rng, 1, sizeof(cl_mem), (void*) &result_dev);
-	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Set test kernel arg 1: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set test kernel arg 1: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 	
 	ocl_status = clSetKernelArg(test_rng, 2, sizeof(cl_uint), (void*) (maxint ? &maxint : &bits));
-	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Set test kernel arg 2: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set test kernel arg 2: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 	
+	/* Setup options depending whether the generated random numbers are 
+	 * to be output to stdout or to a file. */
+	if (g_str_has_prefix(output, "stdout")) {
+		/* Generated random numbers are to be output to stdout. */
+		output_pointer = stdout;
+		
+		/* Information about program execution should not be printed to 
+		 * stdout. */
+		g_set_print_handler(clo_print_to_null);
+		
+		/* Exact output type depends on cli option: */
+		if (!g_strcmp0(output, "stdout-bin")) {
+			output_raw = TRUE;
+		} else if (!g_strcmp0(output, "stdout-uint")) {
+			output_raw = FALSE;
+			output_sep_field = "\n";
+			output_sep_line = "";
+		} else {
+			g_assert_not_reached();
+		}
+		
+		
+	} else if (g_str_has_prefix(output, "file")) {
+		/* Generated random numbers are to be output to file. */
+		if (!g_strcmp0(output, "file-dh")) {
+			output_filename = g_strconcat(CLO_RNG_FILE_PREFIX, "_", rng, "_", gid_seed ? "gid" : "host", ".dh.txt", NULL);
+			output_sep_field = "\n";
+			output_sep_line = "";
+		} else if (!g_strcmp0(output, "file-tsv")) {
+			output_filename = g_strconcat(CLO_RNG_FILE_PREFIX, "_", rng, "_", gid_seed ? "gid" : "host",".tsv", NULL);
+			output_sep_field = "\t";
+			output_sep_line = "\n";
+		} else {
+			g_assert_not_reached();
+		}
+		
+		/* Open file. */
+		output_pointer = fopen(output_filename, "w");
+		gef_if_error_create_goto(err, CLO_ERROR, output_pointer == NULL, status = CLO_ERROR_OPENFILE, error_handler, "Unable to create output file '%s'.", output_filename);
+		
+		/* Create large file buffer to avoid trashing disk. */
+		output_buffer = (char*) malloc(CLO_FILE_BUFF_SIZE * sizeof(char));
+		gef_if_error_create_goto(err, CLO_ERROR, output_buffer == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for output file buffer.");
+		
+		/* Set file buffer. */
+		ocl_status = setvbuf(output_pointer, output_buffer, _IOFBF, CLO_FILE_BUFF_SIZE);
+		gef_if_error_create_goto(err, CLO_ERROR, ocl_status != 0, status = CLO_ERROR_STREAM_WRITE, error_handler, "Unable to set output file buffer.");
+		
+		/* Output type is uint, not raw. */
+		output_raw = FALSE;
+		
+		/* Write initial data if file is to written in dieharder format. */
+		if (!g_strcmp0(output, "file-dh")) {
+			fprintf(output_pointer, "type: d\n");
+			fprintf(output_pointer, "count: %d\n", (int) (gws * runs));
+			fprintf(output_pointer, "numbit: %d\n", bits);
+		}
 
+		
+	} else  {
+		g_assert_not_reached();
+	}
+		
+	
 	/* Print options. */
 	g_print("\n   =========================== Selected options ============================\n\n");
 	g_print("     Random number generator (seed): %s (%u)\n", rng, rng_seed);
@@ -204,13 +272,13 @@ int main(int argc, char **argv)
 		
 		/* Create init kernel. */
 		init_rng = clCreateKernel(zone->program, "initRng", &ocl_status);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Create kernel init_rng: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create kernel init_rng: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		
 		/* Set init kernel args. */
 		ocl_status = clSetKernelArg(init_rng, 0, sizeof(cl_ulong), (void*) &rng_seed);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Set init kernel arg 0: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set init kernel arg 0: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		ocl_status = clSetKernelArg(init_rng, 1, sizeof(cl_mem), (void*) &seeds_dev);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Set init kernel arg 1: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set init kernel arg 1: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		
 		/* Run init kernel. */
 		ocl_status = clEnqueueNDRangeKernel(
@@ -224,7 +292,7 @@ int main(int argc, char **argv)
 			NULL, 
 			NULL
 		);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Kernel init, OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Kernel init, OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		
 
 	} else {
@@ -253,12 +321,13 @@ int main(int argc, char **argv)
 			NULL, 
 			NULL
 		);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Write seeds to device buffer: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Write seeds to device buffer: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		
 	}
 	
 	/* Test! */
-	for (unsigned int i = 0; i < runs; i++) {
+	for (unsigned int i = 0; (i != runs) || (runs == 0); i++) {
+		
 		/* Run kernel. */
 		ocl_status = clEnqueueNDRangeKernel(
 			zone->queues[0], 
@@ -271,7 +340,8 @@ int main(int argc, char **argv)
 			NULL, 
 			NULL
 		);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Kernel exec iter %d: OpenCL error %d (%s).", i, ocl_status, clerror_get(ocl_status));
+		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Kernel exec iter %d: OpenCL error %d (%s).", i, ocl_status, clerror_get(ocl_status));
+		
 		/* Read data. */
 		ocl_status = clEnqueueReadBuffer(
 			zone->queues[0], 
@@ -279,12 +349,22 @@ int main(int argc, char **argv)
 			CL_TRUE, 
 			0, 
 			gws * sizeof(cl_uint), 
-			result_host[i], 
+			result_host, 
 			0, 
 			NULL, 
 			NULL
 		);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_LIBRARY_ERROR, error_handler, "Read back results, iteration %d: OpenCL error %d (%s).", i, ocl_status, clerror_get(ocl_status));
+		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Read back results, iteration %d: OpenCL error %d (%s).", i, ocl_status, clerror_get(ocl_status));
+		
+		/* Write data to output. */
+		if (output_raw) {
+			fwrite(result_host, sizeof(cl_uint), gws, output_pointer);
+		} else {
+			for (unsigned int i = 0; i < gws; i++) {
+				fprintf(output_pointer, "%u%s", result_host[i], output_sep_field);
+			}
+			fprintf(output_pointer, "%s", output_sep_line);
+		}
 	}
 
 	/* Stop timming. */
@@ -292,32 +372,6 @@ int main(int argc, char **argv)
 	
 	/* Print timming. */
 	g_print("     Finished, ellapsed time: %lfs\n", g_timer_elapsed(timer, NULL));
-	g_print("     Saving to files...\n");
-
-	/* Output results to file. */
-	if (!g_strcmp0(output, "file-tsv")) {
-		output_filename = g_strconcat(output, "_", rng, "_", gid_seed ? "gid" : "host",".tsv", NULL);
-		fp = fopen(output_filename, "w");
-		for (unsigned int i = 0; i < runs; i++) {
-			for (unsigned int j = 0; j < gws; j++) {
-				fprintf(fp, "%u\t", result_host[i][j]);
-			}
-			fprintf(fp, "\n");
-		}
-	} else if (!g_strcmp0(output, "file-dh")) {
-		output_filename = g_strconcat(output, "_", rng, "_", gid_seed ? "gid" : "host", ".dh.txt", NULL);
-		fp = fopen(output_filename, "w");
-		fprintf(fp, "type: d\n");
-		fprintf(fp, "count: %d\n", (int) (gws * runs));
-		fprintf(fp, "numbit: %d\n", bits);
-		for (unsigned int i = 0; i < runs; i++) {
-			for (unsigned int j = 0; j < gws; j++) {
-				fprintf(fp, "%u\n", result_host[i][j]);
-			}
-		}
-	}
-	fclose(fp);
-
 	g_print("     Done...\n");
 
 	/* If we get here, everything went Ok. */
@@ -345,6 +399,12 @@ cleanup:
 	/* Free timer. */
 	if (timer) g_timer_destroy(timer);
 	
+	/* Close file. */
+	if (output_pointer) fclose(output_pointer);
+
+	/* Free file output buffer. */
+	if (output_buffer) free(output_buffer);
+	
 	/* Free host-based random number generator. */
 	if (rng_host) g_rand_free(rng_host);
 	
@@ -363,12 +423,7 @@ cleanup:
 	if (zone) clu_zone_free(zone);
 
 	/* Free host resources */
-	if (result_host) {
-		for (unsigned int i = 0; i < runs; i++) {
-			if (result_host[i]) free(result_host[i]);
-		}
-		free(result_host);
-	}
+	if (result_host) free(result_host);
 	if (seeds_host) free(seeds_host);
 	
 	/* Bye bye. */
