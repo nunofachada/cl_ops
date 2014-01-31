@@ -7,7 +7,7 @@ ifndef CF4OCL_DIR
 export CF4OCL_DIR := $(abspath ${CURDIR}/cf4ocl)
 endif
 ifndef CF4OCL_INCDIR
-export CF4OCL_INCDIR := $(abspath $(CF4OCL_DIR)/lib)
+export CF4OCL_INCDIR := $(abspath $(CF4OCL_DIR)/src/lib)
 endif
 ifndef CF4OCL_OBJDIR
 export CF4OCL_OBJDIR := $(OBJDIR)
@@ -36,7 +36,7 @@ endif
 # package (Debian/Ubuntu). For AMDAPPSDK on Linux, one would use
 # -L$$AMDAPPSDKROOT/lib/x86_64.
 ifndef CLLIBDIR
-CLLIBDIR = 
+export LLIBDIR = 
 endif
 
 # Define variables

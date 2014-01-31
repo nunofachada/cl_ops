@@ -26,6 +26,8 @@
 
 #include "clo_common.h"
 
+#define CLO_RNGS "lcg, xorshift64, xorshift128, mwc64x"
+
 /**
  * @brief Information about a RNG.
  * */	
