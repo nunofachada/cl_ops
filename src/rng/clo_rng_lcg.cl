@@ -25,8 +25,8 @@
  * implementation to Java Random class.
  */
  
-#ifndef LIBCL_RNG
-#define LIBCL_RNG
+#ifndef CLO_RNG_IMPL
+#define CLO_RNG_IMPL
  
 typedef ulong rng_state;
  

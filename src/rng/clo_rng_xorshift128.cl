@@ -24,8 +24,8 @@
  * Based on code available [here](http://en.wikipedia.org/wiki/Xorshift).
  */
  
-#ifndef LIBCL_RNG
-#define LIBCL_RNG
+#ifndef CLO_RNG_IMPL
+#define CLO_RNG_IMPL
  
 typedef uint4 rng_state;
 

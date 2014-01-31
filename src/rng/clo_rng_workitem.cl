@@ -21,8 +21,8 @@
  * @brief Utility functions for OpenCL workitems.
  */
 
-#ifndef LIBCL_WORKITEM_CL
-#define LIBCL_WORKITEM_CL
+#ifndef CLO_RNG_WORKITEM
+#define CLO_RNG_WORKITEM
 
 #define GLOBAL_SIZE() get_global_size(0)
 

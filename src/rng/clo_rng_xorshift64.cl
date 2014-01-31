@@ -23,8 +23,8 @@
  * Based on code available [here](http://www.javamex.com/tutorials/random_numbers/xorshift.shtml).
  */
  
-#ifndef LIBCL_RNG
-#define LIBCL_RNG
+#ifndef CLO_RNG_IMPL
+#define CLO_RNG_IMPL
 
 typedef ulong rng_state;
 

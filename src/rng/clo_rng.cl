@@ -16,7 +16,7 @@
  * */
 
  
-#include "clo_workitem.cl"
+#include "clo_rng_workitem.cl"
 
 #ifdef CLO_RNG_LCG
 #include "clo_rng_lcg.cl"

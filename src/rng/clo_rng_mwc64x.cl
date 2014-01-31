@@ -24,8 +24,8 @@
  * http://cas.ee.ic.ac.uk/people/dt10/research/rngs-gpu-mwc64x.html.
  */
  
-#ifndef LIBCL_RNG
-#define LIBCL_RNG
+#ifndef CLO_RNG_IMPL
+#define CLO_RNG_IMPL
 
 typedef uint2 rng_state;
  
