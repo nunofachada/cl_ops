@@ -46,24 +46,57 @@ static size_t lws = CLO_RNG_LWS;
 static unsigned int runs = CLO_RNG_RUNS;
 static int dev_idx = -1;
 static guint32 rng_seed = CLO_DEFAULT_SEED;
-static gboolean gid_seed = FALSE;
+static gchar *gid_hash = NULL;
 static unsigned int bits = CLO_RNG_BITS;
 static unsigned int maxint = 0;
 static gchar *path = NULL;
 
 /* Valid command line options. */
 static GOptionEntry entries[] = {
-	{"rng",          'r', 0, G_OPTION_ARG_STRING, &rng,      "Random number generator: " CLO_RNGS " (default is " CLO_RNG_DEFAULT ")",           "RNG"},
-	{"output",       'o', 0, G_OPTION_ARG_STRING, &output,   "Output: file-tsv, file-dh, stdout-bin, stdout-uint (default: " CLO_RNG_OUTPUT ")", "OUTPUT"},
-	{"globalsize",   'g', 0, G_OPTION_ARG_INT,    &gws,      "Global work size (default is " STR(CLO_RNG_GWS) ")",                               "SIZE"},
-	{"localsize",    'l', 0, G_OPTION_ARG_INT,    &lws,      "Local work size (default is " STR(CLO_RNG_LWS) ")",                                "SIZE"},
-	{"runs",         'n', 0, G_OPTION_ARG_INT,    &runs,     "Random numbers per workitem (default is " STR(CLO_RNG_RUNS) ", 0 means continuous generation)",    "SIZE"},
-	{"device",       'd', 0, G_OPTION_ARG_INT,    &dev_idx,  "Device index",                                                                     "INDEX"},
-	{"rng-seed",     's', 0, G_OPTION_ARG_INT,    &rng_seed, "Seed for random number generator (default is " STR(CLO_DEFAULT_SEED) ")",          "SEED"},
-	{"use-gid-seed", 'u', 0, G_OPTION_ARG_NONE,   &gid_seed, "Use GID-based workitem seeds instead of MT derived seeds from host.",              NULL},
-	{"bits",         'b', 0, G_OPTION_ARG_INT,    &bits,     "Number of bits in unsigned integers to produce (default " STR(CLO_RNG_BITS) ")",   NULL},
-	{"max",          'm', 0, G_OPTION_ARG_INT,    &maxint,   "Maximum integer to produce, overrides --bits option",                              NULL},
-	{"path",         'p', 0, G_OPTION_ARG_STRING, &path,     "Path of OpenCL source files (default is " CLO_DEFAULT_PATH,                        "PATH"},  
+	{"rng",          'r', 0, 
+		G_OPTION_ARG_STRING, &rng,
+		"Random number generator: " CLO_RNGS " (default is " CLO_RNG_DEFAULT ")",           
+		"RNG"},
+	{"output",       'o', 0, 
+		G_OPTION_ARG_STRING, &output,
+		"Output: file-tsv, file-dh, stdout-bin, stdout-uint (default: " CLO_RNG_OUTPUT ")", 
+		"OUTPUT"},
+	{"globalsize",   'g', 0, 
+		G_OPTION_ARG_INT,    &gws,
+		"Global work size (default is " STR(CLO_RNG_GWS) ")",       
+		"SIZE"},
+	{"localsize",    'l', 0, 
+		G_OPTION_ARG_INT,    &lws,      
+		"Local work size (default is " STR(CLO_RNG_LWS) ")",        
+		"SIZE"},
+	{"runs",         'n', 0, 
+		G_OPTION_ARG_INT,    &runs,     
+		"Random numbers per workitem (default is " STR(CLO_RNG_RUNS) ", 0 means continuous generation)",
+		"SIZE"},
+	{"device",       'd', 0, 
+		G_OPTION_ARG_INT,    &dev_idx,  
+		"Device index",                     
+		"INDEX"},
+	{"rng-seed",     's', 0, 
+		G_OPTION_ARG_INT,    &rng_seed, 
+		"Seed for random number generator (default is " STR(CLO_DEFAULT_SEED) ")", 
+		"SEED"},
+	{"gid-hash",     'h', 0, 
+		G_OPTION_ARG_STRING, &gid_hash, 
+		"Use GID-based workitem seeds instead of MT derived seeds from host. The option value is the hash to apply to seeds (NONE, KNUTH or XS1).",
+		"HASH"},
+	{"bits",         'b', 0, 
+		G_OPTION_ARG_INT,    &bits,     
+		"Number of bits in unsigned integers to produce (default " STR(CLO_RNG_BITS) ")",   
+		NULL},
+	{"max",          'm', 0, 
+		G_OPTION_ARG_INT,    &maxint,   
+		"Maximum integer to produce, overrides --bits option",
+		NULL},
+	{"path",         'p', 0, 
+		G_OPTION_ARG_STRING, &path,     
+		"Path of OpenCL source files (default is " CLO_DEFAULT_PATH,
+		"PATH"},  
 	{ NULL, 0, 0, 0, NULL, NULL, NULL }	
 };
 
@@ -149,7 +182,9 @@ int main(int argc, char **argv)
 	/* Build compiler options. */
 	compilerOpts = g_strconcat(
 		"-I ", path,
-		" -D ", rng_info.compiler_const, 
+		" -D ", rng_info.compiler_const,
+		gid_hash ? " -D CLO_RNG_HASH_" : "",
+		gid_hash ? gid_hash : "",
 		maxint ? " -D CLO_RNG_MAXINT" : "", 
 		NULL);
 
@@ -210,11 +245,19 @@ int main(int argc, char **argv)
 	} else if (g_str_has_prefix(output, "file")) {
 		/* Generated random numbers are to be output to file. */
 		if (!g_strcmp0(output, "file-dh")) {
-			output_filename = g_strconcat(CLO_RNG_FILE_PREFIX, "_", rng, "_", gid_seed ? "gid" : "host", ".dh.txt", NULL);
+			output_filename = g_strconcat(
+				CLO_RNG_FILE_PREFIX, "_", rng, "_", 
+				gid_hash ? "gid_" : "host_", 
+				gid_hash ? gid_hash : "mt",
+				".dh.txt", NULL);
 			output_sep_field = "\n";
 			output_sep_line = "";
 		} else if (!g_strcmp0(output, "file-tsv")) {
-			output_filename = g_strconcat(CLO_RNG_FILE_PREFIX, "_", rng, "_", gid_seed ? "gid" : "host",".tsv", NULL);
+			output_filename = g_strconcat(
+				CLO_RNG_FILE_PREFIX, "_", rng, "_", 
+				gid_hash ? "gid_" : "host_", 
+				gid_hash ? gid_hash : "mt",
+				".tsv", NULL);
 			output_sep_field = "\t";
 			output_sep_line = "\n";
 		} else {
@@ -252,7 +295,7 @@ int main(int argc, char **argv)
 	/* Print options. */
 	g_print("\n   =========================== Selected options ============================\n\n");
 	g_print("     Random number generator (seed): %s (%u)\n", rng, rng_seed);
-	g_print("     Seeds in workitems: %s\n", gid_seed ? "GID-based" : "Host-based (using Mersenne Twister)");
+	g_print("     Seeds in workitems: %s %s\n", gid_hash ? "GID-based, hash:" : "Host-based,", gid_hash ? gid_hash : "Mersenne Twister");
 	g_print("     Global/local worksizes: %d/%d\n", (int) gws, (int) lws);
 	g_print("     Number of runs: %d\n", runs);
 	g_print("     Number of bits / Maximum integer: %d / %u\n", bits, (unsigned int) ((1ul << bits) - 1));
@@ -267,7 +310,7 @@ int main(int argc, char **argv)
 	
 	/* If gid_seed is set, then initialize seeds in device with a kernel
 	 * otherwise, initialize seeds in host and send them to device. */
-	if (gid_seed) {
+	if (gid_hash) {
 		/* *** Device initalization of seeds, GID-based. *** */
 		
 		/* Create init kernel. */
@@ -395,6 +438,7 @@ cleanup:
 	if (compilerOpts) g_free(compilerOpts);
 	if (path) g_free(path);
 	if (kernelFile) g_free(kernelFile);
+	if (gid_hash) g_free(gid_hash);
 	
 	/* Free timer. */
 	if (timer) g_timer_destroy(timer);

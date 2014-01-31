@@ -15,11 +15,24 @@
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
- 
 /** 
  * @file
  * @brief Kernels for testing RNGs
  */
+
+#ifdef CLO_RNG_HASH_KNUTH
+	/* Use Knuth's multiplicative method as hash. */
+	#define CLO_RNG_HASH(x)  x = ((x*2654435761) % 0x100000000)
+#elif defined CLO_RNG_HASH_XS1
+	/* Use a xor shift hash. */
+	#define CLO_RNG_HASH(x) \
+		x = ((x >> 16) ^ x) * 0x45d9f3b; \
+		x = ((x >> 16) ^ x) * 0x45d9f3b; \
+		x = ((x >> 16) ^ x);
+#else
+	/* No hash. */
+	#define CLO_RNG_HASH(x) (x)
+#endif
 
 #include "clo_rng.cl"
 
@@ -28,8 +41,9 @@ __kernel void initRng(
 		__global ulong *seeds)
 {
 	
-	uint gid = get_global_id(0);
-	seeds[gid] = main_seed + gid;
+	ulong seed = get_global_id(0) + main_seed;
+	CLO_RNG_HASH(seed);
+	seeds[get_global_id(0)] = seed;
 	
 }
 
