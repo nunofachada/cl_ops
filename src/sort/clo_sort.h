@@ -29,12 +29,23 @@
 /**
  * @brief Available sorting algorithms.
  * */
-#define CLO_SORT_ALGS "s-bitonic (default)"
+#define CLO_SORT_ALGS "s-bitonic"
 
 /**
  * @brief Default sorting algorithm.
  * */
 #define CLO_DEFAULT_SORT "s-bitonic"
+
+/**
+ * @brief Sort direction flags.
+ * */ 
+enum clo_sort_flags {
+	CLO_SORT_ASC = 1, /**< Sort asceding. */
+	CLO_SORT_DESC = 0 /**< Sort descending. */
+};
+
+
+/// @todo dir_asc Should accept CLO constants such as CLO_SORT_ASC adn CLO_SORT_DESC
 
 /**
  * @brief Sort agents.
@@ -80,7 +91,7 @@ typedef size_t (*clo_sort_localmem_usage)(gchar* kernel_name, size_t lws_max, un
  * @param err GError error reporting object.
  * @param lws Local work size.
  * @param len Element width, 1, 2, 4 or 8 bytes.
- * @param dir_asc Sorting direction (TRUE is ascending, FALSE descending).
+ * @param dir_asc Sorting direction (CLO_SORT_ASC is ascending, CLO_SORT_DESC descending).
  * @return @link clo_error_codes::CLO_SUCCESS @endlink if function 
  * terminates successfully, or an error code otherwise.
  */

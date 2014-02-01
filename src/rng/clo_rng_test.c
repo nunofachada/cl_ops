@@ -23,7 +23,6 @@
 
 #include "clo_rng_test.h"
 
-#define CLO_RNG_DEFAULT "lcg"
 #define CLO_RNG_FILE_PREFIX "out"
 #define CLO_RNG_OUTPUT "file-tsv"
 #define CLO_RNG_GWS 262144
@@ -55,7 +54,7 @@ static gchar *path = NULL;
 static GOptionEntry entries[] = {
 	{"rng",          'r', 0, 
 		G_OPTION_ARG_STRING, &rng,
-		"Random number generator: " CLO_RNGS " (default is " CLO_RNG_DEFAULT ")",           
+		"Random number generator: " CLO_RNGS " (default is " CLO_DEFAULT_RNG ")",           
 		"RNG"},
 	{"output",       'o', 0, 
 		G_OPTION_ARG_STRING, &output,
@@ -155,7 +154,7 @@ int main(int argc, char **argv)
 	g_option_context_parse(context, &argc, &argv, &err);	
 	gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
 	if (output == NULL) output = g_strdup(CLO_RNG_OUTPUT);
-	if (rng == NULL) rng = g_strdup(CLO_RNG_DEFAULT);
+	if (rng == NULL) rng = g_strdup(CLO_DEFAULT_RNG);
 	if (path == NULL) path = g_strdup(CLO_DEFAULT_PATH);
 	CLO_ALG_GET(rng_info, rng_infos, rng);
 	gef_if_error_create_goto(err, CLO_ERROR, 

@@ -180,8 +180,8 @@ int main(int argc, char **argv)
 		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Error writing data to device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		
 		/* Set kernel parameters. */
-		status = sort_info.kernelargs_set(&krnls, dev_data, lws, num_elems * bytes, CL_TRUE, &err);
-		gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler); /// @todo Is this a library error?
+		status = sort_info.kernelargs_set(&krnls, dev_data, lws, num_elems * bytes, CLO_SORT_ASC, &err);
+		gef_if_error_goto(err, GEF_USE_GERROR, status, error_handler);
 		
 		/* Start timming. */
 		g_timer_start(timer);

@@ -26,7 +26,4 @@
 
 #include "clo_rng.h"
 
-/** Available random number generators. */
-#define CLO_RNGS "lcg (default), xorshift64, xorshift128 or mwc64x"
-
 #endif
