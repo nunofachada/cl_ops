@@ -19,6 +19,10 @@ endif
 ifndef COMMON_DIR
 export COMMON_DIR := $(abspath ${CURDIR}/../common)
 endif
+ifndef CLDIR
+CLDIR := $(BUILDDIR)
+$(warning CLDIR is not defined, assuming default $(CLDIR))
+endif
 
 # Check if the required OpenCL locations are defined by a higher priority 
 # Makefile, if not define them.
@@ -66,7 +70,7 @@ clo_sort_test.o: clo_sort_test.c clo_sort_test.h
 
 clo_sort_test: clo_sort_test.o clo_sort.o clo_sort_sbitonic.o clo_common.o
 	$(CC) $(CFLAGS) -o $(BUILDDIR)/$@ $(patsubst %,$(OBJDIR)/%,$^) $(CF4OCL_OBJS) $(LDFLAGS) $(LDLIBS)
-	cp clo_sort*.cl $(BUILDDIR)
+	cp clo_sort*.cl $(CLDIR)
 	
 clo_common.o: common
 
@@ -76,6 +80,7 @@ common:
 mkdirs:
 	mkdir -p $(BUILDDIR)
 	mkdir -p $(OBJDIR)
+	mkdir -p $(CLDIR)
 	
 clean:
 	rm -rf $(OBJDIR) $(BUILDDIR)
