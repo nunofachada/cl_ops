@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
-
  
 /** 
  * @file
@@ -33,8 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <glib.h>
-#include "clutils.h"
-#include "clprofiler.h"
+#include <cf4ocl.h>
 
 /** Helper macros to convert int to string at compile time. */
 #define STR_HELPER(x) #x
