@@ -26,7 +26,7 @@ install(TARGETS clo_rng_test RUNTIME DESTINATION bin)
 
 # Where to install OpenCL kernels
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
-	DESTINATION share/${PROJECT_NAME}/
+	DESTINATION share/${PROJECT_NAME}
 	FILES_MATCHING PATTERN "*.cl")
 
 # Where to install headers

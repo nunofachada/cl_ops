@@ -22,9 +22,6 @@ target_link_libraries(clo_sort_test clo_common)
 # Set sort test executable version
 set_target_properties(clo_sort_test PROPERTIES VERSION ${${PROJECT_NAME}_VERSION})
 
-# Where to install sort test executable
-install(TARGETS clo_sort_test RUNTIME DESTINATION bin)
-
 # Copy OpenCL kernels to a location where they can be invoked by the
 # sort test executable without installation
 file(GLOB CL_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cl)
@@ -36,8 +33,10 @@ foreach(CL_FILE ${CL_FILES})
 	)
 endforeach()
 
+# Where to install sort test executable
+install(TARGETS clo_sort_test RUNTIME DESTINATION bin)
 
 # Where to install OpenCL kernels
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
-	DESTINATION share/${PROJECT_NAME}/
+	DESTINATION share/${PROJECT_NAME}
 	FILES_MATCHING PATTERN "*.cl")
