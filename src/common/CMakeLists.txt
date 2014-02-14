@@ -5,7 +5,7 @@ set(CLO_LIB_SRCS_CURRENT clo_common.c PARENT_SCOPE)
 add_library(clo_common STATIC clo_common.c)
 
 # Set common library dependencies
-target_link_libraries(clo_common ${OPENCL_LIBRARIES} ${GLIB_LIBRARIES} ${CF4OCL_LIBRARIES})
+target_link_libraries(clo_common ${OPENCL_LIBRARIES} ${GLIB_LIBRARIES} ${GLIB_LDFLAGS} ${CF4OCL_LIBRARIES})
 
 # Create OpenCL kernel destination directory
 add_custom_command(TARGET clo_common POST_BUILD

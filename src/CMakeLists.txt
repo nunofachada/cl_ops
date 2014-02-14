@@ -28,7 +28,7 @@ endforeach()
 add_library(cl_ops SHARED ${CLO_LIB_SRCS})
 
 # Set cl-ops library dependencies
-target_link_libraries(cl_ops ${OPENCL_LIBRARIES} ${GLIB_LIBRARIES} ${CF4OCL_LIBRARIES})
+target_link_libraries(cl_ops ${OPENCL_LIBRARIES} ${GLIB_LIBRARIES} ${GLIB_LDFLAGS} ${CF4OCL_LIBRARIES})
 
 # Set library version
 set_target_properties(cl_ops PROPERTIES 
