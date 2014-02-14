@@ -100,7 +100,12 @@ int main(int argc, char **argv)
 	g_option_context_parse(context, &argc, &argv, &err);	
 	gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
 	if (algorithm == NULL) algorithm = g_strdup(CLO_DEFAULT_SORT);
-	if (path == NULL) path = g_strdup(CLO_DEFAULT_PATH);
+	if (path == NULL) {
+		kernelFile = clo_kernelpath_get(CLO_DEFAULT_PATH G_DIR_SEPARATOR_S CLO_SORT_KERNEL_SRC, argv[0]);
+		path = g_path_get_dirname(kernelFile);
+	} else {
+		kernelFile = g_build_filename(path, CLO_SORT_KERNEL_SRC, NULL);
+	}	
 	CLO_ALG_GET(sort_info, sort_infos, algorithm);
 	gef_if_error_create_goto(err, CLO_ERROR, !sort_info.tag, status = CLO_ERROR_ARGS, error_handler, "Unknown sorting algorithm '%s'.", algorithm);
 	gef_if_error_create_goto(err, CLO_ERROR, (clo_ones32(bits) != 1) || (bits > 64) || (bits < 8), status = CLO_ERROR_ARGS, error_handler, "Number of bits must be 8, 16, 32 or 64.");
@@ -122,9 +127,6 @@ int main(int argc, char **argv)
 		" -D ", "SORT_ELEM_TYPE=", bits == 8 ? "uchar" : (bits == 16 ? "ushort" : (bits == 32 ? "uint" : "ulong")),
 		NULL);
 	
-	/* Determine complete kernel file location. */
-	kernelFile = g_build_filename(path, CLO_SORT_KERNEL_SRC, NULL);
-
 	/* Build program. */
 	clu_program_create(zone, &kernelFile, 1, compilerOpts, &err);
 	gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);

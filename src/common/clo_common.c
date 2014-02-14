@@ -104,6 +104,48 @@ void clo_print_to_null(const gchar *string) {
 }
 
 /** 
+ * @brief Get full kernel path name. 
+ * 
+ * Assumes the following:
+ * * kernel_filename is given relative to exec_name.
+ * * exec_name corresponds to the invocation of the executable, i.e.
+ * argv[0].
+ * 
+ * @param kernel_filename Name of file containing kernels.
+ * @param exec_name Name of executable (argv[0]).
+ * @return The full path of the kernel file, should be freed with g_free().
+ * */
+gchar* clo_kernelpath_get(gchar* kernel_filename, char* exec_name) {
+	
+	/* Required variables. */
+	gchar *execPath = NULL, *kernelDir = NULL, *kernelPath = NULL;
+	
+	/* Get path of the executable. */
+	execPath = g_find_program_in_path(exec_name);
+	
+	/* Get directory component of the path of the executable. */
+	kernelDir = g_path_get_dirname(execPath);
+	
+	/* Check if it's indeed a directory. */
+	if (!g_file_test(kernelDir, G_FILE_TEST_IS_DIR)) {
+		/* If it's not a directory, assume current directory. */
+		g_free(kernelDir);
+		kernelDir = g_strdup(".");
+	}
+	
+	/* Build full kernel file path. */
+	kernelPath = g_build_filename(kernelDir, kernel_filename, NULL);
+	
+	/* Free stuff. */
+	g_free(execPath);
+	g_free(kernelDir);
+	
+	/* Return full kernel file path. */
+	return kernelPath;
+
+}
+
+/** 
  * @brief Resolves to error category identifying string, in this case an
  * error related to ocl-ops.
  * 

@@ -23,6 +23,9 @@ pkg_check_modules(GLIB REQUIRED glib-2.0>=2.32.1)
 # Library include directories
 include_directories(${GLIB_INCLUDE_DIRS} ${OPENCL_INCLUDE_DIRS} ${CF4OCL_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src/common)
 
+# Destination for the OpenCL kernels
+set(CLO_CL_DEST share/${PROJECT_NAME})
+
 # Add src folder
 add_subdirectory(src)
 

@@ -42,7 +42,7 @@
 #define CLO_DEFAULT_SEED 0
 
 /** Default OpenCL source path. */
-#define CLO_DEFAULT_PATH "."
+#define CLO_DEFAULT_PATH ".." G_DIR_SEPARATOR_S "share" G_DIR_SEPARATOR_S "cl_ops" /// @todo This path should be configured in CMake
 
 /** Resolves to error category identifying string. Required by glib error reporting system. */
 #define CLO_ERROR clo_error_quark()
@@ -95,8 +95,12 @@ unsigned int clo_sum(unsigned int x);
  * string given as a parameter. */
 void clo_print_to_null(const gchar *string);
 
+/** @brief Get full kernel path name. */
+gchar* clo_kernelpath_get(gchar* kernel_filename, char* exec_name);
+
 /** @brief Resolves to error category identifying string, in this case
  *  an error related to ocl-ops. */
 GQuark clo_error_quark(void);
+
 
 #endif

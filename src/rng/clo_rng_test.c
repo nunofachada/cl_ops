@@ -155,7 +155,12 @@ int main(int argc, char **argv)
 	gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
 	if (output == NULL) output = g_strdup(CLO_RNG_OUTPUT);
 	if (rng == NULL) rng = g_strdup(CLO_DEFAULT_RNG);
-	if (path == NULL) path = g_strdup(CLO_DEFAULT_PATH);
+	if (path == NULL) {
+		kernelFile = clo_kernelpath_get(CLO_DEFAULT_PATH G_DIR_SEPARATOR_S CLO_RNG_KERNEL_SRC, argv[0]);
+		path = g_path_get_dirname(kernelFile);
+	} else {
+		kernelFile = g_build_filename(path, CLO_RNG_KERNEL_SRC, NULL);
+	}
 	CLO_ALG_GET(rng_info, rng_infos, rng);
 	gef_if_error_create_goto(err, CLO_ERROR, 
 		!rng_info.tag, 
@@ -186,9 +191,6 @@ int main(int argc, char **argv)
 		gid_hash ? gid_hash : "",
 		maxint ? " -D CLO_RNG_MAXINT" : "", 
 		NULL);
-
-	/* Determine complete kernel file location. */
-	kernelFile = g_build_filename(path, CLO_RNG_KERNEL_SRC, NULL);
 
 	/* Build program. */
 	clu_program_create(zone, &kernelFile, 1, compilerOpts, &err);

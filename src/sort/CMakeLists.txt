@@ -25,14 +25,19 @@ set_target_properties(clo_sort_test PROPERTIES VERSION ${${PROJECT_NAME}_VERSION
 # Where to install sort test executable
 install(TARGETS clo_sort_test RUNTIME DESTINATION bin)
 
-# Copy OpenCL kernels to the same location as the sort executable
-add_custom_command(TARGET clo_sort POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-	${CMAKE_CURRENT_SOURCE_DIR}/*.cl
-	$<TARGET_FILE_DIR:clo_sort_test>
-)
+# Copy OpenCL kernels to a location where they can be invoked by the
+# sort test executable without installation
+file(GLOB CL_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cl)
+foreach(CL_FILE ${CL_FILES})
+	add_custom_command(TARGET clo_sort_test POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		${CL_FILE}
+		${CLO_CL_DEST_SRC}/
+	)
+endforeach()
+
 
 # Where to install OpenCL kernels
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
-	DESTINATION share/cl
+	DESTINATION share/${PROJECT_NAME}/
 	FILES_MATCHING PATTERN "*.cl")
