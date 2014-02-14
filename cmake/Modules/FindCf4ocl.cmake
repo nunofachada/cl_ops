@@ -8,7 +8,7 @@
 include(LibFindMacros)
 
 # Include dir
-find_path(CF4OCL_INCLUDE_DIR cf4ocl/cf4ocl.h)
+find_path(CF4OCL_INCLUDE_DIR cf4ocl.h)
 
 # Finally the library itself
 find_library(CF4OCL_LIBRARY cf4ocl)
