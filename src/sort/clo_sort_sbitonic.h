@@ -36,7 +36,7 @@ int clo_sort_sbitonic_kernels_create(cl_kernel **krnls, cl_program program, GErr
 size_t clo_sort_sbitonic_localmem_usage(gchar* kernel_name, size_t lws_max, unsigned int numel);
 
 /** @brief Set kernels arguments for the simple bitonic sort. */
-int clo_sort_sbitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws, size_t len, cl_uchar dir_asc, GError **err);
+int clo_sort_sbitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws, size_t len, GError **err);
 
 /** @brief Free the simple bitonic sort kernels. */
 void clo_sort_sbitonic_kernels_free(cl_kernel **krnls);

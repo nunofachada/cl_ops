@@ -25,7 +25,11 @@
 	#define CLO_SORT_ELEM_TYPE uint
 #endif
 
+#ifndef CLO_SORT_COMPARE
+	#define CLO_SORT_COMPARE(a, b) ((a) > (b))
+#endif
+
 #ifdef CLO_SORT_SBITONIC
-#include "clo_sort_sbitonic.cl"
+	#include "clo_sort_sbitonic.cl"
 #endif
 

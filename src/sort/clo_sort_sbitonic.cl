@@ -15,7 +15,6 @@
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-
 /** 
  * @file
  * @brief Simple bitonic sort implementation.
@@ -30,8 +29,7 @@
  * @param step Current bitonic sort stage.
  */
 __kernel void sbitonicSort(
-			__global SORT_ELEM_TYPE *data,
-			const uchar dir_asc,
+			__global CLO_SORT_ELEM_TYPE *data,
 			const uint stage,
 			const uint step)
 {
@@ -44,14 +42,14 @@ __kernel void sbitonicSort(
 	uint index2 = index1 + pair_stride;
 	
 	/* Get hashes from global memory. */
-	SORT_ELEM_TYPE data1 = data[index1];
-	SORT_ELEM_TYPE data2 = data[index2];
+	CLO_SORT_ELEM_TYPE data1 = data[index1];
+	CLO_SORT_ELEM_TYPE data2 = data[index2];
 	
 	/* Determine if ascending or descending */
-	bool desc = (bool) !((0x1 & (gid >> stage - 1)) ^ dir_asc);
+	bool desc = (bool) (0x1 & (gid >> (stage - 1)));
 	
 	/* Determine it is required to swap the agents. */
-	bool swap = (data1 > data2) ^ desc;  
+	bool swap = CLO_SORT_COMPARE(data1, data2) ^ desc; 
 	
 	/* Perform swap if needed */ 
 	if (swap) {
