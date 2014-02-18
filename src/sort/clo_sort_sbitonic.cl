@@ -24,7 +24,6 @@
  * @brief A simple bitonic sort kernel.
  * 
  * @param data Array of agent data.
- * @param dir_asc Sorting direction (TRUE is ascending, FALSE is descending).
  * @param stage Current bitonic sort step.
  * @param step Current bitonic sort stage.
  */

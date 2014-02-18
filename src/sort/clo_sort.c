@@ -23,6 +23,7 @@
 
 #include "clo_sort.h"
 #include "clo_sort_sbitonic.h"
+#include "clo_sort_abitonic.h"
 
 /** Available sorting algorithms and respective properties. */
 CloSortInfo sort_infos[] = {
@@ -32,6 +33,12 @@ CloSortInfo sort_infos[] = {
 		clo_sort_sbitonic_kernelargs_set, clo_sort_sbitonic_kernels_free, 
 		clo_sort_sbitonic_events_create, clo_sort_sbitonic_events_free, 
 		clo_sort_sbitonic_events_profile}, 
+	{"a-bitonic", "CLO_SORT_ABITONIC", 1, 
+		clo_sort_abitonic_sort, 
+		clo_sort_abitonic_kernels_create, clo_sort_abitonic_localmem_usage,
+		clo_sort_abitonic_kernelargs_set, clo_sort_abitonic_kernels_free, 
+		clo_sort_abitonic_events_create, clo_sort_abitonic_events_free, 
+		clo_sort_abitonic_events_profile}, 
 	{NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 };
 

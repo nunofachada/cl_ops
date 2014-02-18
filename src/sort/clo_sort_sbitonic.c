@@ -53,7 +53,7 @@ int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 	while (gws % lws != 0)
 		lws = lws / 2;
 		
-	/* Perform agent sorting. */
+	/* Perform sorting. */
 	for (cl_uint currentStage = 1; currentStage <= totalStages; currentStage++) {
 		cl_uint step = currentStage;
 		for (cl_uint currentStep = step; currentStep > 0; currentStep--) {

@@ -1,5 +1,5 @@
 # Sort implementations
-set(CLO_SORT_IMPL "sort" "sort_sbitonic")
+set(CLO_SORT_IMPL "sort" "sort_sbitonic" "sort_abitonic")
 
 # Sort implementations source
 foreach(impl ${CLO_SORT_IMPL})
