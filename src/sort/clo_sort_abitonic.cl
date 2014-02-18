@@ -20,55 +20,18 @@
  * @brief Advanced bitonic sort implementation.
  */
 
-//~ /**
- //~ * @brief A advanced bitonic sort kernel.
- //~ * 
- //~ * @param data Array of agent data.
- //~ * @param stride
- //~ * @param alternate
- //~ */
-//~ __kernel void abitonic_B2(
-			//~ __global CLO_SORT_ELEM_TYPE *data,
-			//~ const uint stride,
-			//~ const uint alternate)
-//~ {
-	//~ /* Global id for this work-item. */
-	//~ uint gid = get_global_id(0);
-	//~ 
-	//~ /* Block of which this thread is part of. */
-	//~ uint block = gid / stride;
-	//~ 
-	//~ /* ID of thread in block. */
-	//~ uint bid = gid % stride;
-//~ 
-	//~ /* Determine what to compare and possibly swap. */
-	//~ uint index1 = block * stride * 2 + bid;
-	//~ uint index2 = index1 + stride;
-	//~ 
-	//~ /* Get hashes from global memory. */
-	//~ CLO_SORT_ELEM_TYPE data1 = data[index1];
-	//~ CLO_SORT_ELEM_TYPE data2 = data[index2];
-	//~ 
-	//~ /* Determine if ascending or descending */
-	//~ bool desc = (bool) (alternate) ? (0x1 & (block % 2) : 0;
-	//~ 
-	//~ /* Determine it is required to swap the agents. */
-	//~ bool swap = CLO_SORT_COMPARE(data1, data2) ^ desc; 
-	//~ 
-	//~ /* Perform swap if needed */ 
-	//~ if (swap) {
-		//~ data[index1] = data2; 
-		//~ data[index2] = data1; 
-	//~ }
-//~ 
-//~ 
-//~ }
-
-__kernel void abitonicSort(
+/**
+ * @brief This kernel can perform any step of any stage of a bitonic
+ * sort.
+ * 
+ * @param data Array of data to sort.
+ * @param stage
+ * @param step
+ */
+__kernel void abitonic_steps_any(
 			__global CLO_SORT_ELEM_TYPE *data,
 			uint stage,
-			uint start_step,
-			uint end_step)
+			uint step)
 {
 	/* Global id for this work-item. */
 	uint gid = get_global_id(0);
@@ -76,34 +39,99 @@ __kernel void abitonicSort(
 	/* Determine if ascending or descending */
 	bool desc = (bool) (0x1 & (gid >> (stage - 1)));
 
-	for (uint step = start_step; step >= end_step; step--) { 
-		
-		/* Determine stride. */
-		uint pair_stride = (uint) (1 << (step - 1)); 
-		
-		/* Block of which this thread is part of. */
-		uint block = gid / pair_stride;
-		
-		/* ID of thread in block. */
-		uint bid = gid % pair_stride;
+	/* Determine stride. */
+	uint pair_stride = (uint) (1 << (step - 1)); 
+	
+	/* Block of which this thread is part of. */
+	uint block = gid / pair_stride;
+	
+	/* ID of thread in block. */
+	uint bid = gid % pair_stride;
 
-		/* Determine what to compare and possibly swap. */
-		uint index1 = block * pair_stride * 2 + bid;
-		uint index2 = index1 + pair_stride;
+	/* Determine what to compare and possibly swap. */
+	uint index1 = block * pair_stride * 2 + bid;
+	uint index2 = index1 + pair_stride;
+	
+	/* Get hashes from global memory. */
+	CLO_SORT_ELEM_TYPE data1 = data[index1];
+	CLO_SORT_ELEM_TYPE data2 = data[index2];
 		
-		/* Get hashes from global memory. */
-		CLO_SORT_ELEM_TYPE data1 = data[index1];
-		CLO_SORT_ELEM_TYPE data2 = data[index2];
+	/* Determine it is required to swap the agents. */
+	bool swap = CLO_SORT_COMPARE(data1, data2) ^ desc; 
 		
-		/* Determine it is required to swap the agents. */
-		bool swap = CLO_SORT_COMPARE(data1, data2) ^ desc; 
-		
-		/* Perform swap if needed */ 
-		if (swap) {
-			data[index1] = data2; 
-			data[index2] = data1; 
-		}
-		
-		barrier(CLK_GLOBAL_MEM_FENCE);
+	/* Perform swap if needed */ 
+	if (swap) {
+		data[index1] = data2; 
+		data[index2] = data1; 
 	}
+		
+}
+
+/**
+ * @brief This kernel can perform the two last steps of a stage in a
+ * bitonic sort.
+ * 
+ * @param data Array of data to sort.
+ * @param stage
+ * @param step
+ */
+__kernel void abitonic_steps_2_1(
+			__global CLO_SORT_ELEM_TYPE *data,
+			uint stage)
+{
+	
+	/* Global id for this work-item. */
+	uint gid = get_global_id(0);
+	
+	/* Determine if ascending or descending */
+	bool desc = (bool) (0x1 & (gid >> (stage - 1)));
+	
+	/* Swap or not to swap? */
+	bool swap;
+	
+	/* Index of values to possibly swap. */
+	uint index1, index2;
+	/* Data elements to possibly swap. */
+	CLO_SORT_ELEM_TYPE data1, data2;
+	
+	/* ********** STEP 2 ************** */
+
+	/* Determine what to compare and possibly swap. */
+	index1 = (gid / 2) * 4 + (gid % 2);
+	index2 = index1 + 2;
+		
+	/* Get hashes from global memory. */
+	data1 = data[index1];
+	data2 = data[index2];
+		
+	/* Determine it is required to swap the agents. */
+	swap = CLO_SORT_COMPARE(data1, data2) ^ desc; 
+		
+	/* Perform swap if needed */ 
+	if (swap) {
+		data[index1] = data2; 
+		data[index2] = data1; 
+	}
+		
+	barrier(CLK_GLOBAL_MEM_FENCE);
+	
+	/* ********** STEP 1 ************** */
+		
+	/* Determine what to compare and possibly swap. */
+	index1 = gid * 2;
+	index2 = index1 + 1;
+		
+	/* Get hashes from global memory. */
+	data1 = data[index1];
+	data2 = data[index2];
+		
+	/* Determine it is required to swap the agents. */
+	swap = CLO_SORT_COMPARE(data1, data2) ^ desc; 
+		
+	/* Perform swap if needed */ 
+	if (swap) {
+		data[index1] = data2; 
+		data[index2] = data1; 
+	}
+		
 }

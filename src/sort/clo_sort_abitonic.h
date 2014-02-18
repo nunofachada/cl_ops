@@ -26,6 +26,11 @@
 
 #include "clo_sort.h"
 
+#define CLO_SORT_ABITONIC_NUMKRNLS 2
+
+#define CLO_SORT_ABITONIC_K_ANY 0
+#define CLO_SORT_ABITONIC_K_2_1 1
+
 /** @brief Sort agents using the advanced bitonic sort. */
 int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event **evts, size_t lws_max, unsigned int numel, gboolean profile, GError **err);
 
