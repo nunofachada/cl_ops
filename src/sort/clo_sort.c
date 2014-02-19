@@ -27,18 +27,22 @@
 
 /** Available sorting algorithms and respective properties. */
 CloSortInfo sort_infos[] = {
-	{"s-bitonic", "CLO_SORT_SBITONIC", 1, 
-		clo_sort_sbitonic_sort, 
+	{"s-bitonic", "CLO_SORT_SBITONIC", 
+		CLO_SORT_SBITONIC_NUMQUEUES,
+		CLO_SORT_SBITONIC_NUMKERNELS, 
+		clo_sort_sbitonic_sort, clo_sort_sbitonic_kernelname_get,
 		clo_sort_sbitonic_kernels_create, clo_sort_sbitonic_localmem_usage,
-		clo_sort_sbitonic_kernelargs_set, clo_sort_sbitonic_kernels_free, 
+		clo_sort_sbitonic_kernelargs_set, clo_sort_sbitonic_kernels_free,
 		clo_sort_sbitonic_events_create, clo_sort_sbitonic_events_free, 
 		clo_sort_sbitonic_events_profile}, 
-	{"a-bitonic", "CLO_SORT_ABITONIC", 1, 
-		clo_sort_abitonic_sort, 
+	{"a-bitonic", "CLO_SORT_ABITONIC", 
+		CLO_SORT_ABITONIC_NUMQUEUES,
+		CLO_SORT_ABITONIC_NUMKERNELS, 
+		clo_sort_abitonic_sort, clo_sort_abitonic_kernelname_get,
 		clo_sort_abitonic_kernels_create, clo_sort_abitonic_localmem_usage,
 		clo_sort_abitonic_kernelargs_set, clo_sort_abitonic_kernels_free, 
 		clo_sort_abitonic_events_create, clo_sort_abitonic_events_free, 
 		clo_sort_abitonic_events_profile}, 
-	{NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+	{NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 };
 

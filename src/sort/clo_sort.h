@@ -51,6 +51,15 @@
  */
 typedef int (*clo_sort_sort)(cl_command_queue *queues, cl_kernel *krnls, cl_event **evts, size_t lws_max, unsigned int numel, gboolean profile, GError **err);
 
+/** 
+ * @brief Returns the name of the kernel identified by the given
+ * index.
+ * 
+ * @param index Index of kernel name to return.
+ * @return The name of the kernel identified by the given index.
+ * */
+typedef const char* (*clo_sort_kernelname_get)(unsigned int index);
+
 /**
  * @brief Create sort kernels.
  * 
@@ -71,7 +80,7 @@ typedef int (*clo_sort_kernels_create)(cl_kernel **krnls, cl_program program, GE
  * @param numel Number of elements to sort.
  * @return Local memory usage (in bytes) for the specified kernel.
  * */
-typedef size_t (*clo_sort_localmem_usage)(gchar* kernel_name, size_t lws_max, size_t len, unsigned int numel);
+typedef size_t (*clo_sort_localmem_usage)(const char* kernel_name, size_t lws_max, size_t len, unsigned int numel);
 
 /**
  * @brief Set sort kernels arguments.
@@ -131,14 +140,16 @@ typedef struct clo_sort_info {
 	char* tag;            /**< Tag identifying the algorithm. */
 	char* compiler_const; /**< OpenCL compiler constant to include the proper CL file. */
 	unsigned int num_queues;  /**< Number of OpenCL command queues required for the algorithm. */
+	unsigned int num_kernels; /**< Number of kernels used by the sorting strategy. */
 	clo_sort_sort sort;   /**< The sorting function. */
-	clo_sort_kernels_create kernels_create; /**< Create sort kernels function. */
-	clo_sort_localmem_usage localmem_usage; /**< Function which returns the local memory usage for the specified kernel. */
-	clo_sort_kernelargs_set kernelargs_set; /**< Set sort kernels arguments function. */
-	clo_sort_kernels_free kernels_free;     /**< Free sort kernels function. */
-	clo_sort_events_create events_create;   /**< Create sort events function.*/
-	clo_sort_events_free events_free;       /**< Free sort events function. */
-	clo_sort_events_profile events_profile; /**< Add sort events to profiler object function. */
+	clo_sort_kernelname_get kernelname_get; /**< Returns the name of the kernel identified by the given index. */
+	clo_sort_kernels_create kernels_create;  /**< Create sort kernels function. */
+	clo_sort_localmem_usage localmem_usage;  /**< Function which returns the local memory usage for the specified kernel. */
+	clo_sort_kernelargs_set kernelargs_set;  /**< Set sort kernels arguments function. */
+	clo_sort_kernels_free kernels_free;      /**< Free sort kernels function. */
+	clo_sort_events_create events_create;    /**< Create sort events function.*/
+	clo_sort_events_free events_free;        /**< Free sort events function. */
+	clo_sort_events_profile events_profile;  /**< Add sort events to profiler object function. */
 } CloSortInfo;
 
 /** @brief Information about the available agent sorting algorithms. */

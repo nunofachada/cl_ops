@@ -23,8 +23,11 @@
 
 #include "clo_sort_abitonic.h"
 
-/** Event index for advanced bitonic sort kernel. */
+/* Event index for advanced bitonic sort kernel. */
 static unsigned int abitonic_evt_idx[CLO_SORT_ABITONIC_NUMKRNLS];
+
+/* Array of kernel names. */
+static const char* const kernel_names[] = CLO_SORT_ABITONIC_KERNELNAMES;
 
 /**
  * @brief Sort agents using the advanced bitonic sort.
@@ -131,6 +134,17 @@ finish:
 }
 
 /** 
+ * @brief Returns the name of the kernel identified by the given
+ * index.
+ * 
+ * @see clo_sort_kernelname_get()
+ * */
+const char* clo_sort_abitonic_kernelname_get(unsigned int index) {
+	g_assert_cmpuint(index, <, CLO_SORT_ABITONIC_NUMKERNELS);
+	return kernel_names[index];
+}
+
+/** 
  * @brief Create kernels for the advanced bitonic sort. 
  * 
  * @see clo_sort_kernels_create()
@@ -172,7 +186,7 @@ finish:
  * 
  * @see clo_sort_localmem_usage()
  * */
-size_t clo_sort_abitonic_localmem_usage(gchar* kernel_name, size_t lws_max, size_t len, unsigned int numel) {
+size_t clo_sort_abitonic_localmem_usage(const char* kernel_name, size_t lws_max, size_t len, unsigned int numel) {
 	
 	/* Local memory usage. */
 	size_t local_mem_usage;

@@ -26,19 +26,48 @@
 
 #include "clo_sort.h"
 
+/** @define Number of advanced bitonic sort kernels. */
 #define CLO_SORT_ABITONIC_NUMKRNLS 2
 
+/**
+ * @defgroup CLO_SORT_ABITONIC_K Id/index of the advanced bitonic sort kernels.
+ *
+ * @{
+ */
 #define CLO_SORT_ABITONIC_K_ANY 0
 #define CLO_SORT_ABITONIC_K_2_1 1
+/** @} */ 
+
+/**
+ * @defgroup CLO_SORT_SBITONIC_KERNELNAME Name of the advanced bitonic sort kernels.
+ *
+ * @{
+ */
+#define CLO_SORT_SBITONIC_KERNELNAME_ANY "abitonic_steps_any"
+#define CLO_SORT_SBITONIC_KERNELNAME_2_1 "abitonic_steps_2_1"
+/** @} */ 
+ 
+/** @brief Number of command queues used by the advanced bitonic sort. */
+#define CLO_SORT_ABITONIC_NUMQUEUES 1
+
+/** @brief Number of kernels used by the advanced bitonic sort. */
+#define CLO_SORT_ABITONIC_NUMKERNELS 2
+
+/** @brief Array of strings containing names of the kernels used by the advanced bitonic sort strategy. */
+#define CLO_SORT_ABITONIC_KERNELNAMES {CLO_SORT_SBITONIC_KERNELNAME_ANY, CLO_SORT_SBITONIC_KERNELNAME_2_1}
 
 /** @brief Sort agents using the advanced bitonic sort. */
 int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event **evts, size_t lws_max, unsigned int numel, gboolean profile, GError **err);
+
+/** @brief Returns the name of the kernel identified by the given
+ * index. */
+const char* clo_sort_abitonic_kernelname_get(unsigned int index);
 
 /** @brief Create kernels for the advanced bitonic sort. */
 int clo_sort_abitonic_kernels_create(cl_kernel **krnls, cl_program program, GError **err);
 
 /** @brief Get local memory usage for the advanced bitonic sort kernels. */
-size_t clo_sort_abitonic_localmem_usage(gchar* kernel_name, size_t lws_max, size_t len, unsigned int numel);
+size_t clo_sort_abitonic_localmem_usage(const char* kernel_name, size_t lws_max, size_t len, unsigned int numel);
 
 /** @brief Set kernels arguments for the advanced bitonic sort. */
 int clo_sort_abitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws, size_t len, GError **err);

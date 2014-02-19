@@ -23,8 +23,11 @@
 
 #include "clo_sort_sbitonic.h"
 
-/** Event index for simple bitonic sort kernel. */
+/* Event index for simple bitonic sort kernel. */
 static unsigned int sbitonic_evt_idx;
+
+/* Array of kernel names. */
+static const char* const kernel_names[] = CLO_SORT_SBITONIC_KERNELNAMES;
 
 /**
  * @brief Sort agents using the simple bitonic sort.
@@ -59,10 +62,10 @@ int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 		for (cl_uint currentStep = step; currentStep > 0; currentStep--) {
 			
 			ocl_status = clSetKernelArg(krnls[0], 1, sizeof(cl_uint), (void *) &currentStage);
-			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of sort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KERNELNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 			
 			ocl_status = clSetKernelArg(krnls[0], 2, sizeof(cl_uint), (void *) &currentStep);
-			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 2 of sort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 2 of " CLO_SORT_SBITONIC_KERNELNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 			
 			evt = profile ? &evts[0][sbitonic_evt_idx] : NULL;
 			
@@ -77,7 +80,7 @@ int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				NULL,
 				evt
 			);
-			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing simple bitonic sort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing " CLO_SORT_SBITONIC_KERNELNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 			sbitonic_evt_idx++;
 		}
 	}
@@ -98,6 +101,17 @@ finish:
 }
 
 /** 
+ * @brief Returns the name of the kernel identified by the given
+ * index.
+ * 
+ * @see clo_sort_kernelname_get()
+ * */
+const char* clo_sort_sbitonic_kernelname_get(unsigned int index) {
+	g_assert_cmpuint(index, <, CLO_SORT_SBITONIC_NUMKERNELS);
+	return kernel_names[index];
+}
+
+/** 
  * @brief Create kernels for the simple bitonic sort. 
  * 
  * @see clo_sort_kernels_create()
@@ -109,11 +123,11 @@ int clo_sort_sbitonic_kernels_create(cl_kernel **krnls, cl_program program, GErr
 	
 	/* Allocate memory for single kernel required for simple bitonic sort. */
 	*krnls = (cl_kernel*) calloc(1, sizeof(cl_kernel));
-	gef_if_error_create_goto(*err, CLO_ERROR, *krnls == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for simple bitonic sort kernel.");	
+	gef_if_error_create_goto(*err, CLO_ERROR, *krnls == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for " CLO_SORT_SBITONIC_KERNELNAME_0 " kernel.");	
 	
 	/* Create kernel. */
-	(*krnls)[0] = clCreateKernel(program, "sbitonicSort", &ocl_status);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create sbitonicSort kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	(*krnls)[0] = clCreateKernel(program, CLO_SORT_SBITONIC_KERNELNAME_0, &ocl_status);
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create " CLO_SORT_SBITONIC_KERNELNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
 	/* If we got here, everything is OK. */
 	status = CLO_SUCCESS;
@@ -139,7 +153,7 @@ finish:
  * 
  * @see clo_sort_localmem_usage()
  * */
-size_t clo_sort_sbitonic_localmem_usage(gchar* kernel_name, size_t lws_max, size_t len, unsigned int numel) {
+size_t clo_sort_sbitonic_localmem_usage(const char* kernel_name, size_t lws_max, size_t len, unsigned int numel) {
 	
 	/* Avoid compiler warnings. */
 	kernel_name = kernel_name;
@@ -167,7 +181,7 @@ int clo_sort_sbitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws,
 	
 	/* Set kernel arguments. */
 	ocl_status = clSetKernelArg(*krnls[0], 0, sizeof(cl_mem), &data);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of sbitonic_sort kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SORT_SBITONIC_KERNELNAME_0 " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
 	/* If we got here, everything is OK. */
 	status = CLO_SUCCESS;
@@ -272,7 +286,7 @@ int clo_sort_sbitonic_events_profile(cl_event **evts, ProfCLProfile *profile, GE
 	int status;
 
 	for (unsigned int i = 0; i < sbitonic_evt_idx; i++) {
-		profcl_profile_add(profile, "SBitonic Sort", evts[0][i], err);
+		profcl_profile_add(profile, CLO_SORT_SBITONIC_KERNELNAME_0, evts[0][i], err);
 		gef_if_error_goto(*err, CLO_ERROR_LIBRARY, status, error_handler);
 	}
 
