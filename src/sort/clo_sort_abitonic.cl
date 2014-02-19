@@ -28,7 +28,7 @@
  * @param stage
  * @param step
  */
-__kernel void abitonic_steps_any(
+__kernel void abitonic_any(
 			__global CLO_SORT_ELEM_TYPE *data,
 			uint stage,
 			uint step)
@@ -71,11 +71,11 @@ __kernel void abitonic_steps_any(
  * @brief This kernel can perform the two last steps of a stage in a
  * bitonic sort.
  * 
- * @param data Array of data to sort.
+ * @param data_global Array of data to sort.
  * @param stage
- * @param step
+ * @param data_local
  */
-__kernel void abitonic_steps_2_1(
+__kernel void abitonic_21(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
@@ -86,10 +86,17 @@ __kernel void abitonic_steps_2_1(
 	uint lid = get_local_id(0);
 	uint local_size = get_local_size(0);
 	uint group_id = get_group_id(0);
+	
+	/* Local and global indexes for moving data between local and
+	 * global memory. */
+	uint local_index1 = lid;
+	uint local_index2 = local_size + lid;
+	uint global_index1 = group_id * local_size * 2 + lid;
+	uint global_index2 = local_size * (group_id * 2 + 1) + lid;
 		
 	/* Load data locally */
-	data_local[lid] = data_global[group_id * local_size * 2 + lid];
-	data_local[local_size + lid] = data_global[local_size * (group_id * 2 + 1) + lid];
+	data_local[local_index1] = data_global[global_index1];
+	data_local[local_index2] = data_global[global_index2];
 	
 	barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -147,7 +154,24 @@ __kernel void abitonic_steps_2_1(
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	/* Store data globally */
-	data_global[group_id * local_size * 2 + lid] = data_local[lid];
-	data_global[local_size * (group_id * 2 + 1) + lid] = data_local[local_size + lid];
+	data_global[global_index1] = data_local[local_index1];
+	data_global[global_index2] = data_local[local_index2];
 		
 }
+
+//~ /**
+ //~ * @brief This kernel can perform the three last steps of a stage in a
+ //~ * bitonic sort.
+ //~ * 
+ //~ * @param data_global Array of data to sort.
+ //~ * @param stage
+ //~ * @param data_local
+ //~ */
+//~ __kernel void abitonic_321(
+			//~ __global CLO_SORT_ELEM_TYPE *data_global,
+			//~ uint stage,
+			//~ __local CLO_SORT_ELEM_TYPE *data_local)
+//~ {
+	//~ 
+	//~ 
+//~ }

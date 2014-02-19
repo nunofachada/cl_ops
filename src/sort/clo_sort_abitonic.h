@@ -35,7 +35,7 @@
  * @{
  */
 #define CLO_SORT_ABITONIC_K_ANY 0
-#define CLO_SORT_ABITONIC_K_2_1 1
+#define CLO_SORT_ABITONIC_K_21 1
 /** @} */ 
 
 /**
@@ -43,8 +43,8 @@
  *
  * @{
  */
-#define CLO_SORT_SBITONIC_KERNELNAME_ANY "abitonic_steps_any"
-#define CLO_SORT_SBITONIC_KERNELNAME_2_1 "abitonic_steps_2_1"
+#define CLO_SORT_SBITONIC_KERNELNAME_ANY "abitonic_any"
+#define CLO_SORT_SBITONIC_KERNELNAME_21 "abitonic_21"
 /** @} */ 
  
 /** @brief Number of command queues used by the advanced bitonic sort. */
@@ -54,7 +54,7 @@
 #define CLO_SORT_ABITONIC_NUMKERNELS 2
 
 /** @brief Array of strings containing names of the kernels used by the advanced bitonic sort strategy. */
-#define CLO_SORT_ABITONIC_KERNELNAMES {CLO_SORT_SBITONIC_KERNELNAME_ANY, CLO_SORT_SBITONIC_KERNELNAME_2_1}
+#define CLO_SORT_ABITONIC_KERNELNAMES {CLO_SORT_SBITONIC_KERNELNAME_ANY, CLO_SORT_SBITONIC_KERNELNAME_21}
 
 /** @brief Sort agents using the advanced bitonic sort. */
 int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event **evts, size_t lws_max, unsigned int numel, gboolean profile, GError **err);
