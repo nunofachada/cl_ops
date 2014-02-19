@@ -123,7 +123,7 @@ __kernel void abitonic_any(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_21(
+__kernel void abitonic_2(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
@@ -147,7 +147,7 @@ __kernel void abitonic_21(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_321(
+__kernel void abitonic_3(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
@@ -173,7 +173,7 @@ __kernel void abitonic_321(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_4321(
+__kernel void abitonic_4(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
@@ -202,7 +202,7 @@ __kernel void abitonic_4321(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_54321(
+__kernel void abitonic_5(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
@@ -233,7 +233,7 @@ __kernel void abitonic_54321(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_654321(
+__kernel void abitonic_6(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
@@ -266,7 +266,7 @@ __kernel void abitonic_654321(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_7654321(
+__kernel void abitonic_7(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
@@ -301,7 +301,7 @@ __kernel void abitonic_7654321(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_87654321(
+__kernel void abitonic_8(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
@@ -339,7 +339,7 @@ __kernel void abitonic_87654321(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_987654321(
+__kernel void abitonic_9(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
@@ -347,6 +347,90 @@ __kernel void abitonic_987654321(
 
 	/* *********** INIT ************** */
 	CLO_SORT_ABITONIC_INIT();
+	/* *********** STEP 9 ************ */
+	CLO_SORT_ABITONIC_STEP(256);
+	/* *********** STEP 8 ************ */
+	CLO_SORT_ABITONIC_STEP(128);
+	/* *********** STEP 7 ************ */
+	CLO_SORT_ABITONIC_STEP(64);
+	/* *********** STEP 6 ************ */
+	CLO_SORT_ABITONIC_STEP(32);
+	/* *********** STEP 5 ************ */
+	CLO_SORT_ABITONIC_STEP(16);
+	/* *********** STEP 4 ************ */
+	CLO_SORT_ABITONIC_STEP(8);
+	/* *********** STEP 3 ************ */
+	CLO_SORT_ABITONIC_STEP(4);
+	/* ********** STEP 2 ************** */
+	CLO_SORT_ABITONIC_STEP(2);
+	/* ********** STEP 1 ************** */
+	CLO_SORT_ABITONIC_STEP(1);
+	/* ********* FINISH *********** */
+	CLO_SORT_ABITONIC_FINISH();
+
+}
+
+/**
+ * @brief This kernel can perform the ten last steps of a stage in a
+ * bitonic sort.
+ * 
+ * @param data_global Array of data to sort.
+ * @param stage
+ * @param data_local
+ */
+__kernel void abitonic_10(
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			__local CLO_SORT_ELEM_TYPE *data_local)
+{
+
+	/* *********** INIT ************** */
+	CLO_SORT_ABITONIC_INIT();
+	/* *********** STEP 10 ************ */
+	CLO_SORT_ABITONIC_STEP(512);
+	/* *********** STEP 9 ************ */
+	CLO_SORT_ABITONIC_STEP(256);
+	/* *********** STEP 8 ************ */
+	CLO_SORT_ABITONIC_STEP(128);
+	/* *********** STEP 7 ************ */
+	CLO_SORT_ABITONIC_STEP(64);
+	/* *********** STEP 6 ************ */
+	CLO_SORT_ABITONIC_STEP(32);
+	/* *********** STEP 5 ************ */
+	CLO_SORT_ABITONIC_STEP(16);
+	/* *********** STEP 4 ************ */
+	CLO_SORT_ABITONIC_STEP(8);
+	/* *********** STEP 3 ************ */
+	CLO_SORT_ABITONIC_STEP(4);
+	/* ********** STEP 2 ************** */
+	CLO_SORT_ABITONIC_STEP(2);
+	/* ********** STEP 1 ************** */
+	CLO_SORT_ABITONIC_STEP(1);
+	/* ********* FINISH *********** */
+	CLO_SORT_ABITONIC_FINISH();
+
+}
+
+/**
+ * @brief This kernel can perform the eleven last steps of a stage in a
+ * bitonic sort.
+ * 
+ * @param data_global Array of data to sort.
+ * @param stage
+ * @param data_local
+ */
+__kernel void abitonic_11(
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			__local CLO_SORT_ELEM_TYPE *data_local)
+{
+
+	/* *********** INIT ************** */
+	CLO_SORT_ABITONIC_INIT();
+	/* *********** STEP 11 ************ */
+	CLO_SORT_ABITONIC_STEP(1024);
+	/* *********** STEP 10 ************ */
+	CLO_SORT_ABITONIC_STEP(512);
 	/* *********** STEP 9 ************ */
 	CLO_SORT_ABITONIC_STEP(256);
 	/* *********** STEP 8 ************ */

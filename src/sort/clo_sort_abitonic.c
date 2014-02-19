@@ -51,10 +51,16 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 	/* Event pointer, in case profiling is on. */
 	cl_event* evt;
 
+	/* Maximum step for unrolled kernels. */
+	cl_uint maxStep;
+	
 	/* Adjust LWS so that its equal or smaller than GWS, making sure that
 	 * GWS is still a multiple of it. */
 	while (gws % lws != 0)
 		lws = lws / 2;
+		
+	/* Determine maximum step for unrolled kernels. */
+	maxStep = clo_tzc(lws) + 1;
 		
 	/* Perform sorting. */
 	for (cl_uint currentStage = 1; currentStage <= totalStages; currentStage++) {
@@ -62,7 +68,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 		for (cl_uint currentStep = currentStage; currentStep >= 1; currentStep--) {
 			
 			/* Use an unrolled kernel. */
-			if ((currentStep <= 9) && (currentStep >= 2)) {
+			if ((currentStep <= maxStep) && (currentStep >= 2)) {
 
 				unsigned int krnl_idx = currentStep - 1;
 				const char* krnl_name = clo_sort_abitonic_kernelname_get(krnl_idx);
