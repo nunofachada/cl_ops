@@ -26,9 +26,6 @@
 
 #include "clo_sort.h"
 
-/** @define Number of advanced bitonic sort kernels. */
-#define CLO_SORT_ABITONIC_NUMKRNLS 2
-
 /**
  * @defgroup CLO_SORT_ABITONIC_K Id/index of the advanced bitonic sort kernels.
  *
@@ -36,6 +33,8 @@
  */
 #define CLO_SORT_ABITONIC_K_ANY 0
 #define CLO_SORT_ABITONIC_K_21 1
+#define CLO_SORT_ABITONIC_K_321 2
+#define CLO_SORT_ABITONIC_K_4321 3
 /** @} */ 
 
 /**
@@ -45,16 +44,18 @@
  */
 #define CLO_SORT_SBITONIC_KERNELNAME_ANY "abitonic_any"
 #define CLO_SORT_SBITONIC_KERNELNAME_21 "abitonic_21"
+#define CLO_SORT_SBITONIC_KERNELNAME_321 "abitonic_321"
+#define CLO_SORT_SBITONIC_KERNELNAME_4321 "abitonic_4321"
 /** @} */ 
  
 /** @brief Number of command queues used by the advanced bitonic sort. */
 #define CLO_SORT_ABITONIC_NUMQUEUES 1
 
 /** @brief Number of kernels used by the advanced bitonic sort. */
-#define CLO_SORT_ABITONIC_NUMKERNELS 2
+#define CLO_SORT_ABITONIC_NUMKERNELS 4
 
 /** @brief Array of strings containing names of the kernels used by the advanced bitonic sort strategy. */
-#define CLO_SORT_ABITONIC_KERNELNAMES {CLO_SORT_SBITONIC_KERNELNAME_ANY, CLO_SORT_SBITONIC_KERNELNAME_21}
+#define CLO_SORT_ABITONIC_KERNELNAMES {CLO_SORT_SBITONIC_KERNELNAME_ANY, CLO_SORT_SBITONIC_KERNELNAME_21, CLO_SORT_SBITONIC_KERNELNAME_321, CLO_SORT_SBITONIC_KERNELNAME_4321}
 
 /** @brief Sort agents using the advanced bitonic sort. */
 int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event **evts, size_t lws_max, unsigned int numel, gboolean profile, GError **err);
