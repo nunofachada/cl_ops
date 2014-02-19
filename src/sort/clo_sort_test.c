@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Error writing data to device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 		
 		/* Set kernel parameters. */
-		status = sort_info.kernelargs_set(&krnls, dev_data, lws, num_elems * bytes, &err);
+		status = sort_info.kernelargs_set(&krnls, dev_data, lws, bytes, &err);
 		gef_if_error_goto(err, GEF_USE_GERROR, status, error_handler);
 		
 		/* Start timming. */

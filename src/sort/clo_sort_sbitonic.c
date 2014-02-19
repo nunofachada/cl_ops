@@ -139,12 +139,13 @@ finish:
  * 
  * @see clo_sort_localmem_usage()
  * */
-size_t clo_sort_sbitonic_localmem_usage(gchar* kernel_name, size_t lws_max, unsigned int numel) {
+size_t clo_sort_sbitonic_localmem_usage(gchar* kernel_name, size_t lws_max, size_t len, unsigned int numel) {
 	
 	/* Avoid compiler warnings. */
 	kernel_name = kernel_name;
 	lws_max = lws_max;
 	numel = numel;
+	len = len;
 	
 	/* Simple bitonic sort doesn't use local memory. */
 	return 0;

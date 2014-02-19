@@ -38,7 +38,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 int clo_sort_abitonic_kernels_create(cl_kernel **krnls, cl_program program, GError **err);
 
 /** @brief Get local memory usage for the advanced bitonic sort kernels. */
-size_t clo_sort_abitonic_localmem_usage(gchar* kernel_name, size_t lws_max, unsigned int numel);
+size_t clo_sort_abitonic_localmem_usage(gchar* kernel_name, size_t lws_max, size_t len, unsigned int numel);
 
 /** @brief Set kernels arguments for the advanced bitonic sort. */
 int clo_sort_abitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws, size_t len, GError **err);

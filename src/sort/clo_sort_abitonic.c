@@ -172,17 +172,24 @@ finish:
  * 
  * @see clo_sort_localmem_usage()
  * */
-size_t clo_sort_abitonic_localmem_usage(gchar* kernel_name, size_t lws_max, unsigned int numel) {
+size_t clo_sort_abitonic_localmem_usage(gchar* kernel_name, size_t lws_max, size_t len, unsigned int numel) {
 	
-	/// @todo This is wrong
+	/* Local memory usage. */
+	size_t local_mem_usage;
 	
 	/* Avoid compiler warnings. */
-	kernel_name = kernel_name;
-	lws_max = lws_max;
 	numel = numel;
 	
+	if (g_strcmp0(kernel_name, "abitonic_steps_any") == 0) {
+		/* No local memory for kernel "any" */
+		local_mem_usage = 0;
+	} else if (g_strcmp0(kernel_name, "abitonic_steps_2_1") == 0) {
+		/* Kernel 2_1 uses local memory. */
+		local_mem_usage = len * lws_max * 2;
+	}
+	
 	/* Advanced bitonic sort doesn't use local memory. */
-	return 0;
+	return local_mem_usage;
 }
 
 /** 
@@ -205,6 +212,9 @@ int clo_sort_abitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws,
 
 	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_2_1], 0, sizeof(cl_mem), &data);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of abitonic_steps_2_1 kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+
+	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_2_1], 2, len * lws * 2, NULL);
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 2 of abitonic_steps_2_1 kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
 	/* If we got here, everything is OK. */
 	status = CLO_SUCCESS;

@@ -67,10 +67,11 @@ typedef int (*clo_sort_kernels_create)(cl_kernel **krnls, cl_program program, GE
  * 
  * @param kernel_name Name of kernel to get the local memory usage from.
  * @param lws_max Maximum local worksize for the specified kernel.
+ * @param len Element width, 1, 2, 4 or 8 bytes.
  * @param numel Number of elements to sort.
  * @return Local memory usage (in bytes) for the specified kernel.
  * */
-typedef size_t (*clo_sort_localmem_usage)(gchar* kernel_name, size_t lws_max, unsigned int numel);
+typedef size_t (*clo_sort_localmem_usage)(gchar* kernel_name, size_t lws_max, size_t len, unsigned int numel);
 
 /**
  * @brief Set sort kernels arguments.

@@ -76,13 +76,23 @@ __kernel void abitonic_steps_any(
  * @param step
  */
 __kernel void abitonic_steps_2_1(
-			__global CLO_SORT_ELEM_TYPE *data,
-			uint stage)
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	
-	/* Global id for this work-item. */
+	/* Global and local ids for this work-item. */
 	uint gid = get_global_id(0);
+	uint lid = get_local_id(0);
+	uint local_size = get_local_size(0);
+	uint group_id = get_group_id(0);
+		
+	/* Load data locally */
+	data_local[lid] = data_global[group_id * local_size * 2 + lid];
+	data_local[local_size + lid] = data_global[local_size * (group_id * 2 + 1) + lid];
 	
+	barrier(CLK_LOCAL_MEM_FENCE);
+
 	/* Determine if ascending or descending */
 	bool desc = (bool) (0x1 & (gid >> (stage - 1)));
 	
@@ -97,41 +107,47 @@ __kernel void abitonic_steps_2_1(
 	/* ********** STEP 2 ************** */
 
 	/* Determine what to compare and possibly swap. */
-	index1 = (gid / 2) * 4 + (gid % 2);
+	index1 = (lid / 2) * 4 + (lid % 2);
 	index2 = index1 + 2;
 		
-	/* Get hashes from global memory. */
-	data1 = data[index1];
-	data2 = data[index2];
+	/* Get elements from global memory. */
+	data1 = data_local[index1];
+	data2 = data_local[index2];
 		
-	/* Determine it is required to swap the agents. */
+	/* Determine if it's required to swap the elements. */
 	swap = CLO_SORT_COMPARE(data1, data2) ^ desc; 
 		
 	/* Perform swap if needed */ 
 	if (swap) {
-		data[index1] = data2; 
-		data[index2] = data1; 
+		data_local[index1] = data2; 
+		data_local[index2] = data1; 
 	}
 		
-	barrier(CLK_GLOBAL_MEM_FENCE);
+	barrier(CLK_LOCAL_MEM_FENCE);
 	
 	/* ********** STEP 1 ************** */
 		
 	/* Determine what to compare and possibly swap. */
-	index1 = gid * 2;
+	index1 = lid * 2;
 	index2 = index1 + 1;
 		
-	/* Get hashes from global memory. */
-	data1 = data[index1];
-	data2 = data[index2];
+	/* Get elements from global memory. */
+	data1 = data_local[index1];
+	data2 = data_local[index2];
 		
-	/* Determine it is required to swap the agents. */
+	/* Determine if it's required to swap the elements. */
 	swap = CLO_SORT_COMPARE(data1, data2) ^ desc; 
 		
 	/* Perform swap if needed */ 
 	if (swap) {
-		data[index1] = data2; 
-		data[index2] = data1; 
+		data_local[index1] = data2; 
+		data_local[index2] = data1; 
 	}
+
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	/* Store data globally */
+	data_global[group_id * local_size * 2 + lid] = data_local[lid];
+	data_global[local_size * (group_id * 2 + 1) + lid] = data_local[local_size + lid];
 		
 }
