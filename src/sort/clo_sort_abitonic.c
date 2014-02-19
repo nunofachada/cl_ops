@@ -62,7 +62,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 		for (cl_uint currentStep = currentStage; currentStep >= 1; currentStep--) {
 			
 			/* Use an unrolled kernel. */
-			if ((currentStep <= 4) && (currentStep >= 2)) {
+			if ((currentStep <= 9) && (currentStep >= 2)) {
 
 				unsigned int krnl_idx = currentStep - 1;
 				const char* krnl_name = clo_sort_abitonic_kernelname_get(krnl_idx);
