@@ -61,73 +61,20 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 		
 		for (cl_uint currentStep = currentStage; currentStep >= 1; currentStep--) {
 			
-			/* Use "4321" kernel. */
-			if (currentStep == 4) {
-				
-				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_4321], 1, sizeof(cl_uint), (void *) &currentStage);
-				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KERNELNAME_4321 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-					
-				evt = profile ? &evts[CLO_SORT_ABITONIC_K_4321][abitonic_evt_idx[CLO_SORT_ABITONIC_K_4321]] : NULL;
-					
-				ocl_status = clEnqueueNDRangeKernel(
-					queues[0], 
-					krnls[CLO_SORT_ABITONIC_K_4321], 
-					1, 
-					NULL, 
-					&gws, 
-					&lws, 
-					0, 
-					NULL,
-					evt
-				);
-				
-				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing " CLO_SORT_SBITONIC_KERNELNAME_4321 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-				abitonic_evt_idx[CLO_SORT_ABITONIC_K_4321]++;
-				
-				
-				/* Break out of the loop. */
-				break;
-			}
+			/* Use an unrolled kernel. */
+			if ((currentStep <= 4) && (currentStep >= 2)) {
 
-			/* Use "321" kernel. */
-			if (currentStep == 3) {
-				
-				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_321], 1, sizeof(cl_uint), (void *) &currentStage);
-				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KERNELNAME_321 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-					
-				evt = profile ? &evts[CLO_SORT_ABITONIC_K_321][abitonic_evt_idx[CLO_SORT_ABITONIC_K_321]] : NULL;
-					
-				ocl_status = clEnqueueNDRangeKernel(
-					queues[0], 
-					krnls[CLO_SORT_ABITONIC_K_321], 
-					1, 
-					NULL, 
-					&gws, 
-					&lws, 
-					0, 
-					NULL,
-					evt
-				);
-				
-				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing " CLO_SORT_SBITONIC_KERNELNAME_321 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-				abitonic_evt_idx[CLO_SORT_ABITONIC_K_321]++;
-				
-				
-				/* Break out of the loop. */
-				break;
-			}
+				unsigned int krnl_idx = currentStep - 1;
+				const char* krnl_name = clo_sort_abitonic_kernelname_get(krnl_idx);
 
-			/* Use "21" kernel. */
-			if (currentStep == 2) {
-				
-				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_21], 1, sizeof(cl_uint), (void *) &currentStage);
-				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KERNELNAME_21 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+				ocl_status = clSetKernelArg(krnls[krnl_idx], 1, sizeof(cl_uint), (void *) &currentStage);
+				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of %s kernel, OpenCL error %d: %s", krnl_name, ocl_status, clerror_get(ocl_status));
 					
-				evt = profile ? &evts[CLO_SORT_ABITONIC_K_21][abitonic_evt_idx[CLO_SORT_ABITONIC_K_21]] : NULL;
+				evt = profile ? &evts[krnl_idx][abitonic_evt_idx[krnl_idx]] : NULL;
 					
 				ocl_status = clEnqueueNDRangeKernel(
 					queues[0], 
-					krnls[CLO_SORT_ABITONIC_K_21], 
+					krnls[krnl_idx], 
 					1, 
 					NULL, 
 					&gws, 
@@ -137,13 +84,14 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 					evt
 				);
 				
-				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing " CLO_SORT_SBITONIC_KERNELNAME_21 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-				abitonic_evt_idx[CLO_SORT_ABITONIC_K_21]++;
-				
+				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing %s kernel, OpenCL error %d: %s", krnl_name, ocl_status, clerror_get(ocl_status));
+				abitonic_evt_idx[krnl_idx]++;
 				
 				/* Break out of the loop. */
 				break;
+				
 			}
+			
 			
 			/* Use "any" kernel. */
 			ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_ANY], 1, sizeof(cl_uint), (void *) &currentStage);
@@ -215,17 +163,11 @@ int clo_sort_abitonic_kernels_create(cl_kernel **krnls, cl_program program, GErr
 	gef_if_error_create_goto(*err, CLO_ERROR, *krnls == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for advanced bitonic sort kernels.");	
 	
 	/* Create kernels. */
-	(*krnls)[CLO_SORT_ABITONIC_K_ANY] = clCreateKernel(program, CLO_SORT_SBITONIC_KERNELNAME_ANY, &ocl_status);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create " CLO_SORT_SBITONIC_KERNELNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-
-	(*krnls)[CLO_SORT_ABITONIC_K_21] = clCreateKernel(program, CLO_SORT_SBITONIC_KERNELNAME_21, &ocl_status);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create " CLO_SORT_SBITONIC_KERNELNAME_21 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-
-	(*krnls)[CLO_SORT_ABITONIC_K_321] = clCreateKernel(program, CLO_SORT_SBITONIC_KERNELNAME_321, &ocl_status);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create " CLO_SORT_SBITONIC_KERNELNAME_321 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-
-	(*krnls)[CLO_SORT_ABITONIC_K_4321] = clCreateKernel(program, CLO_SORT_SBITONIC_KERNELNAME_4321, &ocl_status);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create " CLO_SORT_SBITONIC_KERNELNAME_4321 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	for (unsigned int i = 0; i < CLO_SORT_ABITONIC_NUMKERNELS; i++) {
+		const char* kernel_name = clo_sort_abitonic_kernelname_get(i);
+		(*krnls)[i] = clCreateKernel(program, kernel_name, &ocl_status);
+		gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create %s kernel, OpenCL error %d: %s", kernel_name, ocl_status, clerror_get(ocl_status));
+	}
 
 	/* If we got here, everything is OK. */
 	status = CLO_SUCCESS;
@@ -286,24 +228,14 @@ int clo_sort_abitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws,
 	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_ANY], 0, sizeof(cl_mem), &data);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SORT_SBITONIC_KERNELNAME_ANY " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
-	/// @todo The stuff bellow can be done in a loop
-	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_21], 0, sizeof(cl_mem), &data);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SORT_SBITONIC_KERNELNAME_21 " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	for (unsigned int i = 1;  i < CLO_SORT_ABITONIC_NUMKERNELS; i++) {
+		
+		ocl_status = clSetKernelArg((*krnls)[i], 0, sizeof(cl_mem), &data);
+		gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of %s kernel. OpenCL error %d: %s", clo_sort_abitonic_kernelname_get(i), ocl_status, clerror_get(ocl_status));
 
-	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_21], 2, len * lws * 2, NULL);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 2 of " CLO_SORT_SBITONIC_KERNELNAME_21 " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-
-	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_321], 0, sizeof(cl_mem), &data);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SORT_SBITONIC_KERNELNAME_321 " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-
-	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_321], 2, len * lws * 2, NULL);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 2 of " CLO_SORT_SBITONIC_KERNELNAME_321 " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-
-	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_4321], 0, sizeof(cl_mem), &data);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SORT_SBITONIC_KERNELNAME_4321 " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-
-	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_4321], 2, len * lws * 2, NULL);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 2 of " CLO_SORT_SBITONIC_KERNELNAME_4321 " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+		ocl_status = clSetKernelArg((*krnls)[i], 2, len * lws * 2, NULL);
+		gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 2 of %s kernel. OpenCL error %d: %s", clo_sort_abitonic_kernelname_get(i), ocl_status, clerror_get(ocl_status));
+	}
 
 	/* If we got here, everything is OK. */
 	status = CLO_SUCCESS;
@@ -351,30 +283,22 @@ int clo_sort_abitonic_events_create(cl_event ***evts, unsigned int iters, size_t
 	/* Required number of events, worst case usage scenario. The instruction 
 	 * below sums all numbers from 0 to x, where is is the log2 (clo_tzc) of
 	 * the next larger power of 2 of the maximum possible agents. */
-	int num_evts = iters * clo_sum(clo_tzc(clo_nlpo2(numel))); 
-	/// @todo Not so many events required
-	
-	/* Set advanced bitonic sort event index to zero (global var) */
-	for (int i = 0; i < CLO_SORT_ABITONIC_NUMKERNELS; i++)
-		abitonic_evt_idx[i] = 0;
+	int num_evts = iters * clo_sum(clo_tzc(clo_nlpo2(numel)));  /// @todo Not so many events required
 	
 	/* Two types of event required for the advanced bitonic sort kernel. */
 	*evts = (cl_event**) calloc(CLO_SORT_ABITONIC_NUMKERNELS, sizeof(cl_event*));
-	gef_if_error_create_goto(*err, CLO_ERROR, *evts == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for advanced bitonic sort events (0).");	
+	gef_if_error_create_goto(*err, CLO_ERROR, *evts == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for advanced bitonic sort events.");	
 	
 	/* Allocate memory for all occurrences of the event (i.e. executions of the advanced bitonic sort kernel). */
-	(*evts)[CLO_SORT_ABITONIC_K_ANY] = (cl_event*) calloc(num_evts, sizeof(cl_event));
-	gef_if_error_create_goto(*err, CLO_ERROR, (*evts)[CLO_SORT_ABITONIC_K_ANY] == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for advanced bitonic sort events (1).");	
+	for (unsigned int i = 0; i < CLO_SORT_ABITONIC_NUMKERNELS; i++) {
+		
+		(*evts)[i] = (cl_event*) calloc(num_evts, sizeof(cl_event)); /// @todo Adjust according to kernel, find some formula
+		gef_if_error_create_goto(*err, CLO_ERROR, (*evts)[i] == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for %s kernel events.", clo_sort_abitonic_kernelname_get(i));	
+		
+		/* Set current kernel event index to zero. */
+		abitonic_evt_idx[i] = 0;
+	}
 	
-	(*evts)[CLO_SORT_ABITONIC_K_21] = (cl_event*) calloc(num_evts, sizeof(cl_event));
-	gef_if_error_create_goto(*err, CLO_ERROR, (*evts)[CLO_SORT_ABITONIC_K_21] == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for advanced bitonic sort events (2).");	
-	
-	(*evts)[CLO_SORT_ABITONIC_K_321] = (cl_event*) calloc(num_evts, sizeof(cl_event));
-	gef_if_error_create_goto(*err, CLO_ERROR, (*evts)[CLO_SORT_ABITONIC_K_321] == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for advanced bitonic sort events (2).");	
-
-	(*evts)[CLO_SORT_ABITONIC_K_4321] = (cl_event*) calloc(num_evts, sizeof(cl_event));
-	gef_if_error_create_goto(*err, CLO_ERROR, (*evts)[CLO_SORT_ABITONIC_K_4321] == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for advanced bitonic sort events (2).");	
-
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);
 	status = CLO_SUCCESS;
@@ -420,27 +344,14 @@ int clo_sort_abitonic_events_profile(cl_event **evts, ProfCLProfile *profile, GE
 	
 	int status;
 
-	/// @todo This bellow can be done in a loop
-	for (unsigned int i = 0; i < abitonic_evt_idx[CLO_SORT_ABITONIC_K_ANY]; i++) {
-		profcl_profile_add(profile, CLO_SORT_SBITONIC_KERNELNAME_ANY, evts[CLO_SORT_ABITONIC_K_ANY][i], err);
-		gef_if_error_goto(*err, CLO_ERROR_LIBRARY, status, error_handler);
+	for (unsigned int j = 0; j < CLO_SORT_ABITONIC_NUMKERNELS; j++) {
+		const char* kernel_name = clo_sort_abitonic_kernelname_get(j);
+		for (unsigned int i = 0; i < abitonic_evt_idx[j]; i++) {
+			profcl_profile_add(profile, kernel_name, evts[j][i], err);
+			gef_if_error_goto(*err, CLO_ERROR_LIBRARY, status, error_handler);
+		}
 	}
-
-	for (unsigned int i = 0; i < abitonic_evt_idx[CLO_SORT_ABITONIC_K_21]; i++) {
-		profcl_profile_add(profile, CLO_SORT_SBITONIC_KERNELNAME_21, evts[CLO_SORT_ABITONIC_K_21][i], err);
-		gef_if_error_goto(*err, CLO_ERROR_LIBRARY, status, error_handler);
-	}
-
-	for (unsigned int i = 0; i < abitonic_evt_idx[CLO_SORT_ABITONIC_K_321]; i++) {
-		profcl_profile_add(profile, CLO_SORT_SBITONIC_KERNELNAME_321, evts[CLO_SORT_ABITONIC_K_321][i], err);
-		gef_if_error_goto(*err, CLO_ERROR_LIBRARY, status, error_handler);
-	}
-
-	for (unsigned int i = 0; i < abitonic_evt_idx[CLO_SORT_ABITONIC_K_4321]; i++) {
-		profcl_profile_add(profile, CLO_SORT_SBITONIC_KERNELNAME_4321, evts[CLO_SORT_ABITONIC_K_4321][i], err);
-		gef_if_error_goto(*err, CLO_ERROR_LIBRARY, status, error_handler);
-	}
-
+	
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);
 	status = CLO_SUCCESS;
