@@ -67,53 +67,16 @@
 	/* Store data globally */ \
 	data_global[global_index1] = data_local[local_index1]; \
 	data_global[global_index2] = data_local[local_index2]; \
-
-/**
- * @brief This kernel can perform any step of any stage of a bitonic
- * sort.
- * 
- * @param data Array of data to sort.
- * @param stage
- * @param step
- */
-__kernel void abitonic_any(
-			__global CLO_SORT_ELEM_TYPE *data,
-			uint stage,
-			uint step)
-{
-	/* Global id for this work-item. */
-	uint gid = get_global_id(0);
 	
-	/* Determine if ascending or descending */
-	bool desc = (bool) (0x1 & (gid >> (stage - 1)));
-
-	/* Determine stride. */
-	uint pair_stride = (uint) (1 << (step - 1)); 
-	
-	/* Block of which this thread is part of. */
-	uint block = gid / pair_stride;
-	
-	/* ID of thread in block. */
-	uint bid = gid % pair_stride;
-
-	/* Determine what to compare and possibly swap. */
-	uint index1 = block * pair_stride * 2 + bid;
-	uint index2 = index1 + pair_stride;
-	
-	/* Get hashes from global memory. */
-	CLO_SORT_ELEM_TYPE data1 = data[index1];
-	CLO_SORT_ELEM_TYPE data2 = data[index2];
-		
-	/* Determine it is required to swap the agents. */
-	bool swap = CLO_SORT_COMPARE(data1, data2) ^ desc; 
-		
-	/* Perform swap if needed */ 
-	if (swap) {
-		data[index1] = data2; 
-		data[index2] = data1; 
+#define CLO_SORT_ABITONIC_CMPXCH(index1, index2) \
+	data1 = data_local[index1]; \
+	data2 = data_local[index2]; \
+	swap = CLO_SORT_COMPARE(data1, data2) ^ desc; \
+	if (swap) { \
+		data_local[index1] = data2; \
+		data_local[index2] = data1; \
 	}
-		
-}
+	
 
 /**
  * @brief This kernel can perform the two last steps of a stage in a
@@ -452,4 +415,115 @@ __kernel void abitonic_11(
 	/* ********* FINISH *********** */
 	CLO_SORT_ABITONIC_FINISH();
 
+}
+
+/**
+ * @brief This kernel can perform any step of any stage of a bitonic
+ * sort.
+ * 
+ * @param data Array of data to sort.
+ * @param stage
+ * @param step
+ */
+__kernel void abitonic_any(
+			__global CLO_SORT_ELEM_TYPE *data,
+			uint stage,
+			uint step)
+{
+	/* Global id for this work-item. */
+	uint gid = get_global_id(0);
+	
+	/* Determine if ascending or descending */
+	bool desc = (bool) (0x1 & (gid >> (stage - 1)));
+
+	/* Determine stride. */
+	uint pair_stride = (uint) (1 << (step - 1)); 
+	
+	/* Block of which this thread is part of. */
+	uint block = gid / pair_stride;
+	
+	/* ID of thread in block. */
+	uint bid = gid % pair_stride;
+
+	/* Determine what to compare and possibly swap. */
+	uint index1 = block * pair_stride * 2 + bid;
+	uint index2 = index1 + pair_stride;
+	
+	/* Get hashes from global memory. */
+	CLO_SORT_ELEM_TYPE data1 = data[index1];
+	CLO_SORT_ELEM_TYPE data2 = data[index2];
+		
+	/* Determine it is required to swap the agents. */
+	bool swap = CLO_SORT_COMPARE(data1, data2) ^ desc; 
+		
+	/* Perform swap if needed */ 
+	if (swap) {
+		data[index1] = data2; 
+		data[index2] = data1; 
+	}
+		
+}
+
+/* Each thread sorts 8 values (in three steps of a bitonic stage).
+ * Assumes gws = numel2sort / 8 */
+__kernel void abitonic_s8(
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			__local CLO_SORT_ELEM_TYPE *data_local)
+{
+
+	bool swap;
+	uint index1, index2;
+	CLO_SORT_ELEM_TYPE data1;
+	CLO_SORT_ELEM_TYPE data2;
+	
+	/* Thread information. */
+	uint gid = get_global_id(0);
+	uint lid = get_local_id(0);
+	uint gws = get_global_size(0);
+	
+	/* Determine block size. */
+	uint I = 1 << stage;
+	
+	/* Determine number of blocks. */
+	uint B = gws * 8 / I;
+	
+	/* Determine block id. */
+	uint bid = gid / B;
+	
+	/* Determine if ascending or descending. Ascending if block id is
+	 * pair, descending otherwise. */
+	bool desc = (bool) (0x1 & bid);
+	
+	/* Thread id in block. */
+	uint tid = gid % B;
+		
+	/* Base global address to load/store values from/to. */
+	uint gaddr = bid * I + tid;
+	
+	/* ***** Transfer 8 values to sort to local memory ***** */
+	for (uint i = 0; i < 8; i++)
+		data_local[lid * 8 + i] = data_global[gaddr + i * I/8];
+	
+	/* ***** Sort the 8 values ***** */
+			
+	/* Step n */
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 0, lid * 8 + 4);
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 1, lid * 8 + 5);
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 2, lid * 8 + 6);
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 3, lid * 8 + 7);
+	/* Step n-1 */
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 0, lid * 8 + 2);
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 1, lid * 8 + 3);
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 4, lid * 8 + 6);
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 5, lid * 8 + 7);
+	/* Step n-2 */
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 0, lid * 8 + 1);
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 2, lid * 8 + 3);
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 4, lid * 8 + 5);
+	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 6, lid * 8 + 7);
+
+	/* ***** Transfer the n values to global memory ***** */
+	for (uint i = 0; i < 8; i++)
+		data_global[gaddr + i * I/8] = data_local[lid * 8 + i];
 }

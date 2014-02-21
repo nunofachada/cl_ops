@@ -39,33 +39,32 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 	/* Aux. var. */
 	int status, ocl_status;
 		
-	/* Global worksize. */
-	size_t gws = clo_nlpo2(numel) / 2;
-	
-	/* Local worksize. */
-	size_t lws = lws_max;
-	
-	/* Number of bitonic sort stages. */
-	cl_uint totalStages = (cl_uint) clo_tzc(gws * 2);
-	
 	/* Event pointer, in case profiling is on. */
 	cl_event* evt;
 
+	/* Number of bitonic sort stages. */
+	cl_uint totalStages = (cl_uint) clo_tzc(numel);
+
+	/* ****** Unrolled and any kernels ******** */
+
+	/* Global worksize. */
+	size_t gws = clo_nlpo2(numel) / 2;
+	/* Local worksize. */
+	size_t lws = MIN(lws_max, gws);
 	/* Maximum step for unrolled kernels. */
-	cl_uint maxStep;
+	cl_uint maxStep = clo_tzc(lws) + 1;
 	
-	/* Adjust LWS so that its equal or smaller than GWS, making sure that
-	 * GWS is still a multiple of it. */
-	while (gws % lws != 0)
-		lws = lws / 2;
-		
-	/* Determine maximum step for unrolled kernels. */
-	maxStep = clo_tzc(lws) + 1;
+	/* ***** Three step kernels ****** */
+	
+	/* Global worksize. */
+	size_t gws8 = clo_nlpo2(numel) / 8;
+	/* Local worksize. */
+	size_t lws8 = lws / 2; /// @todo This is more or less, I should adjust it better or try to make it dependent on the device local memory
 		
 	/* Perform sorting. */
 	for (cl_uint currentStage = 1; currentStage <= totalStages; currentStage++) {
 		
-		for (cl_uint currentStep = currentStage; currentStep >= 1; currentStep--) {
+		for (cl_uint currentStep = currentStage; currentStep >= 1; ) {
 			
 			/* Use an unrolled kernel. */
 			if ((currentStep <= maxStep) && (currentStep >= 2)) {
@@ -96,33 +95,61 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				/* Break out of the loop. */
 				break;
 				
+			} else if (currentStep > maxStep) {
+			
+				/* Use 3-step kernel (each thread completely sorts 8 values). */
+				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_S8], 1, sizeof(cl_uint), (void *) &currentStage);
+				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KERNELNAME_S8 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+					
+				evt = profile ? &evts[CLO_SORT_ABITONIC_K_ANY][abitonic_evt_idx[CLO_SORT_ABITONIC_K_S8]] : NULL;
+					
+				ocl_status = clEnqueueNDRangeKernel(
+					queues[0], 
+					krnls[CLO_SORT_ABITONIC_K_S8], 
+					1, 
+					NULL, 
+					&gws8, 
+					&lws8, 
+					0, 
+					NULL,
+					evt
+				);
+				
+				/* Advance three steps. */
+				currentStep -= 3;
+				
+				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing " CLO_SORT_SBITONIC_KERNELNAME_S8 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+				abitonic_evt_idx[CLO_SORT_ABITONIC_K_S8]++;
+			
+			} else { /* Step = 1 */
+			
+				/* Use "any" kernel. */
+				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_ANY], 1, sizeof(cl_uint), (void *) &currentStage);
+				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KERNELNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+					
+				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_ANY], 2, sizeof(cl_uint), (void *) &currentStep);
+				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 2 of " CLO_SORT_SBITONIC_KERNELNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+					
+				evt = profile ? &evts[CLO_SORT_ABITONIC_K_ANY][abitonic_evt_idx[CLO_SORT_ABITONIC_K_ANY]] : NULL;
+					
+				ocl_status = clEnqueueNDRangeKernel(
+					queues[0], 
+					krnls[CLO_SORT_ABITONIC_K_ANY], 
+					1, 
+					NULL, 
+					&gws, 
+					&lws, 
+					0, 
+					NULL,
+					evt
+				);
+				
+				/* Advance one step. */
+				currentStep--;
+				
+				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing " CLO_SORT_SBITONIC_KERNELNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+				abitonic_evt_idx[CLO_SORT_ABITONIC_K_ANY]++;
 			}
-			
-			
-			/* Use "any" kernel. */
-			ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_ANY], 1, sizeof(cl_uint), (void *) &currentStage);
-			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KERNELNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-				
-			ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_ANY], 2, sizeof(cl_uint), (void *) &currentStep);
-			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 2 of " CLO_SORT_SBITONIC_KERNELNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-				
-			evt = profile ? &evts[CLO_SORT_ABITONIC_K_ANY][abitonic_evt_idx[CLO_SORT_ABITONIC_K_ANY]] : NULL;
-				
-			ocl_status = clEnqueueNDRangeKernel(
-				queues[0], 
-				krnls[CLO_SORT_ABITONIC_K_ANY], 
-				1, 
-				NULL, 
-				&gws, 
-				&lws, 
-				0, 
-				NULL,
-				evt
-			);
-			
-			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing " CLO_SORT_SBITONIC_KERNELNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-			abitonic_evt_idx[CLO_SORT_ABITONIC_K_ANY]++;
-			
 			
 		}
 			
