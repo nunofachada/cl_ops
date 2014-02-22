@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 	compilerOpts = g_strconcat(
 		"-I ", path,
 		" -D ", sort_info.compiler_const, 
-		" -D ", "SORT_ELEM_TYPE=", bits == 8 ? "uchar" : (bits == 16 ? "ushort" : (bits == 32 ? "uint" : "ulong")),
+		" -D ", "CLO_SORT_ELEM_TYPE=", bits == 8 ? "uchar" : (bits == 16 ? "ushort" : (bits == 32 ? "uint" : "ulong")),
 		NULL);
 	
 	/* Build program. */
