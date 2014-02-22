@@ -96,12 +96,15 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				break;
 				
 			} else if (currentStep > maxStep) {
-			
+				
 				/* Use 3-step kernel (each thread completely sorts 8 values). */
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_S8], 1, sizeof(cl_uint), (void *) &currentStage);
 				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KERNELNAME_S8 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 					
-				evt = profile ? &evts[CLO_SORT_ABITONIC_K_ANY][abitonic_evt_idx[CLO_SORT_ABITONIC_K_S8]] : NULL;
+				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_S8], 2, sizeof(cl_uint), (void *) &currentStep);
+				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 2 of " CLO_SORT_SBITONIC_KERNELNAME_S8 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+
+				evt = profile ? &evts[CLO_SORT_ABITONIC_K_S8][abitonic_evt_idx[CLO_SORT_ABITONIC_K_S8]] : NULL;
 					
 				ocl_status = clEnqueueNDRangeKernel(
 					queues[0], 
@@ -261,7 +264,7 @@ int clo_sort_abitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws,
 	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_ANY], 0, sizeof(cl_mem), &data);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SORT_SBITONIC_KERNELNAME_ANY " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
-	for (unsigned int i = 1;  i < CLO_SORT_ABITONIC_NUMKERNELS; i++) {
+	for (unsigned int i = 1;  i < CLO_SORT_ABITONIC_NUMKERNELS - 1; i++) {
 		
 		ocl_status = clSetKernelArg((*krnls)[i], 0, sizeof(cl_mem), &data);
 		gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of %s kernel. OpenCL error %d: %s", clo_sort_abitonic_kernelname_get(i), ocl_status, clerror_get(ocl_status));
@@ -269,6 +272,12 @@ int clo_sort_abitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws,
 		ocl_status = clSetKernelArg((*krnls)[i], 2, len * lws * 2, NULL);
 		gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 2 of %s kernel. OpenCL error %d: %s", clo_sort_abitonic_kernelname_get(i), ocl_status, clerror_get(ocl_status));
 	}
+
+	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_S8], 0, sizeof(cl_mem), &data);
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SORT_SBITONIC_KERNELNAME_S8 " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+
+	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_K_S8], 3, len * lws * 8, NULL);
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 3 of " CLO_SORT_SBITONIC_KERNELNAME_S8 " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
 	/* If we got here, everything is OK. */
 	status = CLO_SUCCESS;

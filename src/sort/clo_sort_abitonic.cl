@@ -76,6 +76,15 @@
 		data_local[index1] = data2; \
 		data_local[index2] = data1; \
 	}
+
+#define CLO_SORT_ABITONIC_GCMPXCH(index1, index2) \
+	data1 = data_global[index1]; \
+	data2 = data_global[index2]; \
+	swap = CLO_SORT_COMPARE(data1, data2) ^ desc; \
+	if (swap) { \
+		data_global[index1] = data2; \
+		data_global[index2] = data1; \
+	}
 	
 
 /**
@@ -469,6 +478,7 @@ __kernel void abitonic_any(
 __kernel void abitonic_s8(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
+			uint step,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 
@@ -483,25 +493,25 @@ __kernel void abitonic_s8(
 	uint gws = get_global_size(0);
 	
 	/* Determine block size. */
-	uint I = 1 << stage;
+	uint I = 1 << step;
 	
 	/* Determine number of blocks. */
 	uint B = gws * 8 / I;
 	
 	/* Determine block id. */
-	uint bid = gid / B;
+	uint bid = (gid * 8) / I;
 	
 	/* Determine if ascending or descending. Ascending if block id is
 	 * pair, descending otherwise. */
-	bool desc = (bool) (0x1 & bid);
+	bool desc = (bool) (0x1 & ((gid * 8) / (1 << stage)));
 	
 	/* Thread id in block. */
-	uint tid = gid % B;
+	uint tid = gid % (I/8);
 		
 	/* Base global address to load/store values from/to. */
 	uint gaddr = bid * I + tid;
 	
-	/* ***** Transfer 8 values to sort to local memory ***** */
+	//~ /* ***** Transfer 8 values to sort to local memory ***** */
 	for (uint i = 0; i < 8; i++)
 		data_local[lid * 8 + i] = data_global[gaddr + i * I/8];
 	
@@ -523,7 +533,23 @@ __kernel void abitonic_s8(
 	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 4, lid * 8 + 5);
 	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 6, lid * 8 + 7);
 
-	/* ***** Transfer the n values to global memory ***** */
+	//~ /* Step n */
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 0 * I/8, gaddr + 4 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 1 * I/8, gaddr + 5 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 2 * I/8, gaddr + 6 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 3 * I/8, gaddr + 7 * I/8);
+	//~ /* Step n-1 */
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 0 * I/8, gaddr + 2 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 1 * I/8, gaddr + 3 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 4 * I/8, gaddr + 6 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 5 * I/8, gaddr + 7 * I/8);
+	//~ /* Step n-2 */
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 0 * I/8, gaddr + 1 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 2 * I/8, gaddr + 3 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 4 * I/8, gaddr + 5 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 6 * I/8, gaddr + 7 * I/8);
+
+	//~ /* ***** Transfer the n values to global memory ***** */
 	for (uint i = 0; i < 8; i++)
 		data_global[gaddr + i * I/8] = data_local[lid * 8 + i];
 }
