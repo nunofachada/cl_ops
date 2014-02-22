@@ -517,3 +517,114 @@ __kernel void abitonic_s8(
 	data_global[gaddr + 7 * bsBy8] = data_local[7];
 
 }
+
+/* Each thread sorts 16 values (in three steps of a bitonic stage).
+ * Assumes gws = numel2sort / 16 */
+__kernel void abitonic_s16(
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			uint step)
+{
+
+	__private CLO_SORT_ELEM_TYPE data_local[16];
+	CLO_SORT_ELEM_TYPE data1, data2;
+	
+	/* Thread information. */
+	uint gid = get_global_id(0);
+	uint lid = get_local_id(0);
+	
+	/* Determine block size. */
+	uint blockSize = 1 << step;
+	
+	/* Determine if ascending or descending. Ascending if block id is
+	 * pair, descending otherwise. */
+	bool desc = (bool) (0x1 & ((gid * 16) / (1 << stage)));
+	
+	/* Thread id in block. */
+	uint tid = gid % (blockSize/16);
+		
+	/* Base global address to load/store values from/to. */
+	uint gaddr = ((gid * 16) / blockSize) * blockSize + tid;
+	
+	/* Avoid calculations */
+	uint bsBy8 = blockSize / 16;
+	
+	/* ***** Transfer 8 values to sort to local memory ***** */
+
+	data_local[0] = data_global[gaddr];
+	data_local[1] = data_global[gaddr + bsBy8];
+	data_local[2] = data_global[gaddr + 2 * bsBy8];
+	data_local[3] = data_global[gaddr + 3 * bsBy8];
+	data_local[4] = data_global[gaddr + 4 * bsBy8];
+	data_local[5] = data_global[gaddr + 5 * bsBy8];
+	data_local[6] = data_global[gaddr + 6 * bsBy8];
+	data_local[7] = data_global[gaddr + 7 * bsBy8];
+	data_local[8] = data_global[gaddr + 8 * bsBy8];
+	data_local[9] = data_global[gaddr + 9 * bsBy8];
+	data_local[10] = data_global[gaddr + 10 * bsBy8];
+	data_local[11] = data_global[gaddr + 11 * bsBy8];
+	data_local[12] = data_global[gaddr + 12 * bsBy8];
+	data_local[13] = data_global[gaddr + 13 * bsBy8];
+	data_local[14] = data_global[gaddr + 14 * bsBy8];
+	data_local[15] = data_global[gaddr + 15 * bsBy8];
+
+	/* ***** Sort the 8 values ***** */
+
+	/* Step n */
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 0, 8);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 1, 9);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 2, 10);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 3, 11);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 4, 12);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 5, 13);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 6, 14);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 7, 15);
+	/* Step n-1 */
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 0, 4);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 1, 5);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 2, 6);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 3, 7);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 8, 12);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 9, 13);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 10, 14);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 11, 15);
+
+	/* Step n-2 */
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 0, 2);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 1, 3);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 4, 6);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 5, 7);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 8, 10);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 9, 11);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 12, 14);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 13, 15);
+	
+	/* Step n-3 */
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 0, 1);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 2, 3);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 4, 5);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 6, 7);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 8, 9);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 10, 11);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 12, 13);
+	CLO_SORT_ABITONIC_CMPXCH(data_local, 14, 15);
+
+	/* ***** Transfer the n values to global memory ***** */
+
+	data_global[gaddr] = data_local[0];
+	data_global[gaddr + bsBy8] = data_local[1];
+	data_global[gaddr + 2 * bsBy8] = data_local[2];
+	data_global[gaddr + 3 * bsBy8] = data_local[3];
+	data_global[gaddr + 4 * bsBy8] = data_local[4];
+	data_global[gaddr + 5 * bsBy8] = data_local[5];
+	data_global[gaddr + 6 * bsBy8] = data_local[6];
+	data_global[gaddr + 7 * bsBy8] = data_local[7];
+	data_global[gaddr + 8 * bsBy8] = data_local[8];
+	data_global[gaddr + 9 * bsBy8] = data_local[9];
+	data_global[gaddr + 10 * bsBy8] = data_local[10];
+	data_global[gaddr + 11 * bsBy8] = data_local[11];
+	data_global[gaddr + 12 * bsBy8] = data_local[12];
+	data_global[gaddr + 13 * bsBy8] = data_local[13];
+	data_global[gaddr + 14 * bsBy8] = data_local[14];
+	data_global[gaddr + 15 * bsBy8] = data_local[15];
+}
