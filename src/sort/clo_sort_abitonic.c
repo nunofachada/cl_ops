@@ -43,7 +43,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 	cl_event* evt;
 
 	/* Number of bitonic sort stages. */
-	cl_uint totalStages = (cl_uint) clo_tzc(numel);
+	cl_uint totalStages = (cl_uint) clo_tzc(clo_nlpo2(numel));
 
 	/* ****** Unrolled and any kernels ******** */
 
@@ -61,6 +61,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 	/* Local worksize. */
 	size_t lws8 = lws / 2; /// @todo This is more or less, I should adjust it better or try to make it dependent on the device local memory
 		
+	//~ fprintf(stderr, "----------------\n");
 	/* Perform sorting. */
 	for (cl_uint currentStage = 1; currentStage <= totalStages; currentStage++) {
 		
@@ -68,6 +69,8 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 			
 			/* Use an unrolled kernel. */
 			if ((currentStep <= maxStep) && (currentStep >= 2)) {
+
+				//~ fprintf(stderr, " %d (UNR): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStage, currentStep, gws, lws);
 
 				unsigned int krnl_idx = currentStep - 1;
 				const char* krnl_name = clo_sort_abitonic_kernelname_get(krnl_idx);
@@ -97,6 +100,8 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				
 			} else if (currentStep > maxStep) {
 				
+				//~ fprintf(stderr, " %d (S8): Stage: %d, Step: %d,Gws8: %d, Lws8: %d\n", numel, currentStage, currentStep, gws8, lws8);
+			
 				/* Use 3-step kernel (each thread completely sorts 8 values). */
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_S8], 1, sizeof(cl_uint), (void *) &currentStage);
 				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KERNELNAME_S8 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
@@ -126,6 +131,8 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 			
 			} else { /* Step = 1 */
 			
+				//~ fprintf(stderr, " %d (ANY): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStage, currentStep, gws, lws);
+
 				/* Use "any" kernel. */
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_ANY], 1, sizeof(cl_uint), (void *) &currentStage);
 				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KERNELNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));

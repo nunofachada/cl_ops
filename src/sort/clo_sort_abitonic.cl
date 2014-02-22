@@ -479,13 +479,15 @@ __kernel void abitonic_s8(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			uint step,
-			__local CLO_SORT_ELEM_TYPE *data_local)
+			__local CLO_SORT_ELEM_TYPE *data_locale)
 {
 
 	bool swap;
 	uint index1, index2;
 	CLO_SORT_ELEM_TYPE data1;
 	CLO_SORT_ELEM_TYPE data2;
+	
+	__private CLO_SORT_ELEM_TYPE data_local[8];
 	
 	/* Thread information. */
 	uint gid = get_global_id(0);
@@ -511,45 +513,104 @@ __kernel void abitonic_s8(
 	/* Base global address to load/store values from/to. */
 	uint gaddr = bid * I + tid;
 	
-	//~ /* ***** Transfer 8 values to sort to local memory ***** */
-	for (uint i = 0; i < 8; i++)
-		data_local[lid * 8 + i] = data_global[gaddr + i * I/8];
+	/* Avoid calculations */
+	uint Iby8 = I/8;
+	uint lidx8 = lid * 8;
 	
+	/* ***** Transfer 8 values to sort to local memory ***** */
+	//~ for (uint i = 0; i < 8; i++)
+		//~ data_local[lid * 8 + i] = data_global[gaddr + i * I/8];
+		
+	//~ data_local[lidx8] = data_global[gaddr];
+	//~ data_local[lidx8 + 1] = data_global[gaddr + Iby8];
+	//~ data_local[lidx8 + 2] = data_global[gaddr + 2 * Iby8];
+	//~ data_local[lidx8 + 3] = data_global[gaddr + 3 * Iby8];
+	//~ data_local[lidx8 + 4] = data_global[gaddr + 4 * Iby8];
+	//~ data_local[lidx8 + 5] = data_global[gaddr + 5 * Iby8];
+	//~ data_local[lidx8 + 6] = data_global[gaddr + 6 * Iby8];
+	//~ data_local[lidx8 + 7] = data_global[gaddr + 7 * Iby8];
+	
+
+	data_local[0] = data_global[gaddr];
+	data_local[1] = data_global[gaddr + Iby8];
+	data_local[2] = data_global[gaddr + 2 * Iby8];
+	data_local[3] = data_global[gaddr + 3 * Iby8];
+	data_local[4] = data_global[gaddr + 4 * Iby8];
+	data_local[5] = data_global[gaddr + 5 * Iby8];
+	data_local[6] = data_global[gaddr + 6 * Iby8];
+	data_local[7] = data_global[gaddr + 7 * Iby8];
+
 	/* ***** Sort the 8 values ***** */
 			
+	//~ /* Step n */
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 0, lidx8 + 4);
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 1, lidx8 + 5);
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 2, lidx8 + 6);
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 3, lidx8 + 7);
+	//~ /* Step n-1 */
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 0, lidx8 + 2);
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 1, lidx8 + 3);
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 4, lidx8 + 6);
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 5, lidx8 + 7);
+	//~ /* Step n-2 */
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 0, lidx8 + 1);
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 2, lidx8 + 3);
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 4, lidx8 + 5);
+	//~ CLO_SORT_ABITONIC_CMPXCH(lidx8 + 6, lidx8 + 7);
+
 	/* Step n */
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 0, lid * 8 + 4);
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 1, lid * 8 + 5);
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 2, lid * 8 + 6);
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 3, lid * 8 + 7);
+	CLO_SORT_ABITONIC_CMPXCH(0, 4);
+	CLO_SORT_ABITONIC_CMPXCH(1, 5);
+	CLO_SORT_ABITONIC_CMPXCH(2, 6);
+	CLO_SORT_ABITONIC_CMPXCH(3, 7);
 	/* Step n-1 */
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 0, lid * 8 + 2);
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 1, lid * 8 + 3);
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 4, lid * 8 + 6);
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 5, lid * 8 + 7);
+	CLO_SORT_ABITONIC_CMPXCH(0, 2);
+	CLO_SORT_ABITONIC_CMPXCH(1, 3);
+	CLO_SORT_ABITONIC_CMPXCH(4, 6);
+	CLO_SORT_ABITONIC_CMPXCH(5, 7);
 	/* Step n-2 */
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 0, lid * 8 + 1);
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 2, lid * 8 + 3);
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 4, lid * 8 + 5);
-	CLO_SORT_ABITONIC_CMPXCH(lid * 8 + 6, lid * 8 + 7);
+	CLO_SORT_ABITONIC_CMPXCH(0, 1);
+	CLO_SORT_ABITONIC_CMPXCH(2, 3);
+	CLO_SORT_ABITONIC_CMPXCH(4, 5);
+	CLO_SORT_ABITONIC_CMPXCH(6, 7);
 
 	//~ /* Step n */
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 0 * I/8, gaddr + 4 * I/8);
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 1 * I/8, gaddr + 5 * I/8);
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 2 * I/8, gaddr + 6 * I/8);
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 3 * I/8, gaddr + 7 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 0 * Iby8, gaddr + 4 * Iby8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 1 * Iby8, gaddr + 5 * Iby8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 2 * Iby8, gaddr + 6 * Iby8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 3 * Iby8, gaddr + 7 * Iby8);
 	//~ /* Step n-1 */
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 0 * I/8, gaddr + 2 * I/8);
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 1 * I/8, gaddr + 3 * I/8);
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 4 * I/8, gaddr + 6 * I/8);
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 5 * I/8, gaddr + 7 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 0 * Iby8, gaddr + 2 * Iby8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 1 * Iby8, gaddr + 3 * Iby8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 4 * Iby8, gaddr + 6 * Iby8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 5 * Iby8, gaddr + 7 * Iby8);
 	//~ /* Step n-2 */
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 0 * I/8, gaddr + 1 * I/8);
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 2 * I/8, gaddr + 3 * I/8);
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 4 * I/8, gaddr + 5 * I/8);
-	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 6 * I/8, gaddr + 7 * I/8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 0 * Iby8, gaddr + 1 * Iby8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 2 * Iby8, gaddr + 3 * Iby8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 4 * Iby8, gaddr + 5 * Iby8);
+	//~ CLO_SORT_ABITONIC_GCMPXCH(gaddr + 6 * Iby8, gaddr + 7 * Iby8);
 
-	//~ /* ***** Transfer the n values to global memory ***** */
-	for (uint i = 0; i < 8; i++)
-		data_global[gaddr + i * I/8] = data_local[lid * 8 + i];
+	/* ***** Transfer the n values to global memory ***** */
+	//~ for (uint i = 0; i < 8; i++)
+		//~ data_global[gaddr + i * Iby8] = data_local[lidx8 + i];
+
+	//~ data_global[gaddr] = data_local[lidx8];
+	//~ data_global[gaddr + Iby8] = data_local[lidx8 + 1];
+	//~ data_global[gaddr + 2 * Iby8] = data_local[lidx8 + 2];
+	//~ data_global[gaddr + 3 * Iby8] = data_local[lidx8 + 3];
+	//~ data_global[gaddr + 4 * Iby8] = data_local[lidx8 + 4];
+	//~ data_global[gaddr + 5 * Iby8] = data_local[lidx8 + 5];
+	//~ data_global[gaddr + 6 * Iby8] = data_local[lidx8 + 6];
+	//~ data_global[gaddr + 7 * Iby8] = data_local[lidx8 + 7];
+
+	data_global[gaddr] = data_local[0];
+	data_global[gaddr + Iby8] = data_local[1];
+	data_global[gaddr + 2 * Iby8] = data_local[2];
+	data_global[gaddr + 3 * Iby8] = data_local[3];
+	data_global[gaddr + 4 * Iby8] = data_local[4];
+	data_global[gaddr + 5 * Iby8] = data_local[5];
+	data_global[gaddr + 6 * Iby8] = data_local[6];
+	data_global[gaddr + 7 * Iby8] = data_local[7];
+
+
 }
