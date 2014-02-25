@@ -453,7 +453,7 @@ __kernel void abitonic_s8(
 			uint step)
 {
 
-	__private CLO_SORT_ELEM_TYPE data_local[8];
+	__private CLO_SORT_ELEM_TYPE data_priv[8];
 	CLO_SORT_ELEM_TYPE data1, data2;
 	
 	/* Thread information. */
@@ -474,47 +474,47 @@ __kernel void abitonic_s8(
 	uint gaddr = ((gid * 8) / blockSize) * blockSize + tid;
 	
 	/* Avoid calculations */
-	uint bsBy8 = blockSize / 8;
+	uint bs_by_n = blockSize / 8;
 	
 	/* ***** Transfer 8 values to sort to local memory ***** */
 
-	data_local[0] = data_global[gaddr];
-	data_local[1] = data_global[gaddr + bsBy8];
-	data_local[2] = data_global[gaddr + 2 * bsBy8];
-	data_local[3] = data_global[gaddr + 3 * bsBy8];
-	data_local[4] = data_global[gaddr + 4 * bsBy8];
-	data_local[5] = data_global[gaddr + 5 * bsBy8];
-	data_local[6] = data_global[gaddr + 6 * bsBy8];
-	data_local[7] = data_global[gaddr + 7 * bsBy8];
+	data_priv[0] = data_global[gaddr];
+	data_priv[1] = data_global[gaddr + bs_by_n];
+	data_priv[2] = data_global[gaddr + 2 * bs_by_n];
+	data_priv[3] = data_global[gaddr + 3 * bs_by_n];
+	data_priv[4] = data_global[gaddr + 4 * bs_by_n];
+	data_priv[5] = data_global[gaddr + 5 * bs_by_n];
+	data_priv[6] = data_global[gaddr + 6 * bs_by_n];
+	data_priv[7] = data_global[gaddr + 7 * bs_by_n];
 
 	/* ***** Sort the 8 values ***** */
 
 	/* Step n */
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 0, 4);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 1, 5);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 2, 6);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 3, 7);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 4);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 5);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 6);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 7);
 	/* Step n-1 */
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 0, 2);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 1, 3);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 4, 6);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 5, 7);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 6);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 7);
 	/* Step n-2 */
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 0, 1);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 2, 3);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 4, 5);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 6, 7);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 5);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 7);
 
 	/* ***** Transfer the n values to global memory ***** */
 
-	data_global[gaddr] = data_local[0];
-	data_global[gaddr + bsBy8] = data_local[1];
-	data_global[gaddr + 2 * bsBy8] = data_local[2];
-	data_global[gaddr + 3 * bsBy8] = data_local[3];
-	data_global[gaddr + 4 * bsBy8] = data_local[4];
-	data_global[gaddr + 5 * bsBy8] = data_local[5];
-	data_global[gaddr + 6 * bsBy8] = data_local[6];
-	data_global[gaddr + 7 * bsBy8] = data_local[7];
+	data_global[gaddr] = data_priv[0];
+	data_global[gaddr + bs_by_n] = data_priv[1];
+	data_global[gaddr + 2 * bs_by_n] = data_priv[2];
+	data_global[gaddr + 3 * bs_by_n] = data_priv[3];
+	data_global[gaddr + 4 * bs_by_n] = data_priv[4];
+	data_global[gaddr + 5 * bs_by_n] = data_priv[5];
+	data_global[gaddr + 6 * bs_by_n] = data_priv[6];
+	data_global[gaddr + 7 * bs_by_n] = data_priv[7];
 
 }
 
@@ -526,7 +526,7 @@ __kernel void abitonic_s16(
 			uint step)
 {
 
-	__private CLO_SORT_ELEM_TYPE data_local[16];
+	__private CLO_SORT_ELEM_TYPE data_priv[16];
 	CLO_SORT_ELEM_TYPE data1, data2;
 	
 	/* Thread information. */
@@ -547,84 +547,84 @@ __kernel void abitonic_s16(
 	uint gaddr = ((gid * 16) / blockSize) * blockSize + tid;
 	
 	/* Avoid calculations */
-	uint bsBy8 = blockSize / 16;
+	uint bs_by_n = blockSize / 16;
 	
 	/* ***** Transfer 8 values to sort to local memory ***** */
 
-	data_local[0] = data_global[gaddr];
-	data_local[1] = data_global[gaddr + bsBy8];
-	data_local[2] = data_global[gaddr + 2 * bsBy8];
-	data_local[3] = data_global[gaddr + 3 * bsBy8];
-	data_local[4] = data_global[gaddr + 4 * bsBy8];
-	data_local[5] = data_global[gaddr + 5 * bsBy8];
-	data_local[6] = data_global[gaddr + 6 * bsBy8];
-	data_local[7] = data_global[gaddr + 7 * bsBy8];
-	data_local[8] = data_global[gaddr + 8 * bsBy8];
-	data_local[9] = data_global[gaddr + 9 * bsBy8];
-	data_local[10] = data_global[gaddr + 10 * bsBy8];
-	data_local[11] = data_global[gaddr + 11 * bsBy8];
-	data_local[12] = data_global[gaddr + 12 * bsBy8];
-	data_local[13] = data_global[gaddr + 13 * bsBy8];
-	data_local[14] = data_global[gaddr + 14 * bsBy8];
-	data_local[15] = data_global[gaddr + 15 * bsBy8];
+	data_priv[0] = data_global[gaddr];
+	data_priv[1] = data_global[gaddr + bs_by_n];
+	data_priv[2] = data_global[gaddr + 2 * bs_by_n];
+	data_priv[3] = data_global[gaddr + 3 * bs_by_n];
+	data_priv[4] = data_global[gaddr + 4 * bs_by_n];
+	data_priv[5] = data_global[gaddr + 5 * bs_by_n];
+	data_priv[6] = data_global[gaddr + 6 * bs_by_n];
+	data_priv[7] = data_global[gaddr + 7 * bs_by_n];
+	data_priv[8] = data_global[gaddr + 8 * bs_by_n];
+	data_priv[9] = data_global[gaddr + 9 * bs_by_n];
+	data_priv[10] = data_global[gaddr + 10 * bs_by_n];
+	data_priv[11] = data_global[gaddr + 11 * bs_by_n];
+	data_priv[12] = data_global[gaddr + 12 * bs_by_n];
+	data_priv[13] = data_global[gaddr + 13 * bs_by_n];
+	data_priv[14] = data_global[gaddr + 14 * bs_by_n];
+	data_priv[15] = data_global[gaddr + 15 * bs_by_n];
 
 	/* ***** Sort the 8 values ***** */
 
 	/* Step n */
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 0, 8);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 1, 9);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 2, 10);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 3, 11);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 4, 12);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 5, 13);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 6, 14);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 7, 15);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 8);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 9);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 10);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 11);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 12);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 13);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 14);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 7, 15);
 	/* Step n-1 */
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 0, 4);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 1, 5);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 2, 6);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 3, 7);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 8, 12);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 9, 13);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 10, 14);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 11, 15);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 4);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 5);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 6);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 7);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 12);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 13);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 14);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 11, 15);
 
 	/* Step n-2 */
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 0, 2);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 1, 3);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 4, 6);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 5, 7);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 8, 10);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 9, 11);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 12, 14);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 13, 15);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 6);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 7);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 10);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 11);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 14);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 13, 15);
 	
 	/* Step n-3 */
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 0, 1);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 2, 3);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 4, 5);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 6, 7);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 8, 9);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 10, 11);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 12, 13);
-	CLO_SORT_ABITONIC_CMPXCH(data_local, 14, 15);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 5);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 7);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 9);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 11);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 13);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 14, 15);
 
 	/* ***** Transfer the n values to global memory ***** */
 
-	data_global[gaddr] = data_local[0];
-	data_global[gaddr + bsBy8] = data_local[1];
-	data_global[gaddr + 2 * bsBy8] = data_local[2];
-	data_global[gaddr + 3 * bsBy8] = data_local[3];
-	data_global[gaddr + 4 * bsBy8] = data_local[4];
-	data_global[gaddr + 5 * bsBy8] = data_local[5];
-	data_global[gaddr + 6 * bsBy8] = data_local[6];
-	data_global[gaddr + 7 * bsBy8] = data_local[7];
-	data_global[gaddr + 8 * bsBy8] = data_local[8];
-	data_global[gaddr + 9 * bsBy8] = data_local[9];
-	data_global[gaddr + 10 * bsBy8] = data_local[10];
-	data_global[gaddr + 11 * bsBy8] = data_local[11];
-	data_global[gaddr + 12 * bsBy8] = data_local[12];
-	data_global[gaddr + 13 * bsBy8] = data_local[13];
-	data_global[gaddr + 14 * bsBy8] = data_local[14];
-	data_global[gaddr + 15 * bsBy8] = data_local[15];
+	data_global[gaddr] = data_priv[0];
+	data_global[gaddr + bs_by_n] = data_priv[1];
+	data_global[gaddr + 2 * bs_by_n] = data_priv[2];
+	data_global[gaddr + 3 * bs_by_n] = data_priv[3];
+	data_global[gaddr + 4 * bs_by_n] = data_priv[4];
+	data_global[gaddr + 5 * bs_by_n] = data_priv[5];
+	data_global[gaddr + 6 * bs_by_n] = data_priv[6];
+	data_global[gaddr + 7 * bs_by_n] = data_priv[7];
+	data_global[gaddr + 8 * bs_by_n] = data_priv[8];
+	data_global[gaddr + 9 * bs_by_n] = data_priv[9];
+	data_global[gaddr + 10 * bs_by_n] = data_priv[10];
+	data_global[gaddr + 11 * bs_by_n] = data_priv[11];
+	data_global[gaddr + 12 * bs_by_n] = data_priv[12];
+	data_global[gaddr + 13 * bs_by_n] = data_priv[13];
+	data_global[gaddr + 14 * bs_by_n] = data_priv[14];
+	data_global[gaddr + 15 * bs_by_n] = data_priv[15];
 }
