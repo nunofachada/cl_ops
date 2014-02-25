@@ -65,6 +65,22 @@
 	/* Store data globally */ \
 	data_global[global_index1] = data_local[local_index1]; \
 	data_global[global_index2] = data_local[local_index2];
+	
+#define CLO_SORT_ABITONIC_INIT_S(n) \
+	__private CLO_SORT_ELEM_TYPE data_priv[n]; \
+	CLO_SORT_ELEM_TYPE data1, data2; \
+	/* Thread information. */ \
+	uint gid = get_global_id(0); \
+	uint lid = get_local_id(0); \
+	/* Determine block size. */ \
+	uint blockSize = 1 << step; \
+	/* Determine if ascending or descending. Ascending if block id is \
+	 * pair, descending otherwise. */ \
+	bool desc = (bool) (0x1 & ((gid * n) / (1 << stage))); \
+	/* Base global address to load/store values from/to. */ \
+	uint gaddr = ((gid * n) / blockSize) * blockSize + (gid % (blockSize / n)); \
+	/* Thread increment within block. */ \
+	uint inc = blockSize / n;
 
 /**
  * @brief This kernel can perform the two last steps of a stage in a
@@ -453,39 +469,18 @@ __kernel void abitonic_s8(
 			uint step)
 {
 
-	__private CLO_SORT_ELEM_TYPE data_priv[8];
-	CLO_SORT_ELEM_TYPE data1, data2;
-	
-	/* Thread information. */
-	uint gid = get_global_id(0);
-	uint lid = get_local_id(0);
-	
-	/* Determine block size. */
-	uint blockSize = 1 << step;
-	
-	/* Determine if ascending or descending. Ascending if block id is
-	 * pair, descending otherwise. */
-	bool desc = (bool) (0x1 & ((gid * 8) / (1 << stage)));
-	
-	/* Thread id in block. */
-	uint tid = gid % (blockSize/8);
-		
-	/* Base global address to load/store values from/to. */
-	uint gaddr = ((gid * 8) / blockSize) * blockSize + tid;
-	
-	/* Avoid calculations */
-	uint bs_by_n = blockSize / 8;
+	CLO_SORT_ABITONIC_INIT_S(8);
 	
 	/* ***** Transfer 8 values to sort to local memory ***** */
 
 	data_priv[0] = data_global[gaddr];
-	data_priv[1] = data_global[gaddr + bs_by_n];
-	data_priv[2] = data_global[gaddr + 2 * bs_by_n];
-	data_priv[3] = data_global[gaddr + 3 * bs_by_n];
-	data_priv[4] = data_global[gaddr + 4 * bs_by_n];
-	data_priv[5] = data_global[gaddr + 5 * bs_by_n];
-	data_priv[6] = data_global[gaddr + 6 * bs_by_n];
-	data_priv[7] = data_global[gaddr + 7 * bs_by_n];
+	data_priv[1] = data_global[gaddr + inc];
+	data_priv[2] = data_global[gaddr + 2 * inc];
+	data_priv[3] = data_global[gaddr + 3 * inc];
+	data_priv[4] = data_global[gaddr + 4 * inc];
+	data_priv[5] = data_global[gaddr + 5 * inc];
+	data_priv[6] = data_global[gaddr + 6 * inc];
+	data_priv[7] = data_global[gaddr + 7 * inc];
 
 	/* ***** Sort the 8 values ***** */
 
@@ -508,13 +503,13 @@ __kernel void abitonic_s8(
 	/* ***** Transfer the n values to global memory ***** */
 
 	data_global[gaddr] = data_priv[0];
-	data_global[gaddr + bs_by_n] = data_priv[1];
-	data_global[gaddr + 2 * bs_by_n] = data_priv[2];
-	data_global[gaddr + 3 * bs_by_n] = data_priv[3];
-	data_global[gaddr + 4 * bs_by_n] = data_priv[4];
-	data_global[gaddr + 5 * bs_by_n] = data_priv[5];
-	data_global[gaddr + 6 * bs_by_n] = data_priv[6];
-	data_global[gaddr + 7 * bs_by_n] = data_priv[7];
+	data_global[gaddr + inc] = data_priv[1];
+	data_global[gaddr + 2 * inc] = data_priv[2];
+	data_global[gaddr + 3 * inc] = data_priv[3];
+	data_global[gaddr + 4 * inc] = data_priv[4];
+	data_global[gaddr + 5 * inc] = data_priv[5];
+	data_global[gaddr + 6 * inc] = data_priv[6];
+	data_global[gaddr + 7 * inc] = data_priv[7];
 
 }
 
@@ -526,49 +521,28 @@ __kernel void abitonic_s16(
 			uint step)
 {
 
-	__private CLO_SORT_ELEM_TYPE data_priv[16];
-	CLO_SORT_ELEM_TYPE data1, data2;
+	CLO_SORT_ABITONIC_INIT_S(16);
 	
-	/* Thread information. */
-	uint gid = get_global_id(0);
-	uint lid = get_local_id(0);
-	
-	/* Determine block size. */
-	uint blockSize = 1 << step;
-	
-	/* Determine if ascending or descending. Ascending if block id is
-	 * pair, descending otherwise. */
-	bool desc = (bool) (0x1 & ((gid * 16) / (1 << stage)));
-	
-	/* Thread id in block. */
-	uint tid = gid % (blockSize/16);
-		
-	/* Base global address to load/store values from/to. */
-	uint gaddr = ((gid * 16) / blockSize) * blockSize + tid;
-	
-	/* Avoid calculations */
-	uint bs_by_n = blockSize / 16;
-	
-	/* ***** Transfer 8 values to sort to local memory ***** */
+	/* ***** Transfer 16 values to sort to local memory ***** */
 
 	data_priv[0] = data_global[gaddr];
-	data_priv[1] = data_global[gaddr + bs_by_n];
-	data_priv[2] = data_global[gaddr + 2 * bs_by_n];
-	data_priv[3] = data_global[gaddr + 3 * bs_by_n];
-	data_priv[4] = data_global[gaddr + 4 * bs_by_n];
-	data_priv[5] = data_global[gaddr + 5 * bs_by_n];
-	data_priv[6] = data_global[gaddr + 6 * bs_by_n];
-	data_priv[7] = data_global[gaddr + 7 * bs_by_n];
-	data_priv[8] = data_global[gaddr + 8 * bs_by_n];
-	data_priv[9] = data_global[gaddr + 9 * bs_by_n];
-	data_priv[10] = data_global[gaddr + 10 * bs_by_n];
-	data_priv[11] = data_global[gaddr + 11 * bs_by_n];
-	data_priv[12] = data_global[gaddr + 12 * bs_by_n];
-	data_priv[13] = data_global[gaddr + 13 * bs_by_n];
-	data_priv[14] = data_global[gaddr + 14 * bs_by_n];
-	data_priv[15] = data_global[gaddr + 15 * bs_by_n];
+	data_priv[1] = data_global[gaddr + inc];
+	data_priv[2] = data_global[gaddr + 2 * inc];
+	data_priv[3] = data_global[gaddr + 3 * inc];
+	data_priv[4] = data_global[gaddr + 4 * inc];
+	data_priv[5] = data_global[gaddr + 5 * inc];
+	data_priv[6] = data_global[gaddr + 6 * inc];
+	data_priv[7] = data_global[gaddr + 7 * inc];
+	data_priv[8] = data_global[gaddr + 8 * inc];
+	data_priv[9] = data_global[gaddr + 9 * inc];
+	data_priv[10] = data_global[gaddr + 10 * inc];
+	data_priv[11] = data_global[gaddr + 11 * inc];
+	data_priv[12] = data_global[gaddr + 12 * inc];
+	data_priv[13] = data_global[gaddr + 13 * inc];
+	data_priv[14] = data_global[gaddr + 14 * inc];
+	data_priv[15] = data_global[gaddr + 15 * inc];
 
-	/* ***** Sort the 8 values ***** */
+	/* ***** Sort the 16 values ***** */
 
 	/* Step n */
 	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 8);
@@ -612,19 +586,19 @@ __kernel void abitonic_s16(
 	/* ***** Transfer the n values to global memory ***** */
 
 	data_global[gaddr] = data_priv[0];
-	data_global[gaddr + bs_by_n] = data_priv[1];
-	data_global[gaddr + 2 * bs_by_n] = data_priv[2];
-	data_global[gaddr + 3 * bs_by_n] = data_priv[3];
-	data_global[gaddr + 4 * bs_by_n] = data_priv[4];
-	data_global[gaddr + 5 * bs_by_n] = data_priv[5];
-	data_global[gaddr + 6 * bs_by_n] = data_priv[6];
-	data_global[gaddr + 7 * bs_by_n] = data_priv[7];
-	data_global[gaddr + 8 * bs_by_n] = data_priv[8];
-	data_global[gaddr + 9 * bs_by_n] = data_priv[9];
-	data_global[gaddr + 10 * bs_by_n] = data_priv[10];
-	data_global[gaddr + 11 * bs_by_n] = data_priv[11];
-	data_global[gaddr + 12 * bs_by_n] = data_priv[12];
-	data_global[gaddr + 13 * bs_by_n] = data_priv[13];
-	data_global[gaddr + 14 * bs_by_n] = data_priv[14];
-	data_global[gaddr + 15 * bs_by_n] = data_priv[15];
+	data_global[gaddr + inc] = data_priv[1];
+	data_global[gaddr + 2 * inc] = data_priv[2];
+	data_global[gaddr + 3 * inc] = data_priv[3];
+	data_global[gaddr + 4 * inc] = data_priv[4];
+	data_global[gaddr + 5 * inc] = data_priv[5];
+	data_global[gaddr + 6 * inc] = data_priv[6];
+	data_global[gaddr + 7 * inc] = data_priv[7];
+	data_global[gaddr + 8 * inc] = data_priv[8];
+	data_global[gaddr + 9 * inc] = data_priv[9];
+	data_global[gaddr + 10 * inc] = data_priv[10];
+	data_global[gaddr + 11 * inc] = data_priv[11];
+	data_global[gaddr + 12 * inc] = data_priv[12];
+	data_global[gaddr + 13 * inc] = data_priv[13];
+	data_global[gaddr + 14 * inc] = data_priv[14];
+	data_global[gaddr + 15 * inc] = data_priv[15];
 }
