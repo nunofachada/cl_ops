@@ -44,6 +44,7 @@
 #define CLO_SORT_ABITONIC_K_11 10
 #define CLO_SORT_ABITONIC_K_S8 11
 #define CLO_SORT_ABITONIC_K_S16 12
+#define CLO_SORT_ABITONIC_K_4_S4 13
 /** @} */ 
 
 /**
@@ -64,13 +65,14 @@
 #define CLO_SORT_SBITONIC_KERNELNAME_11 "abitonic_11"
 #define CLO_SORT_SBITONIC_KERNELNAME_S8 "abitonic_s8"
 #define CLO_SORT_SBITONIC_KERNELNAME_S16 "abitonic_s16"
+#define CLO_SORT_SBITONIC_KERNELNAME_4_S4 "abitonic_4_s4"
 /** @} */ 
  
 /** @brief Number of command queues used by the advanced bitonic sort. */
 #define CLO_SORT_ABITONIC_NUMQUEUES 1
 
 /** @brief Number of kernels used by the advanced bitonic sort. */
-#define CLO_SORT_ABITONIC_NUMKERNELS 13
+#define CLO_SORT_ABITONIC_NUMKERNELS 14
 
 /** @brief Array of strings containing names of the kernels used by the advanced bitonic sort strategy. */
 #define CLO_SORT_ABITONIC_KERNELNAMES {CLO_SORT_SBITONIC_KERNELNAME_ANY, \
@@ -79,7 +81,8 @@
 	CLO_SORT_SBITONIC_KERNELNAME_6, CLO_SORT_SBITONIC_KERNELNAME_7, \
 	CLO_SORT_SBITONIC_KERNELNAME_8, CLO_SORT_SBITONIC_KERNELNAME_9, \
 	CLO_SORT_SBITONIC_KERNELNAME_10, CLO_SORT_SBITONIC_KERNELNAME_11, \
-	CLO_SORT_SBITONIC_KERNELNAME_S8, CLO_SORT_SBITONIC_KERNELNAME_S16}
+	CLO_SORT_SBITONIC_KERNELNAME_S8, CLO_SORT_SBITONIC_KERNELNAME_S16, \
+	CLO_SORT_SBITONIC_KERNELNAME_4_S4}
 	
 /** @brief Sort agents using the advanced bitonic sort. */
 int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event **evts, size_t lws_max, unsigned int numel, gboolean profile, GError **err);

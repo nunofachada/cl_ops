@@ -471,7 +471,7 @@ __kernel void abitonic_s8(
 
 	CLO_SORT_ABITONIC_INIT_S(8);
 	
-	/* ***** Transfer 8 values to sort to local memory ***** */
+	/* ***** Transfer 8 values to sort to private memory ***** */
 
 	data_priv[0] = data_global[gaddr];
 	data_priv[1] = data_global[gaddr + inc];
@@ -523,7 +523,7 @@ __kernel void abitonic_s16(
 
 	CLO_SORT_ABITONIC_INIT_S(16);
 	
-	/* ***** Transfer 16 values to sort to local memory ***** */
+	/* ***** Transfer 16 values to sort to private memory ***** */
 
 	data_priv[0] = data_global[gaddr];
 	data_priv[1] = data_global[gaddr + inc];
@@ -601,4 +601,123 @@ __kernel void abitonic_s16(
 	data_global[gaddr + 13 * inc] = data_priv[13];
 	data_global[gaddr + 14 * inc] = data_priv[14];
 	data_global[gaddr + 15 * inc] = data_priv[15];
+}
+
+/* Works from step 4 to step 1, local barriers between each two steps,
+ * each thread sorts 4 values. */
+__kernel void abitonic_4_s4(
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			__local CLO_SORT_ELEM_TYPE *data_local) 
+{
+
+	/* Global and local ids for this work-item. */
+	uint gid = get_global_id(0);
+	uint lid = get_local_id(0);
+	uint local_size = get_local_size(0);
+	uint group_id = get_group_id(0);
+	
+	/* Base for local memory. */
+	uint laddr;
+	uint inc;
+	uint blockSize;
+
+	/* Elements to possibly swap. */
+	CLO_SORT_ELEM_TYPE data1, data2, data_priv[4];
+	
+	/* Local and global indexes for moving data between local and \
+	 * global memory. */
+	uint local_index1 = lid;
+	uint local_index2 = local_size + lid;
+	uint local_index3 = local_size * 2 + lid;
+	uint local_index4 = local_size * 3 + lid;
+	uint global_index1 = local_size * group_id * 4 + lid;
+	uint global_index2 = local_size * (group_id * 4 + 1) + lid;
+	uint global_index3 = local_size * (group_id * 4 + 2) + lid;
+	uint global_index4 = local_size * (group_id * 4 + 3) + lid;
+	
+	/// @todo One can perform a direct load from global to private...
+
+	/* Determine if ascending or descending */
+	bool desc = (bool) (0x1 & (gid >> (stage - 2)));
+	
+	/* Index of values to possibly swap. */
+	uint index1, index2;
+	
+	/* Load data locally */
+	data_local[local_index1] = data_global[global_index1];
+	data_local[local_index2] = data_global[global_index2];
+	data_local[local_index3] = data_global[global_index3];
+	data_local[local_index4] = data_global[global_index4];
+	
+	/* Local memory barrier */
+	barrier(CLK_LOCAL_MEM_FENCE);
+	
+	/* ***** Transfer 4 values to sort from local to private memory ***** */
+	
+	blockSize = 1 << 4; // Step 4
+	laddr = ((lid * 4) / blockSize) * blockSize + (lid % (blockSize / 4));
+	inc = blockSize / 4;
+
+	data_priv[0] = data_local[laddr];
+	data_priv[1] = data_local[laddr + inc];
+	data_priv[2] = data_local[laddr + 2 * inc];
+	data_priv[3] = data_local[laddr + 3 * inc];
+
+	/* ***** Sort the 4 values ***** */
+
+	/* Step n */
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3);
+	/* Step n-1 */
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3);
+
+	/* ***** Transfer 4 sorted values from private to local memory ***** */
+
+	data_local[laddr] = data_priv[0];
+	data_local[laddr + inc] = data_priv[1];
+	data_local[laddr + 2 * inc] = data_priv[2];
+	data_local[laddr + 3 * inc] = data_priv[3];
+	
+	/* Local memory barrier */
+	barrier(CLK_LOCAL_MEM_FENCE);
+	
+	/* ***** Transfer 4 values to sort from local to private memory ***** */
+
+	blockSize = 1 << 2; // Step 2
+	laddr = ((lid * 4) / blockSize) * blockSize + (lid % (blockSize / 4));
+	inc = blockSize / 4;
+
+	data_priv[0] = data_local[laddr];
+	data_priv[1] = data_local[laddr + inc];
+	data_priv[2] = data_local[laddr + 2 * inc];
+	data_priv[3] = data_local[laddr + 3 * inc];
+	
+	/* ***** Sort the 4 values ***** */
+
+	/* Step n */
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3);
+	/* Step n-1 */
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1);
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3);
+	
+	/* ***** Transfer 4 sorted values from private to local memory ***** */
+
+	/// @todo One can perform a direct store from private to global...
+	data_local[laddr] = data_priv[0];
+	data_local[laddr + inc] = data_priv[1];
+	data_local[laddr + 2 * inc] = data_priv[2];
+	data_local[laddr + 3 * inc] = data_priv[3];
+	
+	/* Local memory barrier */
+	barrier(CLK_LOCAL_MEM_FENCE);
+	
+	/* Store data globally */
+	data_global[global_index1] = data_local[local_index1];
+	data_global[global_index2] = data_local[local_index2];
+	data_global[global_index3] = data_local[local_index3];
+	data_global[global_index4] = data_local[local_index4];
+				
 }
