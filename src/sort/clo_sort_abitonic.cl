@@ -899,3 +899,210 @@ __kernel void abitonic_8_s12(
 	CLO_SORT_ABITONIC_8_S3(3);
 	CLO_SORT_ABITONIC_8_FINISH();				
 }
+
+#define CLO_SORT_ABITONIC_16_INIT() \
+	/* Global and local ids for this work-item. */ \
+	uint gid = get_global_id(0); \
+	uint lid = get_local_id(0); \
+	uint local_size = get_local_size(0); \
+	uint group_id = get_group_id(0); \
+	/* Base for local memory. */ \
+	uint laddr; \
+	uint inc; \
+	uint blockSize; \
+	/* Elements to possibly swap. */ \
+	CLO_SORT_ELEM_TYPE data1, data2, data_priv[16]; \
+	/* Local and global indexes for moving data between local and \
+	 * global memory. */ \
+	uint local_index1 = lid; \
+	uint local_index2 = local_size + lid; \
+	uint local_index3 = local_size * 2 + lid; \
+	uint local_index4 = local_size * 3 + lid; \
+	uint local_index5 = local_size * 4 + lid; \
+	uint local_index6 = local_size * 5 + lid; \
+	uint local_index7 = local_size * 6 + lid; \
+	uint local_index8 = local_size * 7 + lid; \
+	uint local_index9 = local_size * 8 + lid; \
+	uint local_index10 = local_size * 9 + lid; \
+	uint local_index11 = local_size * 10 + lid; \
+	uint local_index12 = local_size * 11 + lid; \
+	uint local_index13 = local_size * 12 + lid; \
+	uint local_index14 = local_size * 13 + lid; \	
+	uint local_index15 = local_size * 14 + lid; \	
+	uint local_index16 = local_size * 15 + lid; \	
+	uint global_index1 = local_size * group_id * 16 + lid; \
+	uint global_index2 = local_size * (group_id * 16 + 1) + lid; \
+	uint global_index3 = local_size * (group_id * 16 + 2) + lid; \
+	uint global_index4 = local_size * (group_id * 16 + 3) + lid; \
+	uint global_index5 = local_size * (group_id * 16 + 4) + lid; \
+	uint global_index6 = local_size * (group_id * 16 + 5) + lid; \
+	uint global_index7 = local_size * (group_id * 16 + 6) + lid; \
+	uint global_index8 = local_size * (group_id * 16 + 7) + lid; \
+	uint global_index9 = local_size * (group_id * 16 + 8) + lid; \
+	uint global_index10 = local_size * (group_id * 16 + 9) + lid; \
+	uint global_index11 = local_size * (group_id * 16 + 10) + lid; \
+	uint global_index12 = local_size * (group_id * 16 + 11) + lid; \
+	uint global_index13 = local_size * (group_id * 16 + 12) + lid; \
+	uint global_index14 = local_size * (group_id * 16 + 13) + lid; \
+	uint global_index15 = local_size * (group_id * 16 + 14) + lid; \
+	uint global_index16 = local_size * (group_id * 16 + 15) + lid; \
+	/* Determine if ascending or descending */ \
+	bool desc = (bool) (0x1 & (gid >> (stage - 4))); \
+	/* Index of values to possibly swap. */ \
+	uint index1, index2; \
+	/* Load data locally */ \
+	data_local[local_index1] = data_global[global_index1]; \
+	data_local[local_index2] = data_global[global_index2]; \
+	data_local[local_index3] = data_global[global_index3]; \
+	data_local[local_index4] = data_global[global_index4]; \
+	data_local[local_index5] = data_global[global_index5]; \
+	data_local[local_index6] = data_global[global_index6]; \
+	data_local[local_index7] = data_global[global_index7]; \
+	data_local[local_index8] = data_global[global_index8]; \
+	data_local[local_index9] = data_global[global_index9]; \
+	data_local[local_index10] = data_global[global_index10]; \
+	data_local[local_index11] = data_global[global_index11]; \
+	data_local[local_index12] = data_global[global_index12]; \
+	data_local[local_index13] = data_global[global_index13]; \
+	data_local[local_index14] = data_global[global_index14]; \
+	data_local[local_index15] = data_global[global_index15]; \
+	data_local[local_index16] = data_global[global_index16]; \
+	/* Local memory barrier */ \
+	barrier(CLK_LOCAL_MEM_FENCE);
+	
+#define CLO_SORT_ABITONIC_16_FINISH() \
+	/* Store data globally */ \
+	data_global[global_index1] = data_local[local_index1]; \
+	data_global[global_index2] = data_local[local_index2]; \
+	data_global[global_index3] = data_local[local_index3]; \
+	data_global[global_index4] = data_local[local_index4]; \
+	data_global[global_index5] = data_local[local_index5]; \
+	data_global[global_index6] = data_local[local_index6]; \
+	data_global[global_index7] = data_local[local_index7]; \
+	data_global[global_index8] = data_local[local_index8]; \
+	data_global[global_index9] = data_local[local_index9]; \
+	data_global[global_index10] = data_local[local_index10]; \
+	data_global[global_index11] = data_local[local_index11]; \
+	data_global[global_index12] = data_local[local_index12]; \
+	data_global[global_index13] = data_local[local_index13]; \
+	data_global[global_index14] = data_local[local_index14]; \
+	data_global[global_index15] = data_local[local_index15]; \
+	data_global[global_index16] = data_local[local_index16];
+	
+#define CLO_SORT_ABITONIC_16_S4(step) \
+	/* ***** Transfer 16 values to sort from local to private memory ***** */ \
+	blockSize = 1 << step; \
+	laddr = ((lid * 16) / blockSize) * blockSize + (lid % (blockSize / 16)); \
+	inc = blockSize / 16; \
+	data_priv[0] = data_local[laddr]; \
+	data_priv[1] = data_local[laddr + inc]; \
+	data_priv[2] = data_local[laddr + 2 * inc]; \
+	data_priv[3] = data_local[laddr + 3 * inc]; \
+	data_priv[4] = data_local[laddr + 4 * inc]; \
+	data_priv[5] = data_local[laddr + 5 * inc]; \
+	data_priv[6] = data_local[laddr + 6 * inc]; \
+	data_priv[7] = data_local[laddr + 7 * inc]; \
+	data_priv[8] = data_local[laddr + 8 * inc]; \
+	data_priv[9] = data_local[laddr + 9 * inc]; \
+	data_priv[10] = data_local[laddr + 10 * inc]; \
+	data_priv[11] = data_local[laddr + 11 * inc]; \
+	data_priv[12] = data_local[laddr + 12 * inc]; \
+	data_priv[13] = data_local[laddr + 13 * inc]; \
+	data_priv[14] = data_local[laddr + 14 * inc]; \
+	data_priv[15] = data_local[laddr + 15 * inc]; \
+	/* ***** Sort the 16 values ***** */ \
+	/* Step n */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 8); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 9); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 10); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 11); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 12); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 13); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 14); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 7, 15); \
+	/* Step n-1 */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 4); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 5); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 6); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 7); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 12); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 13); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 14); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 11, 15); \
+	/* Step n-2 */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 6); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 7); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 10); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 11); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 14); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 13, 15); \
+	/* Step n-3 */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 5); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 7); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 9); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 11); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 13); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 14, 15); \
+	/* ***** Transfer 16 sorted values from private to local memory ***** */ \
+	data_local[laddr] = data_priv[0]; \
+	data_local[laddr + inc] = data_priv[1]; \
+	data_local[laddr + 2 * inc] = data_priv[2]; \
+	data_local[laddr + 3 * inc] = data_priv[3]; \
+	data_local[laddr + 4 * inc] = data_priv[4]; \
+	data_local[laddr + 5 * inc] = data_priv[5]; \
+	data_local[laddr + 6 * inc] = data_priv[6]; \
+	data_local[laddr + 7 * inc] = data_priv[7]; \
+	data_local[laddr + 8 * inc] = data_priv[8]; \
+	data_local[laddr + 9 * inc] = data_priv[9]; \
+	data_local[laddr + 10 * inc] = data_priv[10]; \
+	data_local[laddr + 11 * inc] = data_priv[11]; \
+	data_local[laddr + 12 * inc] = data_priv[12]; \
+	data_local[laddr + 13 * inc] = data_priv[13]; \
+	data_local[laddr + 14 * inc] = data_priv[14]; \
+	data_local[laddr + 15 * inc] = data_priv[15]; \
+	/* Local memory barrier */ \
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+
+/* Works from step 4 to step 1, local barriers between each four steps,
+ * each thread sorts 16 values. */
+__kernel void abitonic_16_s4(
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			__local CLO_SORT_ELEM_TYPE *data_local) 
+{
+	CLO_SORT_ABITONIC_16_INIT();
+	CLO_SORT_ABITONIC_16_S4(4);
+	CLO_SORT_ABITONIC_16_FINISH();				
+}
+
+/* Works from step 8 to step 1, local barriers between each four steps,
+ * each thread sorts 16 values. */
+__kernel void abitonic_16_s8(
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			__local CLO_SORT_ELEM_TYPE *data_local) 
+{
+	CLO_SORT_ABITONIC_16_INIT();
+	CLO_SORT_ABITONIC_16_S4(8);
+	CLO_SORT_ABITONIC_16_S4(4);
+	CLO_SORT_ABITONIC_16_FINISH();				
+}
+
+/* Works from step 12 to step 1, local barriers between each four steps,
+ * each thread sorts 16 values. */
+__kernel void abitonic_16_s12(
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			__local CLO_SORT_ELEM_TYPE *data_local) 
+{
+	CLO_SORT_ABITONIC_16_INIT();
+	CLO_SORT_ABITONIC_16_S4(12);
+	CLO_SORT_ABITONIC_16_S4(8);
+	CLO_SORT_ABITONIC_16_S4(4);
+	CLO_SORT_ABITONIC_16_FINISH();				
+}
