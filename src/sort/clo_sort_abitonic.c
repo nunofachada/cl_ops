@@ -77,24 +77,29 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 	size_t lws_h4 = MIN(lws_max, gws_h4); /// @todo This is more or less, I should adjust it better or try to make it dependent on the device local memory
 
 
-	//~ fprintf(stderr, "----------------\n");
+	fprintf(stderr, "----------------\n");
 	/* Perform sorting. */
 	for (cl_uint currentStage = 1; currentStage <= totalStages; currentStage++) {
 		
 		for (cl_uint currentStep = currentStage; currentStep >= 1; ) {
 			
-			if ((currentStep == 4) || (currentStep == 6) || (currentStep == 8)) {
+			if ((currentStep % 2 == 0) 
+				&& (currentStep > 2) 
+				&& (currentStep < 14)
+				&& (((cl_uint) (1 << (currentStep - 2))) <= lws_h4)) {
 				
-				//~ fprintf(stderr, " %d (H4): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStage, currentStep, gws_h4, lws_h4);
-
 				unsigned int krnl_idx;
 				switch (currentStep) {
 					case 4: krnl_idx = CLO_SORT_ABITONIC_K_4_S4; break;
 					case 6: krnl_idx = CLO_SORT_ABITONIC_K_4_S6; break;
 					case 8: krnl_idx = CLO_SORT_ABITONIC_K_4_S8; break;
+					case 10: krnl_idx = CLO_SORT_ABITONIC_K_4_S10; break;
+					case 12: krnl_idx = CLO_SORT_ABITONIC_K_4_S12; break;
 				}
 				
 				const char* krnl_name = clo_sort_abitonic_kernelname_get(krnl_idx);
+
+				fprintf(stderr, " %d (4_S%d): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStep, currentStage, currentStep, gws_h4, lws_h4);
 
 				ocl_status = clSetKernelArg(krnls[krnl_idx], 1, sizeof(cl_uint), (void *) &currentStage);
 				gef_if_error_create_goto(*err, CLO_ERROR, 
@@ -129,7 +134,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 			if ((currentStep <= maxStep) && (currentStep >= 2)) {
 				/* Use an unrolled kernel. */
 
-				//~ fprintf(stderr, " %d (UNR): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStage, currentStep, gws, lws);
+				fprintf(stderr, " %d (UNR): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStage, currentStep, gws, lws);
 
 				unsigned int krnl_idx = currentStep - 1;
 				const char* krnl_name = clo_sort_abitonic_kernelname_get(krnl_idx);
@@ -161,7 +166,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				
 
 
-				//~ fprintf(stderr, " %d (S8): Stage: %d, Step: %d,Gws8: %d, Lws8: %d\n", numel, currentStage, currentStep, gws8, lws8);
+				fprintf(stderr, " %d (S8): Stage: %d, Step: %d,Gws8: %d, Lws8: %d\n", numel, currentStage, currentStep, gws8, lws8);
 			
 				/* Use 3-step kernel (each thread completely sorts 8 values). */
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_S8], 1, sizeof(cl_uint), (void *) &currentStage);
@@ -193,7 +198,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				
 			} else if (currentStep > maxStep + 3) {
 
-				//~ fprintf(stderr, " %d (S16): Stage: %d, Step: %d,Gws16: %d, Lws16: %d\n", numel, currentStage, currentStep, gws16, lws16);
+				fprintf(stderr, " %d (S16): Stage: %d, Step: %d,Gws16: %d, Lws16: %d\n", numel, currentStage, currentStep, gws16, lws16);
 
 				/* Use 4-step kernel (each thread completely sorts 16 values). */
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_S16], 1, sizeof(cl_uint), (void *) &currentStage);
@@ -223,7 +228,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 			
 			} else { /* Step = 1 */
 			
-				//~ fprintf(stderr, " %d (ANY): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStage, currentStep, gws, lws);
+				fprintf(stderr, " %d (ANY): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStage, currentStep, gws, lws);
 
 				/* Use "any" kernel. */
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_K_ANY], 1, sizeof(cl_uint), (void *) &currentStage);
@@ -378,7 +383,7 @@ int clo_sort_abitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws,
 
 	}
 	
-	for (unsigned int i = CLO_SORT_ABITONIC_K_4_S4;  i <= CLO_SORT_ABITONIC_K_4_S8; i++) {
+	for (unsigned int i = CLO_SORT_ABITONIC_K_4_S4;  i <= CLO_SORT_ABITONIC_K_4_S12; i++) {
 
 		ocl_status = clSetKernelArg((*krnls)[i], 0, sizeof(cl_mem), &data);
 		gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of %s kernel. OpenCL error %d: %s", clo_sort_abitonic_kernelname_get(i), ocl_status, clerror_get(ocl_status));

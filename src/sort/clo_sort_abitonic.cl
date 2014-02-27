@@ -712,3 +712,36 @@ __kernel void abitonic_4_s8(
 	CLO_SORT_ABITONIC_4_S2(2);
 	CLO_SORT_ABITONIC_4_FINISH();				
 }
+
+/* Works from step 10 to step 1, local barriers between each two steps,
+ * each thread sorts 4 values. */
+__kernel void abitonic_4_s10(
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			__local CLO_SORT_ELEM_TYPE *data_local) 
+{
+	CLO_SORT_ABITONIC_4_INIT();
+	CLO_SORT_ABITONIC_4_S2(10);
+	CLO_SORT_ABITONIC_4_S2(8);
+	CLO_SORT_ABITONIC_4_S2(6);
+	CLO_SORT_ABITONIC_4_S2(4);
+	CLO_SORT_ABITONIC_4_S2(2);
+	CLO_SORT_ABITONIC_4_FINISH();				
+}
+
+/* Works from step 12 to step 1, local barriers between each two steps,
+ * each thread sorts 4 values. */
+__kernel void abitonic_4_s12(
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			__local CLO_SORT_ELEM_TYPE *data_local) 
+{
+	CLO_SORT_ABITONIC_4_INIT();
+	CLO_SORT_ABITONIC_4_S2(12);
+	CLO_SORT_ABITONIC_4_S2(10);
+	CLO_SORT_ABITONIC_4_S2(8);
+	CLO_SORT_ABITONIC_4_S2(6);
+	CLO_SORT_ABITONIC_4_S2(4);
+	CLO_SORT_ABITONIC_4_S2(2);
+	CLO_SORT_ABITONIC_4_FINISH();				
+}
