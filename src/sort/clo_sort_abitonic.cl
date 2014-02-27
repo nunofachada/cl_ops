@@ -20,7 +20,7 @@
  * @brief Advanced bitonic sort implementation.
  */
  
-#define CLO_SORT_ABITONIC_CMPXCH(data, index1, index2) \
+#define ABIT_CMPXCH(data, index1, index2) \
 	data1 = data[index1]; \
 	data2 = data[index2]; \
 	if (CLO_SORT_COMPARE(data1, data2) ^ desc) { \
@@ -28,16 +28,16 @@
 		data[index2] = data1; \
 	} 
  
-#define CLO_SORT_ABITONIC_STEP(data, stride) \
+#define ABIT_LOCAL_SORT(data, stride) \
   	/* Determine what to compare and possibly swap. */ \
 	index1 = (lid / stride) * stride * 2 + (lid % stride); \
 	index2 = index1 + stride; \
 	/* Compare and swap */ \
-	CLO_SORT_ABITONIC_CMPXCH(data, index1, index2); \
+	ABIT_CMPXCH(data, index1, index2); \
 	/* Local memory barrier */ \
 	barrier(CLK_LOCAL_MEM_FENCE);
 	
-#define CLO_SORT_ABITONIC_INIT() \
+#define ABIT_LOCAL_INIT() \
 	/* Global and local ids for this work-item. */ \
 	uint gid = get_global_id(0); \
 	uint lid = get_local_id(0); \
@@ -61,12 +61,12 @@
 	/* Data elements to possibly swap. */ \
 	CLO_SORT_ELEM_TYPE data1, data2;
 	
-#define CLO_SORT_ABITONIC_FINISH() \
+#define ABIT_LOCAL_FINISH() \
 	/* Store data globally */ \
 	data_global[global_index1] = data_local[local_index1]; \
 	data_global[global_index2] = data_local[local_index2];
 	
-#define CLO_SORT_ABITONIC_INIT_S(n) \
+#define ABIT_PRIV_INIT(n) \
 	__private CLO_SORT_ELEM_TYPE data_priv[n]; \
 	CLO_SORT_ELEM_TYPE data1, data2; \
 	/* Thread information. */ \
@@ -82,68 +82,68 @@
 	/* Thread increment within block. */ \
 	uint inc = blockSize / n;
 
-#define CLO_SORT_ABITONIC_4S_16V(data_priv); \
+#define ABIT_SORT_4S16V(data2sort); \
 	/* Step n */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 8); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 9); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 10); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 11); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 12); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 13); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 14); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 7, 15); \
+	ABIT_CMPXCH(data2sort, 0, 8); \
+	ABIT_CMPXCH(data2sort, 1, 9); \
+	ABIT_CMPXCH(data2sort, 2, 10); \
+	ABIT_CMPXCH(data2sort, 3, 11); \
+	ABIT_CMPXCH(data2sort, 4, 12); \
+	ABIT_CMPXCH(data2sort, 5, 13); \
+	ABIT_CMPXCH(data2sort, 6, 14); \
+	ABIT_CMPXCH(data2sort, 7, 15); \
 	/* Step n-1 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 4); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 5); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 6); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 7); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 12); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 13); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 14); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 11, 15); \
+	ABIT_CMPXCH(data2sort, 0, 4); \
+	ABIT_CMPXCH(data2sort, 1, 5); \
+	ABIT_CMPXCH(data2sort, 2, 6); \
+	ABIT_CMPXCH(data2sort, 3, 7); \
+	ABIT_CMPXCH(data2sort, 8, 12); \
+	ABIT_CMPXCH(data2sort, 9, 13); \
+	ABIT_CMPXCH(data2sort, 10, 14); \
+	ABIT_CMPXCH(data2sort, 11, 15); \
 	/* Step n-2 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 6); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 7); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 10); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 11); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 14); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 13, 15); \
+	ABIT_CMPXCH(data2sort, 0, 2); \
+	ABIT_CMPXCH(data2sort, 1, 3); \
+	ABIT_CMPXCH(data2sort, 4, 6); \
+	ABIT_CMPXCH(data2sort, 5, 7); \
+	ABIT_CMPXCH(data2sort, 8, 10); \
+	ABIT_CMPXCH(data2sort, 9, 11); \
+	ABIT_CMPXCH(data2sort, 12, 14); \
+	ABIT_CMPXCH(data2sort, 13, 15); \
 	/* Step n-3 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 5); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 7); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 9); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 11); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 13); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 14, 15);
+	ABIT_CMPXCH(data2sort, 0, 1); \
+	ABIT_CMPXCH(data2sort, 2, 3); \
+	ABIT_CMPXCH(data2sort, 4, 5); \
+	ABIT_CMPXCH(data2sort, 6, 7); \
+	ABIT_CMPXCH(data2sort, 8, 9); \
+	ABIT_CMPXCH(data2sort, 10, 11); \
+	ABIT_CMPXCH(data2sort, 12, 13); \
+	ABIT_CMPXCH(data2sort, 14, 15);
 
-#define CLO_SORT_ABITONIC_3S_8V(data_priv) \
+#define ABIT_SORT_3S_8V(data2sort) \
 	/* Step n */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 4); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 5); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 6); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 7); \
+	ABIT_CMPXCH(data2sort, 0, 4); \
+	ABIT_CMPXCH(data2sort, 1, 5); \
+	ABIT_CMPXCH(data2sort, 2, 6); \
+	ABIT_CMPXCH(data2sort, 3, 7); \
 	/* Step n-1 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 6); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 7); \
+	ABIT_CMPXCH(data2sort, 0, 2); \
+	ABIT_CMPXCH(data2sort, 1, 3); \
+	ABIT_CMPXCH(data2sort, 4, 6); \
+	ABIT_CMPXCH(data2sort, 5, 7); \
 	/* Step n-2 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 5); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 7);
+	ABIT_CMPXCH(data2sort, 0, 1); \
+	ABIT_CMPXCH(data2sort, 2, 3); \
+	ABIT_CMPXCH(data2sort, 4, 5); \
+	ABIT_CMPXCH(data2sort, 6, 7);
 
-#define CLO_SORT_ABITONIC_2S_4V(data_priv) \
+#define ABIT_SORT_2S_4V(data2sort) \
 	/* Step n */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3); \
+	ABIT_CMPXCH(data2sort, 0, 2); \
+	ABIT_CMPXCH(data2sort, 1, 3); \
 	/* Step n-1 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3);
+	ABIT_CMPXCH(data2sort, 0, 1); \
+	ABIT_CMPXCH(data2sort, 2, 3);
 
 /**
  * @brief This kernel can perform the two last steps of a stage in a
@@ -153,20 +153,20 @@
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_2(
+__kernel void abit_local_s2(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	
 	/* *********** INIT ************** */
-	CLO_SORT_ABITONIC_INIT();
+	ABIT_LOCAL_INIT();
 	/* ********** STEP 2 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 2);
+	ABIT_LOCAL_SORT(data_local, 2);
 	/* ********** STEP 1 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 1);
+	ABIT_LOCAL_SORT(data_local, 1);
 	/* ********* FINISH *********** */
-	CLO_SORT_ABITONIC_FINISH();
+	ABIT_LOCAL_FINISH();
 }
 
 /**
@@ -177,22 +177,22 @@ __kernel void abitonic_2(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_3(
+__kernel void abit_local_s3(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	
 	/* *********** INIT ************** */
-	CLO_SORT_ABITONIC_INIT();
+	ABIT_LOCAL_INIT();
 	/* *********** STEP 3 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 4);
+	ABIT_LOCAL_SORT(data_local, 4);
 	/* ********** STEP 2 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 2);
+	ABIT_LOCAL_SORT(data_local, 2);
 	/* ********** STEP 1 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 1);
+	ABIT_LOCAL_SORT(data_local, 1);
 	/* ********* FINISH *********** */
-	CLO_SORT_ABITONIC_FINISH();
+	ABIT_LOCAL_FINISH();
 }
 
 /**
@@ -203,24 +203,24 @@ __kernel void abitonic_3(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_4(
+__kernel void abit_local_s4(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 
 	/* *********** INIT ************** */
-	CLO_SORT_ABITONIC_INIT();
+	ABIT_LOCAL_INIT();
 	/* *********** STEP 4 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 8);
+	ABIT_LOCAL_SORT(data_local, 8);
 	/* *********** STEP 3 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 4);
+	ABIT_LOCAL_SORT(data_local, 4);
 	/* ********** STEP 2 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 2);
+	ABIT_LOCAL_SORT(data_local, 2);
 	/* ********** STEP 1 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 1);
+	ABIT_LOCAL_SORT(data_local, 1);
 	/* ********* FINISH *********** */
-	CLO_SORT_ABITONIC_FINISH();
+	ABIT_LOCAL_FINISH();
 
 }
 
@@ -232,26 +232,26 @@ __kernel void abitonic_4(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_5(
+__kernel void abit_local_s5(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 
 	/* *********** INIT ************** */
-	CLO_SORT_ABITONIC_INIT();
+	ABIT_LOCAL_INIT();
 	/* *********** STEP 5 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 16);
+	ABIT_LOCAL_SORT(data_local, 16);
 	/* *********** STEP 4 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 8);
+	ABIT_LOCAL_SORT(data_local, 8);
 	/* *********** STEP 3 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 4);
+	ABIT_LOCAL_SORT(data_local, 4);
 	/* ********** STEP 2 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 2);
+	ABIT_LOCAL_SORT(data_local, 2);
 	/* ********** STEP 1 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 1);
+	ABIT_LOCAL_SORT(data_local, 1);
 	/* ********* FINISH *********** */
-	CLO_SORT_ABITONIC_FINISH();
+	ABIT_LOCAL_FINISH();
 
 }
 
@@ -263,28 +263,28 @@ __kernel void abitonic_5(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_6(
+__kernel void abit_local_s6(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 
 	/* *********** INIT ************** */
-	CLO_SORT_ABITONIC_INIT();
+	ABIT_LOCAL_INIT();
 	/* *********** STEP 6 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 32);
+	ABIT_LOCAL_SORT(data_local, 32);
 	/* *********** STEP 5 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 16);
+	ABIT_LOCAL_SORT(data_local, 16);
 	/* *********** STEP 4 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 8);
+	ABIT_LOCAL_SORT(data_local, 8);
 	/* *********** STEP 3 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 4);
+	ABIT_LOCAL_SORT(data_local, 4);
 	/* ********** STEP 2 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 2);
+	ABIT_LOCAL_SORT(data_local, 2);
 	/* ********** STEP 1 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 1);
+	ABIT_LOCAL_SORT(data_local, 1);
 	/* ********* FINISH *********** */
-	CLO_SORT_ABITONIC_FINISH();
+	ABIT_LOCAL_FINISH();
 
 }
 
@@ -296,30 +296,30 @@ __kernel void abitonic_6(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_7(
+__kernel void abit_local_s7(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 
 	/* *********** INIT ************** */
-	CLO_SORT_ABITONIC_INIT();
+	ABIT_LOCAL_INIT();
 	/* *********** STEP 7 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 64);
+	ABIT_LOCAL_SORT(data_local, 64);
 	/* *********** STEP 6 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 32);
+	ABIT_LOCAL_SORT(data_local, 32);
 	/* *********** STEP 5 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 16);
+	ABIT_LOCAL_SORT(data_local, 16);
 	/* *********** STEP 4 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 8);
+	ABIT_LOCAL_SORT(data_local, 8);
 	/* *********** STEP 3 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 4);
+	ABIT_LOCAL_SORT(data_local, 4);
 	/* ********** STEP 2 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 2);
+	ABIT_LOCAL_SORT(data_local, 2);
 	/* ********** STEP 1 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 1);
+	ABIT_LOCAL_SORT(data_local, 1);
 	/* ********* FINISH *********** */
-	CLO_SORT_ABITONIC_FINISH();
+	ABIT_LOCAL_FINISH();
 
 }
 
@@ -331,32 +331,32 @@ __kernel void abitonic_7(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_8(
+__kernel void abit_local_s8(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 
 	/* *********** INIT ************** */
-	CLO_SORT_ABITONIC_INIT();
+	ABIT_LOCAL_INIT();
 	/* *********** STEP 8 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 128);
+	ABIT_LOCAL_SORT(data_local, 128);
 	/* *********** STEP 7 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 64);
+	ABIT_LOCAL_SORT(data_local, 64);
 	/* *********** STEP 6 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 32);
+	ABIT_LOCAL_SORT(data_local, 32);
 	/* *********** STEP 5 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 16);
+	ABIT_LOCAL_SORT(data_local, 16);
 	/* *********** STEP 4 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 8);
+	ABIT_LOCAL_SORT(data_local, 8);
 	/* *********** STEP 3 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 4);
+	ABIT_LOCAL_SORT(data_local, 4);
 	/* ********** STEP 2 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 2);
+	ABIT_LOCAL_SORT(data_local, 2);
 	/* ********** STEP 1 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 1);
+	ABIT_LOCAL_SORT(data_local, 1);
 	/* ********* FINISH *********** */
-	CLO_SORT_ABITONIC_FINISH();
+	ABIT_LOCAL_FINISH();
 
 }
 
@@ -369,34 +369,34 @@ __kernel void abitonic_8(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_9(
+__kernel void abit_local_s9(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 
 	/* *********** INIT ************** */
-	CLO_SORT_ABITONIC_INIT();
+	ABIT_LOCAL_INIT();
 	/* *********** STEP 9 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 256);
+	ABIT_LOCAL_SORT(data_local, 256);
 	/* *********** STEP 8 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 128);
+	ABIT_LOCAL_SORT(data_local, 128);
 	/* *********** STEP 7 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 64);
+	ABIT_LOCAL_SORT(data_local, 64);
 	/* *********** STEP 6 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 32);
+	ABIT_LOCAL_SORT(data_local, 32);
 	/* *********** STEP 5 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 16);
+	ABIT_LOCAL_SORT(data_local, 16);
 	/* *********** STEP 4 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 8);
+	ABIT_LOCAL_SORT(data_local, 8);
 	/* *********** STEP 3 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 4);
+	ABIT_LOCAL_SORT(data_local, 4);
 	/* ********** STEP 2 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 2);
+	ABIT_LOCAL_SORT(data_local, 2);
 	/* ********** STEP 1 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 1);
+	ABIT_LOCAL_SORT(data_local, 1);
 	/* ********* FINISH *********** */
-	CLO_SORT_ABITONIC_FINISH();
+	ABIT_LOCAL_FINISH();
 
 }
 
@@ -408,36 +408,36 @@ __kernel void abitonic_9(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_10(
+__kernel void abit_local_s10(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 
 	/* *********** INIT ************** */
-	CLO_SORT_ABITONIC_INIT();
+	ABIT_LOCAL_INIT();
 	/* *********** STEP 10 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 512);
+	ABIT_LOCAL_SORT(data_local, 512);
 	/* *********** STEP 9 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 256);
+	ABIT_LOCAL_SORT(data_local, 256);
 	/* *********** STEP 8 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 128);
+	ABIT_LOCAL_SORT(data_local, 128);
 	/* *********** STEP 7 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 64);
+	ABIT_LOCAL_SORT(data_local, 64);
 	/* *********** STEP 6 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 32);
+	ABIT_LOCAL_SORT(data_local, 32);
 	/* *********** STEP 5 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 16);
+	ABIT_LOCAL_SORT(data_local, 16);
 	/* *********** STEP 4 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 8);
+	ABIT_LOCAL_SORT(data_local, 8);
 	/* *********** STEP 3 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 4);
+	ABIT_LOCAL_SORT(data_local, 4);
 	/* ********** STEP 2 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 2);
+	ABIT_LOCAL_SORT(data_local, 2);
 	/* ********** STEP 1 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 1);
+	ABIT_LOCAL_SORT(data_local, 1);
 	/* ********* FINISH *********** */
-	CLO_SORT_ABITONIC_FINISH();
+	ABIT_LOCAL_FINISH();
 
 }
 
@@ -449,38 +449,38 @@ __kernel void abitonic_10(
  * @param stage
  * @param data_local
  */
-__kernel void abitonic_11(
+__kernel void abit_local_s11(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 
 	/* *********** INIT ************** */
-	CLO_SORT_ABITONIC_INIT();
+	ABIT_LOCAL_INIT();
 	/* *********** STEP 11 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 1024);
+	ABIT_LOCAL_SORT(data_local, 1024);
 	/* *********** STEP 10 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 512);
+	ABIT_LOCAL_SORT(data_local, 512);
 	/* *********** STEP 9 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 256);
+	ABIT_LOCAL_SORT(data_local, 256);
 	/* *********** STEP 8 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 128);
+	ABIT_LOCAL_SORT(data_local, 128);
 	/* *********** STEP 7 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 64);
+	ABIT_LOCAL_SORT(data_local, 64);
 	/* *********** STEP 6 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 32);
+	ABIT_LOCAL_SORT(data_local, 32);
 	/* *********** STEP 5 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 16);
+	ABIT_LOCAL_SORT(data_local, 16);
 	/* *********** STEP 4 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 8);
+	ABIT_LOCAL_SORT(data_local, 8);
 	/* *********** STEP 3 ************ */
-	CLO_SORT_ABITONIC_STEP(data_local, 4);
+	ABIT_LOCAL_SORT(data_local, 4);
 	/* ********** STEP 2 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 2);
+	ABIT_LOCAL_SORT(data_local, 2);
 	/* ********** STEP 1 ************** */
-	CLO_SORT_ABITONIC_STEP(data_local, 1);
+	ABIT_LOCAL_SORT(data_local, 1);
 	/* ********* FINISH *********** */
-	CLO_SORT_ABITONIC_FINISH();
+	ABIT_LOCAL_FINISH();
 
 }
 
@@ -492,7 +492,7 @@ __kernel void abitonic_11(
  * @param stage
  * @param step
  */
-__kernel void abitonic_any(
+__kernel void abit_any(
 			__global CLO_SORT_ELEM_TYPE *data,
 			uint stage,
 			uint step)
@@ -520,19 +520,19 @@ __kernel void abitonic_any(
 	uint index2 = index1 + pair_stride;
 
 	/* Compare and possibly exchange elements. */
-	CLO_SORT_ABITONIC_CMPXCH(data, index1, index2);
+	ABIT_CMPXCH(data, index1, index2);
 	
 }
 
 /* Each thread sorts 8 values (in three steps of a bitonic stage).
  * Assumes gws = numel2sort / 8 */
-__kernel void abitonic_s8(
+__kernel void abit_priv_3s8v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			uint step)
 {
 
-	CLO_SORT_ABITONIC_INIT_S(8);
+	ABIT_PRIV_INIT(8);
 	
 	/* ***** Transfer 8 values to sort to private memory ***** */
 
@@ -547,7 +547,7 @@ __kernel void abitonic_s8(
 
 	/* ***** Sort the 8 values ***** */
 	
-	CLO_SORT_ABITONIC_3S_8V(data_priv);
+	ABIT_SORT_3S_8V(data_priv);
 
 	/* ***** Transfer the n values to global memory ***** */
 
@@ -564,13 +564,13 @@ __kernel void abitonic_s8(
 
 /* Each thread sorts 16 values (in three steps of a bitonic stage).
  * Assumes gws = numel2sort / 16 */
-__kernel void abitonic_s16(
+__kernel void abit_priv_4s16v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			uint step)
 {
 
-	CLO_SORT_ABITONIC_INIT_S(16);
+	ABIT_PRIV_INIT(16);
 	
 	/* ***** Transfer 16 values to sort to private memory ***** */
 
@@ -593,7 +593,7 @@ __kernel void abitonic_s16(
 
 	/* ***** Sort the 16 values ***** */
 
-	CLO_SORT_ABITONIC_4S_16V(data_priv);
+	ABIT_SORT_4S16V(data_priv);
 
 	/* ***** Transfer the n values to global memory ***** */
 
@@ -615,7 +615,7 @@ __kernel void abitonic_s16(
 	data_global[gaddr + 15 * inc] = data_priv[15];
 }
 
-#define CLO_SORT_ABITONIC_4_INIT() \
+#define ABIT_HYB_2S4V_INIT() \
 	/* Global and local ids for this work-item. */ \
 	uint gid = get_global_id(0); \
 	uint lid = get_local_id(0); \
@@ -649,14 +649,14 @@ __kernel void abitonic_s16(
 	/* Local memory barrier */ \
 	barrier(CLK_LOCAL_MEM_FENCE);
 	
-#define CLO_SORT_ABITONIC_4_FINISH() \
+#define ABIT_HYB_2S4V_FINISH() \
 	/* Store data globally */ \
 	data_global[global_index1] = data_local[local_index1]; \
 	data_global[global_index2] = data_local[local_index2]; \
 	data_global[global_index3] = data_local[local_index3]; \
 	data_global[global_index4] = data_local[local_index4];
 	
-#define CLO_SORT_ABITONIC_4_S2(step) \
+#define ABIT_HYB_2S4V_SORT(step) \
 	/* ***** Transfer 4 values to sort from local to private memory ***** */ \
 	blockSize = 1 << step; \
 	laddr = ((lid * 4) / blockSize) * blockSize + (lid % (blockSize / 4)); \
@@ -666,7 +666,7 @@ __kernel void abitonic_s16(
 	data_priv[2] = data_local[laddr + 2 * inc]; \
 	data_priv[3] = data_local[laddr + 3 * inc]; \
 	/* ***** Sort the 4 values ***** */ \
-	CLO_SORT_ABITONIC_2S_4V(data_priv); \
+	ABIT_SORT_2S_4V(data_priv); \
 	/* ***** Transfer 4 sorted values from private to local memory ***** */ \
 	data_local[laddr] = data_priv[0]; \
 	data_local[laddr + inc] = data_priv[1]; \
@@ -683,10 +683,10 @@ __kernel void abitonic_4_s4(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_4_INIT();
-	CLO_SORT_ABITONIC_4_S2(4);
-	CLO_SORT_ABITONIC_4_S2(2);
-	CLO_SORT_ABITONIC_4_FINISH();				
+	ABIT_HYB_2S4V_INIT();
+	ABIT_HYB_2S4V_SORT(4);
+	ABIT_HYB_2S4V_SORT(2);
+	ABIT_HYB_2S4V_FINISH();				
 }
 
 
@@ -697,11 +697,11 @@ __kernel void abitonic_4_s6(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_4_INIT();
-	CLO_SORT_ABITONIC_4_S2(6);
-	CLO_SORT_ABITONIC_4_S2(4);
-	CLO_SORT_ABITONIC_4_S2(2);
-	CLO_SORT_ABITONIC_4_FINISH();				
+	ABIT_HYB_2S4V_INIT();
+	ABIT_HYB_2S4V_SORT(6);
+	ABIT_HYB_2S4V_SORT(4);
+	ABIT_HYB_2S4V_SORT(2);
+	ABIT_HYB_2S4V_FINISH();				
 }
 
 
@@ -712,12 +712,12 @@ __kernel void abitonic_4_s8(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_4_INIT();
-	CLO_SORT_ABITONIC_4_S2(8);
-	CLO_SORT_ABITONIC_4_S2(6);
-	CLO_SORT_ABITONIC_4_S2(4);
-	CLO_SORT_ABITONIC_4_S2(2);
-	CLO_SORT_ABITONIC_4_FINISH();				
+	ABIT_HYB_2S4V_INIT();
+	ABIT_HYB_2S4V_SORT(8);
+	ABIT_HYB_2S4V_SORT(6);
+	ABIT_HYB_2S4V_SORT(4);
+	ABIT_HYB_2S4V_SORT(2);
+	ABIT_HYB_2S4V_FINISH();				
 }
 
 /* Works from step 10 to step 1, local barriers between each two steps,
@@ -727,13 +727,13 @@ __kernel void abitonic_4_s10(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_4_INIT();
-	CLO_SORT_ABITONIC_4_S2(10);
-	CLO_SORT_ABITONIC_4_S2(8);
-	CLO_SORT_ABITONIC_4_S2(6);
-	CLO_SORT_ABITONIC_4_S2(4);
-	CLO_SORT_ABITONIC_4_S2(2);
-	CLO_SORT_ABITONIC_4_FINISH();				
+	ABIT_HYB_2S4V_INIT();
+	ABIT_HYB_2S4V_SORT(10);
+	ABIT_HYB_2S4V_SORT(8);
+	ABIT_HYB_2S4V_SORT(6);
+	ABIT_HYB_2S4V_SORT(4);
+	ABIT_HYB_2S4V_SORT(2);
+	ABIT_HYB_2S4V_FINISH();				
 }
 
 /* Works from step 12 to step 1, local barriers between each two steps,
@@ -743,18 +743,18 @@ __kernel void abitonic_4_s12(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_4_INIT();
-	CLO_SORT_ABITONIC_4_S2(12);
-	CLO_SORT_ABITONIC_4_S2(10);
-	CLO_SORT_ABITONIC_4_S2(8);
-	CLO_SORT_ABITONIC_4_S2(6);
-	CLO_SORT_ABITONIC_4_S2(4);
-	CLO_SORT_ABITONIC_4_S2(2);
-	CLO_SORT_ABITONIC_4_FINISH();				
+	ABIT_HYB_2S4V_INIT();
+	ABIT_HYB_2S4V_SORT(12);
+	ABIT_HYB_2S4V_SORT(10);
+	ABIT_HYB_2S4V_SORT(8);
+	ABIT_HYB_2S4V_SORT(6);
+	ABIT_HYB_2S4V_SORT(4);
+	ABIT_HYB_2S4V_SORT(2);
+	ABIT_HYB_2S4V_FINISH();				
 }
 
 
-#define CLO_SORT_ABITONIC_8_INIT() \
+#define ABIT_HYB_3S8V_INIT() \
 	/* Global and local ids for this work-item. */ \
 	uint gid = get_global_id(0); \
 	uint lid = get_local_id(0); \
@@ -800,7 +800,7 @@ __kernel void abitonic_4_s12(
 	/* Local memory barrier */ \
 	barrier(CLK_LOCAL_MEM_FENCE);
 	
-#define CLO_SORT_ABITONIC_8_FINISH() \
+#define ABIT_HYB_3S8V_FINISH() \
 	/* Store data globally */ \
 	data_global[global_index1] = data_local[local_index1]; \
 	data_global[global_index2] = data_local[local_index2]; \
@@ -811,7 +811,7 @@ __kernel void abitonic_4_s12(
 	data_global[global_index7] = data_local[local_index7]; \
 	data_global[global_index8] = data_local[local_index8];
 	
-#define CLO_SORT_ABITONIC_8_S3(step) \
+#define ABIT_HYB_3S8V_SORT(step) \
 	/* ***** Transfer 8 values to sort from local to private memory ***** */ \
 	blockSize = 1 << step; \
 	laddr = ((lid * 8) / blockSize) * blockSize + (lid % (blockSize / 8)); \
@@ -825,7 +825,7 @@ __kernel void abitonic_4_s12(
 	data_priv[6] = data_local[laddr + 6 * inc]; \
 	data_priv[7] = data_local[laddr + 7 * inc]; \
 	/* ***** Sort the 8 values ***** */ \
-	CLO_SORT_ABITONIC_3S_8V(data_priv); \
+	ABIT_SORT_3S_8V(data_priv); \
 	/* ***** Transfer 4 sorted values from private to local memory ***** */ \
 	data_local[laddr] = data_priv[0]; \
 	data_local[laddr + inc] = data_priv[1]; \
@@ -846,9 +846,9 @@ __kernel void abitonic_8_s3(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_8_INIT();
-	CLO_SORT_ABITONIC_8_S3(3);
-	CLO_SORT_ABITONIC_8_FINISH();				
+	ABIT_HYB_3S8V_INIT();
+	ABIT_HYB_3S8V_SORT(3);
+	ABIT_HYB_3S8V_FINISH();				
 }
 
 /* Works from step 6 to step 1, local barriers between each three steps,
@@ -858,10 +858,10 @@ __kernel void abitonic_8_s6(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_8_INIT();
-	CLO_SORT_ABITONIC_8_S3(6);
-	CLO_SORT_ABITONIC_8_S3(3);
-	CLO_SORT_ABITONIC_8_FINISH();				
+	ABIT_HYB_3S8V_INIT();
+	ABIT_HYB_3S8V_SORT(6);
+	ABIT_HYB_3S8V_SORT(3);
+	ABIT_HYB_3S8V_FINISH();				
 }
 
 /* Works from step 9 to step 1, local barriers between each three steps,
@@ -871,11 +871,11 @@ __kernel void abitonic_8_s9(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_8_INIT();
-	CLO_SORT_ABITONIC_8_S3(9);
-	CLO_SORT_ABITONIC_8_S3(6);
-	CLO_SORT_ABITONIC_8_S3(3);
-	CLO_SORT_ABITONIC_8_FINISH();				
+	ABIT_HYB_3S8V_INIT();
+	ABIT_HYB_3S8V_SORT(9);
+	ABIT_HYB_3S8V_SORT(6);
+	ABIT_HYB_3S8V_SORT(3);
+	ABIT_HYB_3S8V_FINISH();				
 }
 
 /* Works from step 12 to step 1, local barriers between each three steps,
@@ -885,15 +885,15 @@ __kernel void abitonic_8_s12(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_8_INIT();
-	CLO_SORT_ABITONIC_8_S3(12);
-	CLO_SORT_ABITONIC_8_S3(9);
-	CLO_SORT_ABITONIC_8_S3(6);
-	CLO_SORT_ABITONIC_8_S3(3);
-	CLO_SORT_ABITONIC_8_FINISH();				
+	ABIT_HYB_3S8V_INIT();
+	ABIT_HYB_3S8V_SORT(12);
+	ABIT_HYB_3S8V_SORT(9);
+	ABIT_HYB_3S8V_SORT(6);
+	ABIT_HYB_3S8V_SORT(3);
+	ABIT_HYB_3S8V_FINISH();				
 }
 
-#define CLO_SORT_ABITONIC_16_INIT() \
+#define ABIT_HYB_4S16V_INIT() \
 	/* Global and local ids for this work-item. */ \
 	uint gid = get_global_id(0); \
 	uint lid = get_local_id(0); \
@@ -963,7 +963,7 @@ __kernel void abitonic_8_s12(
 	/* Local memory barrier */ \
 	barrier(CLK_LOCAL_MEM_FENCE);
 	
-#define CLO_SORT_ABITONIC_16_FINISH() \
+#define ABIT_HYB_4S16V_FINISH() \
 	/* Store data globally */ \
 	data_global[global_index1] = data_local[local_index1]; \
 	data_global[global_index2] = data_local[local_index2]; \
@@ -982,7 +982,7 @@ __kernel void abitonic_8_s12(
 	data_global[global_index15] = data_local[local_index15]; \
 	data_global[global_index16] = data_local[local_index16];
 	
-#define CLO_SORT_ABITONIC_16_S4(step) \
+#define ABIT_HYB_4S16V_SORT(step) \
 	/* ***** Transfer 16 values to sort from local to private memory ***** */ \
 	blockSize = 1 << step; \
 	laddr = ((lid * 16) / blockSize) * blockSize + (lid % (blockSize / 16)); \
@@ -1004,7 +1004,7 @@ __kernel void abitonic_8_s12(
 	data_priv[14] = data_local[laddr + 14 * inc]; \
 	data_priv[15] = data_local[laddr + 15 * inc]; \
 	/* ***** Sort the 16 values ***** */ \
-	CLO_SORT_ABITONIC_4S_16V(data_priv); \
+	ABIT_SORT_4S16V(data_priv); \
 	/* ***** Transfer 16 sorted values from private to local memory ***** */ \
 	data_local[laddr] = data_priv[0]; \
 	data_local[laddr + inc] = data_priv[1]; \
@@ -1033,9 +1033,9 @@ __kernel void abitonic_16_s4(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_16_INIT();
-	CLO_SORT_ABITONIC_16_S4(4);
-	CLO_SORT_ABITONIC_16_FINISH();				
+	ABIT_HYB_4S16V_INIT();
+	ABIT_HYB_4S16V_SORT(4);
+	ABIT_HYB_4S16V_FINISH();				
 }
 
 /* Works from step 8 to step 1, local barriers between each four steps,
@@ -1045,10 +1045,10 @@ __kernel void abitonic_16_s8(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_16_INIT();
-	CLO_SORT_ABITONIC_16_S4(8);
-	CLO_SORT_ABITONIC_16_S4(4);
-	CLO_SORT_ABITONIC_16_FINISH();				
+	ABIT_HYB_4S16V_INIT();
+	ABIT_HYB_4S16V_SORT(8);
+	ABIT_HYB_4S16V_SORT(4);
+	ABIT_HYB_4S16V_FINISH();				
 }
 
 /* Works from step 12 to step 1, local barriers between each four steps,
@@ -1058,9 +1058,9 @@ __kernel void abitonic_16_s12(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
 {
-	CLO_SORT_ABITONIC_16_INIT();
-	CLO_SORT_ABITONIC_16_S4(12);
-	CLO_SORT_ABITONIC_16_S4(8);
-	CLO_SORT_ABITONIC_16_S4(4);
-	CLO_SORT_ABITONIC_16_FINISH();				
+	ABIT_HYB_4S16V_INIT();
+	ABIT_HYB_4S16V_SORT(12);
+	ABIT_HYB_4S16V_SORT(8);
+	ABIT_HYB_4S16V_SORT(4);
+	ABIT_HYB_4S16V_FINISH();				
 }
