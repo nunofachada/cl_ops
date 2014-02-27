@@ -82,6 +82,69 @@
 	/* Thread increment within block. */ \
 	uint inc = blockSize / n;
 
+#define CLO_SORT_ABITONIC_4S_16V(data_priv); \
+	/* Step n */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 8); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 9); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 10); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 11); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 12); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 13); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 14); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 7, 15); \
+	/* Step n-1 */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 4); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 5); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 6); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 7); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 12); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 13); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 14); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 11, 15); \
+	/* Step n-2 */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 6); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 7); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 10); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 11); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 14); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 13, 15); \
+	/* Step n-3 */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 5); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 7); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 9); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 11); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 13); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 14, 15);
+
+#define CLO_SORT_ABITONIC_3S_8V(data_priv) \
+	/* Step n */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 4); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 5); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 6); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 7); \
+	/* Step n-1 */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 6); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 7); \
+	/* Step n-2 */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 5); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 7);
+
+#define CLO_SORT_ABITONIC_2S_4V(data_priv) \
+	/* Step n */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3); \
+	/* Step n-1 */ \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1); \
+	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3);
+
 /**
  * @brief This kernel can perform the two last steps of a stage in a
  * bitonic sort.
@@ -483,22 +546,8 @@ __kernel void abitonic_s8(
 	data_priv[7] = data_global[gaddr + 7 * inc];
 
 	/* ***** Sort the 8 values ***** */
-
-	/* Step n */
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 4);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 5);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 6);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 7);
-	/* Step n-1 */
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 6);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 7);
-	/* Step n-2 */
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 5);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 7);
+	
+	CLO_SORT_ABITONIC_3S_8V(data_priv);
 
 	/* ***** Transfer the n values to global memory ***** */
 
@@ -544,44 +593,7 @@ __kernel void abitonic_s16(
 
 	/* ***** Sort the 16 values ***** */
 
-	/* Step n */
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 8);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 9);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 10);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 11);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 12);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 13);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 14);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 7, 15);
-	/* Step n-1 */
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 4);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 5);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 6);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 7);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 12);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 13);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 14);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 11, 15);
-
-	/* Step n-2 */
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 6);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 7);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 10);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 11);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 14);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 13, 15);
-	
-	/* Step n-3 */
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 5);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 7);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 9);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 11);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 13);
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 14, 15);
+	CLO_SORT_ABITONIC_4S_16V(data_priv);
 
 	/* ***** Transfer the n values to global memory ***** */
 
@@ -654,12 +666,7 @@ __kernel void abitonic_s16(
 	data_priv[2] = data_local[laddr + 2 * inc]; \
 	data_priv[3] = data_local[laddr + 3 * inc]; \
 	/* ***** Sort the 4 values ***** */ \
-	/* Step n */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3); \
-	/* Step n-1 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3); \
+	CLO_SORT_ABITONIC_2S_4V(data_priv); \
 	/* ***** Transfer 4 sorted values from private to local memory ***** */ \
 	data_local[laddr] = data_priv[0]; \
 	data_local[laddr + inc] = data_priv[1]; \
@@ -818,21 +825,7 @@ __kernel void abitonic_4_s12(
 	data_priv[6] = data_local[laddr + 6 * inc]; \
 	data_priv[7] = data_local[laddr + 7 * inc]; \
 	/* ***** Sort the 8 values ***** */ \
-	/* Step n */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 4); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 5); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 6); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 7); \
-	/* Step n-1 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 6); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 7); \
-	/* Step n-2 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 5); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 7); \
+	CLO_SORT_ABITONIC_3S_8V(data_priv); \
 	/* ***** Transfer 4 sorted values from private to local memory ***** */ \
 	data_local[laddr] = data_priv[0]; \
 	data_local[laddr + inc] = data_priv[1]; \
@@ -1011,42 +1004,7 @@ __kernel void abitonic_8_s12(
 	data_priv[14] = data_local[laddr + 14 * inc]; \
 	data_priv[15] = data_local[laddr + 15 * inc]; \
 	/* ***** Sort the 16 values ***** */ \
-	/* Step n */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 8); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 9); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 10); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 11); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 12); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 13); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 14); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 7, 15); \
-	/* Step n-1 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 4); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 5); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 6); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 3, 7); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 12); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 13); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 14); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 11, 15); \
-	/* Step n-2 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 2); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 1, 3); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 6); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 5, 7); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 10); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 9, 11); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 14); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 13, 15); \
-	/* Step n-3 */ \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 0, 1); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 2, 3); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 4, 5); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 6, 7); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 8, 9); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 10, 11); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 12, 13); \
-	CLO_SORT_ABITONIC_CMPXCH(data_priv, 14, 15); \
+	CLO_SORT_ABITONIC_4S_16V(data_priv); \
 	/* ***** Transfer 16 sorted values from private to local memory ***** */ \
 	data_local[laddr] = data_priv[0]; \
 	data_local[laddr + inc] = data_priv[1]; \
