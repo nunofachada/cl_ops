@@ -27,7 +27,7 @@
 #include "clo_sort.h"
 
 /** @brief Name of single simple bitonic sort kernel. */
-#define CLO_SORT_SBITONIC_KERNELNAME_0 "sbitonicSort"
+#define CLO_SORT_SBITONIC_KNAME_0 "sbitonicSort"
  
 /** @brief Number of command queues used by the simple bitonic sort. */
 #define CLO_SORT_SBITONIC_NUMQUEUES 1
@@ -36,7 +36,7 @@
 #define CLO_SORT_SBITONIC_NUMKERNELS 1
 
 /** @brief Array of strings containing names of the kernels used by the simple bitonic sort strategy. */
-#define CLO_SORT_SBITONIC_KERNELNAMES {CLO_SORT_SBITONIC_KERNELNAME_0}
+#define CLO_SORT_SBITONIC_KERNELNAMES {CLO_SORT_SBITONIC_KNAME_0}
 
 /** @brief Sort agents using the simple bitonic sort. */
 int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event **evts, size_t lws_max, unsigned int numel, gboolean profile, GError **err);
