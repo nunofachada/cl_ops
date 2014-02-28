@@ -120,7 +120,7 @@
 	ABIT_CMPXCH(data2sort, 12, 13); \
 	ABIT_CMPXCH(data2sort, 14, 15);
 
-#define ABIT_SORT_3S_8V(data2sort) \
+#define ABIT_SORT_3S8V(data2sort) \
 	/* Step n */ \
 	ABIT_CMPXCH(data2sort, 0, 4); \
 	ABIT_CMPXCH(data2sort, 1, 5); \
@@ -137,7 +137,7 @@
 	ABIT_CMPXCH(data2sort, 4, 5); \
 	ABIT_CMPXCH(data2sort, 6, 7);
 
-#define ABIT_SORT_2S_4V(data2sort) \
+#define ABIT_SORT_2S4V(data2sort) \
 	/* Step n */ \
 	ABIT_CMPXCH(data2sort, 0, 2); \
 	ABIT_CMPXCH(data2sort, 1, 3); \
@@ -524,6 +524,37 @@ __kernel void abit_any(
 	
 }
 
+/* Each thread sorts 4 values (in two steps of a bitonic stage).
+ * Assumes gws = numel2sort / 4 */
+__kernel void abit_priv_2s4v(
+			__global CLO_SORT_ELEM_TYPE *data_global,
+			uint stage,
+			uint step)
+{
+
+	ABIT_PRIV_INIT(4);
+	
+	/* ***** Transfer 4 values to sort to private memory ***** */
+
+	data_priv[0] = data_global[gaddr];
+	data_priv[1] = data_global[gaddr + inc];
+	data_priv[2] = data_global[gaddr + 2 * inc];
+	data_priv[3] = data_global[gaddr + 3 * inc];
+
+	/* ***** Sort the 4 values ***** */
+	
+	ABIT_SORT_2S4V(data_priv);
+
+	/* ***** Transfer the 4 values to global memory ***** */
+
+	data_global[gaddr] = data_priv[0];
+	data_global[gaddr + inc] = data_priv[1];
+	data_global[gaddr + 2 * inc] = data_priv[2];
+	data_global[gaddr + 3 * inc] = data_priv[3];
+
+}
+
+
 /* Each thread sorts 8 values (in three steps of a bitonic stage).
  * Assumes gws = numel2sort / 8 */
 __kernel void abit_priv_3s8v(
@@ -547,7 +578,7 @@ __kernel void abit_priv_3s8v(
 
 	/* ***** Sort the 8 values ***** */
 	
-	ABIT_SORT_3S_8V(data_priv);
+	ABIT_SORT_3S8V(data_priv);
 
 	/* ***** Transfer the n values to global memory ***** */
 
@@ -666,7 +697,7 @@ __kernel void abit_priv_4s16v(
 	data_priv[2] = data_local[laddr + 2 * inc]; \
 	data_priv[3] = data_local[laddr + 3 * inc]; \
 	/* ***** Sort the 4 values ***** */ \
-	ABIT_SORT_2S_4V(data_priv); \
+	ABIT_SORT_2S4V(data_priv); \
 	/* ***** Transfer 4 sorted values from private to local memory ***** */ \
 	data_local[laddr] = data_priv[0]; \
 	data_local[laddr + inc] = data_priv[1]; \
@@ -825,7 +856,7 @@ __kernel void abit_hyb_s12_2s4v(
 	data_priv[6] = data_local[laddr + 6 * inc]; \
 	data_priv[7] = data_local[laddr + 7 * inc]; \
 	/* ***** Sort the 8 values ***** */ \
-	ABIT_SORT_3S_8V(data_priv); \
+	ABIT_SORT_3S8V(data_priv); \
 	/* ***** Transfer 4 sorted values from private to local memory ***** */ \
 	data_local[laddr] = data_priv[0]; \
 	data_local[laddr + inc] = data_priv[1]; \

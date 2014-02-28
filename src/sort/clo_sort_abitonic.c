@@ -45,7 +45,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 	/* Number of bitonic sort stages. */
 	cl_uint totalStages = (cl_uint) clo_tzc(clo_nlpo2(numel));
 
-	/* ****** Unrolled and any kernels ******** */
+	/* ****** Local memory kernels and any kernel ******** */
 
 	/* Global worksize. */
 	size_t gws = clo_nlpo2(numel) / 2;
@@ -54,17 +54,22 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 	/* Maximum step for unrolled kernels. */
 	cl_uint maxStep = clo_tzc(lws) + 1;
 	
-	/* ***** Multi-step kernels ****** */
+	/* ***** Private memory kernels ****** */
+
+	/* Global worksize. */
+	size_t gws4 = clo_nlpo2(numel) / 4;
+	/* Local worksize. */
+	size_t lws4 = MIN(lws_max, gws4);
 
 	/* Global worksize. */
 	size_t gws8 = clo_nlpo2(numel) / 8;
 	/* Local worksize. */
-	size_t lws8 = MIN(lws / 2, gws8); /// @todo This is more or less, I should adjust it better or try to make it dependent on the device local memory
+	size_t lws8 = MIN(lws_max, gws8);
 		
 	/* Global worksize. */
 	size_t gws16 = clo_nlpo2(numel) / 16;
 	/* Local worksize. */
-	size_t lws16 = MIN(lws, gws16); /// @todo This is more or less, I should adjust it better or try to make it dependent on the device local memory
+	size_t lws16 = MIN(lws_max, gws16);
 
 	/* ***** Hybrid kernels ****** */
 
@@ -103,7 +108,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				
 				const char* krnl_name = clo_sort_abitonic_kernelname_get(krnl_idx);
 
-				fprintf(stderr, " %d (16_S%d): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStep, currentStage, currentStep, gws_h4, lws_h4);
+				fprintf(stderr, " %d (HYB_S%d_4S16V): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStep, currentStage, currentStep, gws_h4, lws_h4);
 
 				ocl_status = clSetKernelArg(krnls[krnl_idx], 1, sizeof(cl_uint), (void *) &currentStage);
 				gef_if_error_create_goto(*err, CLO_ERROR, 
@@ -150,7 +155,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				
 				const char* krnl_name = clo_sort_abitonic_kernelname_get(krnl_idx);
 
-				fprintf(stderr, " %d (8_S%d): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStep, currentStage, currentStep, gws_h4, lws_h4);
+				fprintf(stderr, " %d (HYB_S%d_3S8V): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStep, currentStage, currentStep, gws_h4, lws_h4);
 
 				ocl_status = clSetKernelArg(krnls[krnl_idx], 1, sizeof(cl_uint), (void *) &currentStage);
 				gef_if_error_create_goto(*err, CLO_ERROR, 
@@ -198,7 +203,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				
 				const char* krnl_name = clo_sort_abitonic_kernelname_get(krnl_idx);
 
-				fprintf(stderr, " %d (4_S%d): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStep, currentStage, currentStep, gws_h4, lws_h4);
+				fprintf(stderr, " %d (HYB_S%d_2S4V): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStep, currentStage, currentStep, gws_h4, lws_h4);
 
 				ocl_status = clSetKernelArg(krnls[krnl_idx], 1, sizeof(cl_uint), (void *) &currentStage);
 				gef_if_error_create_goto(*err, CLO_ERROR, 
@@ -233,7 +238,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 			if ((currentStep <= maxStep) && (currentStep >= 2)) {
 				/* Use a local memory kernel. */
 
-				fprintf(stderr, " %d (LOCAL): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStage, currentStep, gws, lws);
+				fprintf(stderr, " %d (LOCAL_S%d): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStep, currentStage, currentStep, gws, lws);
 
 				unsigned int krnl_idx = currentStep - 1;
 				const char* krnl_name = clo_sort_abitonic_kernelname_get(krnl_idx);
@@ -261,11 +266,54 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				/* Break out of the loop. */
 				break;
 				
+			} else if (currentStep == maxStep + 2) {
+
+				fprintf(stderr, " %d (PRIV_2S4V): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStage, currentStep, gws4, lws4);
+			
+				/* Use 2-step kernel (each thread completely sorts 4 values). */
+				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_KIDX_PRIV_2S4V], 1, sizeof(cl_uint), (void *) &currentStage);
+				gef_if_error_create_goto(*err, CLO_ERROR, 
+					ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, 
+					error_handler, 
+					"arg 1 of " CLO_SORT_SBITONIC_KNAME_PRIV_2S4V " kernel, OpenCL error %d: %s", 
+					ocl_status, clerror_get(ocl_status));
+						
+				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_KIDX_PRIV_2S4V], 2, sizeof(cl_uint), (void *) &currentStep);
+				gef_if_error_create_goto(*err, CLO_ERROR, 
+					ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, 
+					error_handler, 
+					"arg 2 of " CLO_SORT_SBITONIC_KNAME_PRIV_2S4V " kernel, OpenCL error %d: %s", 
+					ocl_status, clerror_get(ocl_status));
+
+				evt = profile ? &evts[CLO_SORT_ABITONIC_KIDX_PRIV_2S4V][abitonic_evt_idx[CLO_SORT_ABITONIC_KIDX_PRIV_2S4V]] : NULL;
+						
+				ocl_status = clEnqueueNDRangeKernel(
+					queues[0], 
+					krnls[CLO_SORT_ABITONIC_KIDX_PRIV_2S4V], 
+					1, 
+					NULL, 
+					&gws4, 
+					&lws4, 
+					0, 
+					NULL,
+					evt
+				);
+					
+				/* Advance two steps. */
+				currentStep -= 2;
+					
+				gef_if_error_create_goto(*err, CLO_ERROR, 
+					ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, 
+					error_handler, 
+					"Executing " CLO_SORT_SBITONIC_KNAME_PRIV_2S4V " kernel, OpenCL error %d: %s", 
+					ocl_status, clerror_get(ocl_status));
+				abitonic_evt_idx[CLO_SORT_ABITONIC_KIDX_PRIV_2S4V]++;
+
 			} else if (currentStep == maxStep + 3) {
 				
 
 
-				fprintf(stderr, " %d (S8): Stage: %d, Step: %d,Gws8: %d, Lws8: %d\n", numel, currentStage, currentStep, gws8, lws8);
+				fprintf(stderr, " %d (PRIV_3S8V): Stage: %d, Step: %d,Gws: %d, Lws: %d\n", numel, currentStage, currentStep, gws8, lws8);
 			
 				/* Use 3-step kernel (each thread completely sorts 8 values). */
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_KIDX_PRIV_3S8V], 1, sizeof(cl_uint), (void *) &currentStage);
@@ -309,7 +357,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				
 			} else if (currentStep > maxStep + 3) {
 
-				fprintf(stderr, " %d (S16): Stage: %d, Step: %d,Gws16: %d, Lws16: %d\n", numel, currentStage, currentStep, gws16, lws16);
+				fprintf(stderr, " %d (PRIV_4S16V): Stage: %d, Step: %d, Gws: %d, Lws: %d\n", numel, currentStage, currentStep, gws16, lws16);
 
 				/* Use 4-step kernel (each thread completely sorts 16 values). */
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_KIDX_PRIV_4S16V], 1, sizeof(cl_uint), (void *) &currentStage);
@@ -340,7 +388,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 					NULL,
 					evt
 				);
-				/* Advance three steps. */
+				/* Advance four steps. */
 				currentStep -= 4;
 				
 				gef_if_error_create_goto(*err, CLO_ERROR, 
@@ -497,7 +545,7 @@ int clo_sort_abitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws,
 		gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 2 of %s kernel. OpenCL error %d: %s", clo_sort_abitonic_kernelname_get(i), ocl_status, clerror_get(ocl_status));
 	}
 
-	for (unsigned int i = CLO_SORT_ABITONIC_KIDX_PRIV_3S8V;  i <= CLO_SORT_ABITONIC_KIDX_PRIV_4S16V; i++) {
+	for (unsigned int i = CLO_SORT_ABITONIC_KIDX_PRIV_2S4V;  i <= CLO_SORT_ABITONIC_KIDX_PRIV_4S16V; i++) {
 
 		ocl_status = clSetKernelArg((*krnls)[i], 0, sizeof(cl_mem), &data);
 		gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of %s kernel. OpenCL error %d: %s", clo_sort_abitonic_kernelname_get(i), ocl_status, clerror_get(ocl_status));
