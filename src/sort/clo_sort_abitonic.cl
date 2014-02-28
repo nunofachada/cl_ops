@@ -678,7 +678,7 @@ __kernel void abit_priv_4s16v(
 
 /* Works from step 4 to step 1, local barriers between each two steps,
  * each thread sorts 4 values. */
-__kernel void abitonic_4_s4(
+__kernel void abit_hyb_s4_2s4v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
@@ -692,7 +692,7 @@ __kernel void abitonic_4_s4(
 
 /* Works from step 6 to step 1, local barriers between each two steps,
  * each thread sorts 4 values. */
-__kernel void abitonic_4_s6(
+__kernel void abit_hyb_s6_2s4v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
@@ -707,7 +707,7 @@ __kernel void abitonic_4_s6(
 
 /* Works from step 8 to step 1, local barriers between each two steps,
  * each thread sorts 4 values. */
-__kernel void abitonic_4_s8(
+__kernel void abit_hyb_s8_2s4v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
@@ -722,7 +722,7 @@ __kernel void abitonic_4_s8(
 
 /* Works from step 10 to step 1, local barriers between each two steps,
  * each thread sorts 4 values. */
-__kernel void abitonic_4_s10(
+__kernel void abit_hyb_s10_2s4v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
@@ -738,7 +738,7 @@ __kernel void abitonic_4_s10(
 
 /* Works from step 12 to step 1, local barriers between each two steps,
  * each thread sorts 4 values. */
-__kernel void abitonic_4_s12(
+__kernel void abit_hyb_s12_2s4v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
@@ -841,7 +841,7 @@ __kernel void abitonic_4_s12(
 
 /* Works from step 3 to step 1, local barriers between each three steps,
  * each thread sorts 8 values. */
-__kernel void abitonic_8_s3(
+__kernel void abit_hyb_s3_3s8v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
@@ -853,7 +853,7 @@ __kernel void abitonic_8_s3(
 
 /* Works from step 6 to step 1, local barriers between each three steps,
  * each thread sorts 8 values. */
-__kernel void abitonic_8_s6(
+__kernel void abit_hyb_s6_3s8v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
@@ -866,7 +866,7 @@ __kernel void abitonic_8_s6(
 
 /* Works from step 9 to step 1, local barriers between each three steps,
  * each thread sorts 8 values. */
-__kernel void abitonic_8_s9(
+__kernel void abit_hyb_s9_3s8v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
@@ -880,7 +880,7 @@ __kernel void abitonic_8_s9(
 
 /* Works from step 12 to step 1, local barriers between each three steps,
  * each thread sorts 8 values. */
-__kernel void abitonic_8_s12(
+__kernel void abit_hyb_s12_3s8v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
@@ -1028,7 +1028,7 @@ __kernel void abitonic_8_s12(
 
 /* Works from step 4 to step 1, local barriers between each four steps,
  * each thread sorts 16 values. */
-__kernel void abitonic_16_s4(
+__kernel void abit_hyb_s4_4s16v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
@@ -1040,7 +1040,7 @@ __kernel void abitonic_16_s4(
 
 /* Works from step 8 to step 1, local barriers between each four steps,
  * each thread sorts 16 values. */
-__kernel void abitonic_16_s8(
+__kernel void abit_hyb_s8_4s16v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
@@ -1053,7 +1053,7 @@ __kernel void abitonic_16_s8(
 
 /* Works from step 12 to step 1, local barriers between each four steps,
  * each thread sorts 16 values. */
-__kernel void abitonic_16_s12(
+__kernel void abit_hyb_s12_4s16v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local) 
