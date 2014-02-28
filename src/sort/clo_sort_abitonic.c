@@ -275,14 +275,14 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				gef_if_error_create_goto(*err, CLO_ERROR, 
 					ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, 
 					error_handler, 
-					"arg 1 of " CLO_SORT_SBITONIC_KNAME_PRIV_2S4V " kernel, OpenCL error %d: %s", 
+					"arg 1 of " CLO_SORT_ABITONIC_KNAME_PRIV_2S4V " kernel, OpenCL error %d: %s", 
 					ocl_status, clerror_get(ocl_status));
 						
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_KIDX_PRIV_2S4V], 2, sizeof(cl_uint), (void *) &currentStep);
 				gef_if_error_create_goto(*err, CLO_ERROR, 
 					ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, 
 					error_handler, 
-					"arg 2 of " CLO_SORT_SBITONIC_KNAME_PRIV_2S4V " kernel, OpenCL error %d: %s", 
+					"arg 2 of " CLO_SORT_ABITONIC_KNAME_PRIV_2S4V " kernel, OpenCL error %d: %s", 
 					ocl_status, clerror_get(ocl_status));
 
 				evt = profile ? &evts[CLO_SORT_ABITONIC_KIDX_PRIV_2S4V][abitonic_evt_idx[CLO_SORT_ABITONIC_KIDX_PRIV_2S4V]] : NULL;
@@ -305,7 +305,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				gef_if_error_create_goto(*err, CLO_ERROR, 
 					ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, 
 					error_handler, 
-					"Executing " CLO_SORT_SBITONIC_KNAME_PRIV_2S4V " kernel, OpenCL error %d: %s", 
+					"Executing " CLO_SORT_ABITONIC_KNAME_PRIV_2S4V " kernel, OpenCL error %d: %s", 
 					ocl_status, clerror_get(ocl_status));
 				abitonic_evt_idx[CLO_SORT_ABITONIC_KIDX_PRIV_2S4V]++;
 
@@ -320,14 +320,14 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				gef_if_error_create_goto(*err, CLO_ERROR, 
 					ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, 
 					error_handler, 
-					"arg 1 of " CLO_SORT_SBITONIC_KNAME_PRIV_3S8V " kernel, OpenCL error %d: %s", 
+					"arg 1 of " CLO_SORT_ABITONIC_KNAME_PRIV_3S8V " kernel, OpenCL error %d: %s", 
 					ocl_status, clerror_get(ocl_status));
 						
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_KIDX_PRIV_3S8V], 2, sizeof(cl_uint), (void *) &currentStep);
 				gef_if_error_create_goto(*err, CLO_ERROR, 
 					ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, 
 					error_handler, 
-					"arg 2 of " CLO_SORT_SBITONIC_KNAME_PRIV_3S8V " kernel, OpenCL error %d: %s", 
+					"arg 2 of " CLO_SORT_ABITONIC_KNAME_PRIV_3S8V " kernel, OpenCL error %d: %s", 
 					ocl_status, clerror_get(ocl_status));
 
 				evt = profile ? &evts[CLO_SORT_ABITONIC_KIDX_PRIV_3S8V][abitonic_evt_idx[CLO_SORT_ABITONIC_KIDX_PRIV_3S8V]] : NULL;
@@ -350,7 +350,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				gef_if_error_create_goto(*err, CLO_ERROR, 
 					ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, 
 					error_handler, 
-					"Executing " CLO_SORT_SBITONIC_KNAME_PRIV_3S8V " kernel, OpenCL error %d: %s", 
+					"Executing " CLO_SORT_ABITONIC_KNAME_PRIV_3S8V " kernel, OpenCL error %d: %s", 
 					ocl_status, clerror_get(ocl_status));
 				abitonic_evt_idx[CLO_SORT_ABITONIC_KIDX_PRIV_3S8V]++;
 			
@@ -364,7 +364,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				gef_if_error_create_goto(*err, CLO_ERROR, 
 					ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, 
 					error_handler, 
-					"arg 1 of " CLO_SORT_SBITONIC_KNAME_PRIV_4S16V " kernel, OpenCL error %d: %s", 
+					"arg 1 of " CLO_SORT_ABITONIC_KNAME_PRIV_4S16V " kernel, OpenCL error %d: %s", 
 					ocl_status, clerror_get(ocl_status));
 					
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_KIDX_PRIV_4S16V], 2, sizeof(cl_uint), (void *) &currentStep);
@@ -372,7 +372,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 					ocl_status != CL_SUCCESS, 
 					status = CLO_ERROR_LIBRARY, 
 					error_handler, 
-					"arg 2 of " CLO_SORT_SBITONIC_KNAME_PRIV_4S16V " kernel, OpenCL error %d: %s", 
+					"arg 2 of " CLO_SORT_ABITONIC_KNAME_PRIV_4S16V " kernel, OpenCL error %d: %s", 
 					ocl_status, clerror_get(ocl_status));
 
 				evt = profile ? &evts[CLO_SORT_ABITONIC_KIDX_PRIV_4S16V][abitonic_evt_idx[CLO_SORT_ABITONIC_KIDX_PRIV_4S16V]] : NULL;
@@ -394,7 +394,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				gef_if_error_create_goto(*err, CLO_ERROR, 
 					ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, 
 					error_handler, 
-					"Executing " CLO_SORT_SBITONIC_KNAME_PRIV_4S16V " kernel, OpenCL error %d: %s", 
+					"Executing " CLO_SORT_ABITONIC_KNAME_PRIV_4S16V " kernel, OpenCL error %d: %s", 
 					ocl_status, clerror_get(ocl_status));
 				abitonic_evt_idx[CLO_SORT_ABITONIC_KIDX_PRIV_4S16V]++;
 			
@@ -404,10 +404,10 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 
 				/* Use "any" kernel. */
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_KIDX_ANY], 1, sizeof(cl_uint), (void *) &currentStage);
-				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_ABITONIC_KNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 					
 				ocl_status = clSetKernelArg(krnls[CLO_SORT_ABITONIC_KIDX_ANY], 2, sizeof(cl_uint), (void *) &currentStep);
-				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 2 of " CLO_SORT_SBITONIC_KNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 2 of " CLO_SORT_ABITONIC_KNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 					
 				evt = profile ? &evts[CLO_SORT_ABITONIC_KIDX_ANY][abitonic_evt_idx[CLO_SORT_ABITONIC_KIDX_ANY]] : NULL;
 					
@@ -426,7 +426,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 				/* Advance one step. */
 				currentStep--;
 				
-				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing " CLO_SORT_SBITONIC_KNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+				gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing " CLO_SORT_ABITONIC_KNAME_ANY " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 				abitonic_evt_idx[CLO_SORT_ABITONIC_KIDX_ANY]++;
 			}
 			
@@ -510,12 +510,19 @@ size_t clo_sort_abitonic_localmem_usage(const char* kernel_name, size_t lws_max,
 	/* Avoid compiler warnings. */
 	numel = numel;
 	
-	if (g_strcmp0(kernel_name, CLO_SORT_SBITONIC_KNAME_ANY) == 0) {
-		/* No local memory for kernel "any" */
+	if ((g_strcmp0(kernel_name, CLO_SORT_ABITONIC_KNAME_ANY) == 0) ||
+		(g_strrstr(kernel_name, CLO_SORT_ABITONIC_KNAME_PRIV_MARK))) {
+		/* No local memory for private memory kernels and for kernel "any" */
 		local_mem_usage = 0;
-	} else {
-		/* Other kernels use local memory. */
+	} else if (g_strrstr(kernel_name, CLO_SORT_ABITONIC_KNAME_LOCAL_MARK)) {
+		/* Local memory kernels use local memory. */
 		local_mem_usage = len * lws_max * 2;
+	} else if (g_strrstr(kernel_name, CLO_SORT_ABITONIC_KNAME_HYB_MARK)) {
+		/* Hybrid memory kernels use local memory, but it depends on
+		 * how many elements each thread sorts. */
+		local_mem_usage = len * lws_max * CLO_SORT_ABITONIC_KPARSE_HYB_V(kernel_name);
+	} else {
+		g_assert_not_reached();
 	}
 	
 	/* Advanced bitonic sort doesn't use local memory. */
@@ -534,7 +541,7 @@ int clo_sort_abitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws,
 	
 	/* Set kernel arguments. */
 	ocl_status = clSetKernelArg((*krnls)[CLO_SORT_ABITONIC_KIDX_ANY], 0, sizeof(cl_mem), &data);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SORT_SBITONIC_KNAME_ANY " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SORT_ABITONIC_KNAME_ANY " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
 	for (unsigned int i = CLO_SORT_ABITONIC_KIDX_LOCAL_S2;  i <= CLO_SORT_ABITONIC_KIDX_LOCAL_S11; i++) {
 		
