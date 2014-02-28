@@ -24,6 +24,7 @@
 
 #define CLO_SORT_LWS 256
 #define CLO_SORT_BITS 32
+#define CLO_SORT_RUNS 1
 
 /** A description of the program. */
 #define CLO_SORT_DESCRIPTION "Test sorting algorithms"
@@ -33,6 +34,7 @@
 
 /* Command line arguments and respective default values. */
 static gchar *algorithm = NULL;
+static guint32 runs = CLO_SORT_RUNS;
 static size_t lws = CLO_SORT_LWS;
 static int dev_idx = -1;
 static guint32 rng_seed = CLO_DEFAULT_SEED;
@@ -42,6 +44,7 @@ static gchar* path = NULL;
 /* Valid command line options. */
 static GOptionEntry entries[] = {
 	{"algorithm",    'a', 0, G_OPTION_ARG_STRING,   &algorithm,     "Sorting algorithm: " CLO_SORT_ALGS,                                            "ALGORITHM"},
+	{"runs",         'r', 0, G_OPTION_ARG_INT,      &runs,          "Number of runs (default is " STR(CLO_SORT_RUNS) ")",                           "RUNS"},
 	{"localsize",    'l', 0, G_OPTION_ARG_INT,      &lws,           "Maximum local work size (default is " STR(CLO_SORT_LWS) ")",                   "SIZE"},
 	{"device",       'd', 0, G_OPTION_ARG_INT,      &dev_idx,       "Device index",                                                                 "INDEX"},
 	{"rng-seed",     's', 0, G_OPTION_ARG_INT,      &rng_seed,      "Seed for random number generator (default is " STR(CLO_DEFAULT_SEED) ")",      "SEED"},
@@ -140,6 +143,7 @@ int main(int argc, char **argv)
 	printf("     Random number generator seed: %u\n", rng_seed);
 	printf("     Maximum local worksize: %d\n", (int) lws);
 	printf("     Size in bits (bytes) of elements to sort: %d (%d)\n", bits, (int) bytes);
+	printf("     Number of runs: %d\n", runs);
 	printf("     Compiler Options: %s\n", compilerOpts);
 	
 	/* Create timer. */
@@ -151,99 +155,105 @@ int main(int argc, char **argv)
 		unsigned int num_elems = 1 << N;
 		gboolean sorted_ok;
 		
-		/* Create host buffers */
-		host_data = (gchar*) realloc(host_data, bytes * num_elems);
-		gef_if_error_create_goto(err, CLO_ERROR, host_data == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for host data.");
-		
-		/* Initialize host buffer. */
-		for (unsigned int i = 0;  i < num_elems; i++) {
-			/* Get a random 64-bit value by default... */
-			gulong value = (gulong) (g_rand_double(rng_host) * G_MAXULONG);
-			/* But just use the specified bits. */
-			memcpy(host_data + bytes*i, &value, bytes);
-		}
-		
-		/* Create device buffer. */
-		dev_data = clCreateBuffer(zone->context, CL_MEM_READ_WRITE, num_elems * bytes, NULL, &ocl_status);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Error creating device buffer: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
-		
-		/* Copy data to device. */
-		ocl_status = clEnqueueWriteBuffer(
-			zone->queues[0], 
-			dev_data, 
-			CL_FALSE, 
-			0, 
-			num_elems * bytes, 
-			host_data, 
-			0, 
-			NULL, 
-			NULL
-		);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Error writing data to device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
-		
-		/* Set kernel parameters. */
-		status = sort_info.kernelargs_set(&krnls, dev_data, lws, bytes, &err);
-		gef_if_error_goto(err, GEF_USE_GERROR, status, error_handler);
-		
-		/* Start timming. */
-		g_timer_start(timer);
-		
-		/* Perform sort. */
-		sort_info.sort(
-			&(zone->queues[0]), 
-			krnls, 
-			NULL, 
-			lws,
-			num_elems,
-			FALSE,
-			&err
-		);
-		gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
-
-		/* Wait for the kernel to terminate... */
-		ocl_status = clFinish(zone->queues[0]);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Waiting for kernel to terminate, OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
-		
-		/* Stop timming. */
-		g_timer_stop(timer);
-		
-		/* Copy data to host. */
-		ocl_status = clEnqueueReadBuffer(
-			zone->queues[0], 
-			dev_data,
-			CL_TRUE, 
-			0, 
-			num_elems * bytes, 
-			host_data, 
-			0, 
-			NULL, 
-			NULL
-		);
-		gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Error reading data from device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
-		
-		/* Release device buffer. */
-		clReleaseMemObject(dev_data);
-		
-		/* Check if sorting was well performed. */
-		sorted_ok = TRUE;
-		gulong value1 = 0, value2 = 0;
-		for (unsigned int i = 0;  i < num_elems - 1; i++) {
-			/* Compare value two by two... */
-			value1 = 0; value2 = 0;
-			/* Get values. */
-			memcpy(&value1, host_data + bytes*i, bytes);
-			memcpy(&value2, host_data + bytes*(i + 1), bytes);
-			/* Compare. */
-			if (value1 > value2) {
-				sorted_ok = FALSE;
-				break;
+		for (unsigned int r = 0; r < runs; r++) {
+			
+			/* Create host buffers */
+			host_data = (gchar*) realloc(host_data, bytes * num_elems);
+			gef_if_error_create_goto(err, CLO_ERROR, host_data == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for host data.");
+			
+			/* Initialize host buffer. */
+			for (unsigned int i = 0;  i < num_elems; i++) {
+				/* Get a random 64-bit value by default... */
+				gulong value = (gulong) (g_rand_double(rng_host) * G_MAXULONG);
+				/* But just use the specified bits. */
+				memcpy(host_data + bytes*i, &value, bytes);
 			}
 			
+			/* Create device buffer. */
+			dev_data = clCreateBuffer(zone->context, CL_MEM_READ_WRITE, num_elems * bytes, NULL, &ocl_status);
+			gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Error creating device buffer: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+			
+			/* Copy data to device. */
+			ocl_status = clEnqueueWriteBuffer(
+				zone->queues[0], 
+				dev_data, 
+				CL_FALSE, 
+				0, 
+				num_elems * bytes, 
+				host_data, 
+				0, 
+				NULL, 
+				NULL
+			);
+			gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Error writing data to device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+			
+			/* Set kernel parameters. */
+			status = sort_info.kernelargs_set(&krnls, dev_data, lws, bytes, &err);
+			gef_if_error_goto(err, GEF_USE_GERROR, status, error_handler);
+			
+			/* Start timming. */
+			if (r == 0)
+				g_timer_start(timer);
+			else
+				g_timer_continue(timer);
+			
+			/* Perform sort. */
+			sort_info.sort(
+				&(zone->queues[0]), 
+				krnls, 
+				NULL, 
+				lws,
+				num_elems,
+				FALSE,
+				&err
+			);
+			gef_if_error_goto(err, CLO_ERROR_LIBRARY, status, error_handler);
+
+			/* Wait for the kernel to terminate... */
+			ocl_status = clFinish(zone->queues[0]);
+			gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Waiting for kernel to terminate, OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+			
+			/* Stop timming. */
+			g_timer_stop(timer);
+			
+			/* Copy data to host. */
+			ocl_status = clEnqueueReadBuffer(
+				zone->queues[0], 
+				dev_data,
+				CL_TRUE, 
+				0, 
+				num_elems * bytes, 
+				host_data, 
+				0, 
+				NULL, 
+				NULL
+			);
+			gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Error reading data from device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+			
+			/* Release device buffer. */
+			clReleaseMemObject(dev_data);
+			
+			/* Check if sorting was well performed. */
+			sorted_ok = TRUE;
+			gulong value1 = 0, value2 = 0;
+			for (unsigned int i = 0;  i < num_elems - 1; i++) {
+				/* Compare value two by two... */
+				value1 = 0; value2 = 0;
+				/* Get values. */
+				memcpy(&value1, host_data + bytes*i, bytes);
+				memcpy(&value2, host_data + bytes*(i + 1), bytes);
+				/* Compare. */
+				if (value1 > value2) {
+					sorted_ok = FALSE;
+					break;
+				}
+				
+			}
+		
 		}
-		
+			
 		/* Print info. */
-		printf("       - 2^%d %d-bit elements: %fMkeys/s %s\n", N, bits, 1e-6 * num_elems / g_timer_elapsed(timer, NULL), sorted_ok ? "" : "(sort did not work)");
-		
+		printf("       - 2^%d: %f Mkeys/s %s\n", N, 1e-6 * num_elems * runs / g_timer_elapsed(timer, NULL), sorted_ok ? "" : "(sort did not work)");
 	}
 
 	/* If we get here, everything went Ok. */
