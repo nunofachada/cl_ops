@@ -43,8 +43,56 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lw
 	cl_event* evt;
 
 	/* Number of bitonic sort stages. */
-	cl_uint totalStages = (cl_uint) clo_tzc(clo_nlpo2(numel));
+	cl_uint totalStages;
+	
+	/* Maximum number of in-kernel steps for private memory kernels. */
+	unsigned int max_inkrnl_stps = 4;
+	
+	/* Maximum step from which finalizing (local and hybrid) kernels can start. */
+	unsigned int max_step = UINT_MAX;
+	
+	/* Tokenized options. */
+	gchar** opts = NULL;
+	
+	/* Strategy to follow, defaults to the one that requires fewer kernel launches. */
+	clo_sort_abitonic_strategy strategy = CLO_SORT_ABITONIC_STRATEGY_MINKRNL;
+	
+	/* Check options. */
+	if (options) {
+		opts = g_strsplit_set(options, "._", 3);
+		for (unsigned int i = 0; opts[i] != NULL; i++) {
+			char key;
+			unsigned int value;
+			int read = sscanf(opts[i], "%c%u", &key, &value);
+			gef_if_error_create_goto(*err, CLO_ERROR, 
+				read != 2, status = CLO_ERROR_ARGS, error_handler, 
+						"Invalid options '%s' for a-bitonic sort.", opts[i]);
+			switch(key) {
+				case 's': 
+					strategy = value;
+					gef_if_error_create_goto(*err, CLO_ERROR, 
+						strategy > CLO_SORT_ABITONIC_STRATEGY_PRIV_ONLY, 
+						status = CLO_ERROR_ARGS, error_handler, 
+						"Invalid strategy '%d' for a-bitonic sort.", value);
+					break;
+				case 'p':
+					max_inkrnl_stps = value;
+					break;
+				case 'm':
+					max_step = value;
+					break;
+				default:
+					gef_if_error_create_goto(*err, CLO_ERROR, TRUE, 
+						status = CLO_ERROR_ARGS, error_handler, 
+						"Invalid option '%c' for a-bitonic sort.", key);
+			}
+		}
+	}
 
+
+	/* Determine total number of bitonic stages. */
+	totalStages = (cl_uint) clo_tzc(clo_nlpo2(numel));
+	
 	/* ****** Local memory kernels and any kernel ******** */
 
 	/* Global worksize. */
@@ -444,6 +492,9 @@ error_handler:
 	g_assert(err == NULL || *err != NULL);
 	
 finish:
+	
+	/* Free parsed a-bitonic options. */
+	g_strfreev(opts);
 	
 	/* Return. */
 	return status;	

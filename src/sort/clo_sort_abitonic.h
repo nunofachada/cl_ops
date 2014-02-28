@@ -121,6 +121,13 @@
 	CLO_SORT_ABITONIC_KNAME_HYB_S4_4S16V, CLO_SORT_ABITONIC_KNAME_HYB_S8_4S16V, \
 	CLO_SORT_ABITONIC_KNAME_HYB_S12_4S16V}
 	
+typedef enum {
+	CLO_SORT_ABITONIC_STRATEGY_MINKRNL = 0, 
+	CLO_SORT_ABITONIC_STRATEGY_LOCAL = 1, 
+	CLO_SORT_ABITONIC_STRATEGY_HYB = 2,
+	CLO_SORT_ABITONIC_STRATEGY_PRIV_ONLY = 3
+} clo_sort_abitonic_strategy;
+	
 /** @brief Sort agents using the advanced bitonic sort. */
 int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lws_max, unsigned int numel, const char* options, cl_event **evts, gboolean profile, GError **err);
 
