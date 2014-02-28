@@ -39,7 +39,7 @@
 #define CLO_SORT_SBITONIC_KERNELNAMES {CLO_SORT_SBITONIC_KNAME_0}
 
 /** @brief Sort agents using the simple bitonic sort. */
-int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event **evts, size_t lws_max, unsigned int numel, gboolean profile, GError **err);
+int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lws_max, unsigned int numel, const char* options, cl_event **evts, gboolean profile, GError **err);
 
 /** @brief Returns the name of the kernel identified by the given
  * index. */

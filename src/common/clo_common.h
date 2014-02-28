@@ -57,7 +57,7 @@
  * */
 #define CLO_ALG_GET(info, info_v, arg_tag) \
 	for (int i___priv = 0; info_v[i___priv].tag; i___priv++) { \
-		if (g_strcmp0(info_v[i___priv].tag, arg_tag) == 0) { \
+		if (g_str_has_prefix(arg_tag, info_v[i___priv].tag)) { \
 			info = info_v[i___priv]; \
 			break; \
 		} \

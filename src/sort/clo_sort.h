@@ -49,7 +49,7 @@
  * @return @link clo_error_codes::CLO_SUCCESS @endlink if function 
  * terminates successfully, or an error code otherwise.
  */
-typedef int (*clo_sort_sort)(cl_command_queue *queues, cl_kernel *krnls, cl_event **evts, size_t lws_max, unsigned int numel, gboolean profile, GError **err);
+typedef int (*clo_sort_sort)(cl_command_queue *queues, cl_kernel *krnls, size_t lws_max, unsigned int numel, const char* options, cl_event **evts, gboolean profile, GError **err);
 
 /** 
  * @brief Returns the name of the kernel identified by the given

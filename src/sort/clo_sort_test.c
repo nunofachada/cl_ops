@@ -201,9 +201,10 @@ int main(int argc, char **argv)
 			sort_info.sort(
 				&(zone->queues[0]), 
 				krnls, 
-				NULL, 
 				lws,
 				num_elems,
+				g_strrstr(".", algorithm),
+				NULL, 
 				FALSE,
 				&err
 			);

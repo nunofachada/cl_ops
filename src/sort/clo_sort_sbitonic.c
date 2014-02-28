@@ -34,7 +34,7 @@ static const char* const kernel_names[] = CLO_SORT_SBITONIC_KERNELNAMES;
  * 
  * @see clo_sort_sort()
  */
-int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event **evts, size_t lws_max, unsigned int numel, gboolean profile, GError **err) {
+int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lws_max, unsigned int numel, const char* options, cl_event **evts, gboolean profile, GError **err) {
 	
 	/* Aux. var. */
 	int status, ocl_status;
@@ -43,18 +43,16 @@ int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, cl_event 
 	size_t gws = clo_nlpo2(numel) / 2;
 	
 	/* Local worksize. */
-	size_t lws = lws_max;
+	size_t lws = MIN(lws_max, gws);
 	
 	/* Number of bitonic sort stages. */
 	cl_uint totalStages = (cl_uint) clo_tzc(gws * 2);
 	
 	/* Event pointer, in case profiling is on. */
 	cl_event* evt;
-
-	/* Adjust LWS so that its equal or smaller than GWS, making sure that
-	 * GWS is still a multiple of it. */
-	while (gws % lws != 0)
-		lws = lws / 2;
+	
+	/* Avoid compiler warnings. */
+	options = options;
 		
 	/* Perform sorting. */
 	for (cl_uint currentStage = 1; currentStage <= totalStages; currentStage++) {
