@@ -534,7 +534,7 @@ void clo_sort_abitonic_strategy_get(clo_sort_abitonic_step *steps, size_t lws_ma
 				default:
 					g_assert_not_reached();
 			}
-			steps[step - 1].gws = clo_nlpo2(numel) / clo_nlpo2(step_margin + 1);
+			steps[step - 1].gws = clo_nlpo2(numel) / (1 << step_margin);
 			steps[step - 1].lws = MIN(lws_max, steps[step - 1].gws);
 			steps[step - 1].set_step = TRUE;
 			steps[step - 1].num_steps = step_margin;
