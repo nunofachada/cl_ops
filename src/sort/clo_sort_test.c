@@ -84,6 +84,9 @@ int main(int argc, char **argv)
 	gchar* compilerOpts = NULL;
 	cl_kernel *krnls = NULL;
 	size_t bytes;
+	
+	/* Algorithm options. */
+	gchar *options = NULL;
 
 	/* Host-based random number generator (mersenne twister) */
 	GRand* rng_host = NULL;	
@@ -113,6 +116,10 @@ int main(int argc, char **argv)
 	gef_if_error_create_goto(err, CLO_ERROR, !sort_info.tag, status = CLO_ERROR_ARGS, error_handler, "Unknown sorting algorithm '%s'.", algorithm);
 	gef_if_error_create_goto(err, CLO_ERROR, (clo_ones32(bits) != 1) || (bits > 64) || (bits < 8), status = CLO_ERROR_ARGS, error_handler, "Number of bits must be 8, 16, 32 or 64.");
 
+	/* Parse algorithm specific options, if any. */
+	options = g_strrstr(algorithm, ".");
+	if (options != NULL) options = options + 1; /* Remove prefix dot. */
+	
 	/* Determine size in bytes of each element to sort. */
 	bytes = bits / 8;
 	
@@ -203,7 +210,7 @@ int main(int argc, char **argv)
 				krnls, 
 				lws,
 				num_elems,
-				g_strrstr(".", algorithm),
+				options,
 				NULL, 
 				FALSE,
 				&err

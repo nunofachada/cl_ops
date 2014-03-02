@@ -96,8 +96,8 @@
 #define CLO_SORT_ABITONIC_KNAME_PRIV_MARK "priv"
 #define CLO_SORT_ABITONIC_KNAME_HYB_MARK "hyb"
 
-#define CLO_SORT_ABITONIC_KPARSE_HYB_V(kname) atoi(g_strrstr(kname, "s") + 1)
-
+#define CLO_SORT_ABITONIC_KPARSE_V(kname) atoi(g_strrstr(kname, "s") + 1)
+#define CLO_SORT_ABITONIC_KPARSE_S(kname) atoi(g_strrstr(kname, "_") + 1)
 
 /** @brief Number of command queues used by the advanced bitonic sort. */
 #define CLO_SORT_ABITONIC_NUMQUEUES 1
@@ -120,14 +120,16 @@
 	CLO_SORT_ABITONIC_KNAME_HYB_S9_3S8V, CLO_SORT_ABITONIC_KNAME_HYB_S12_3S8V, \
 	CLO_SORT_ABITONIC_KNAME_HYB_S4_4S16V, CLO_SORT_ABITONIC_KNAME_HYB_S8_4S16V, \
 	CLO_SORT_ABITONIC_KNAME_HYB_S12_4S16V}
-	
-typedef enum {
-	CLO_SORT_ABITONIC_STRATEGY_MINKRNL = 0, 
-	CLO_SORT_ABITONIC_STRATEGY_LOCAL = 1, 
-	CLO_SORT_ABITONIC_STRATEGY_HYB = 2,
-	CLO_SORT_ABITONIC_STRATEGY_PRIV_ONLY = 3
-} clo_sort_abitonic_strategy;
-	
+
+typedef struct {
+	const char* krnl_name;
+	unsigned int krnl_idx;
+	size_t gws;
+	size_t lws;
+	gboolean set_step;
+	unsigned int num_steps;
+} clo_sort_abitonic_step;
+
 /** @brief Sort agents using the advanced bitonic sort. */
 int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lws_max, unsigned int numel, const char* options, cl_event **evts, gboolean profile, GError **err);
 
@@ -155,6 +157,14 @@ void clo_sort_abitonic_events_free(cl_event ***evts);
 
 /** @brief Add bitonic sort events to the profiler object. */
 int clo_sort_abitonic_events_profile(cl_event **evts, ProfCLProfile *profile, GError **err);
+
+void clo_sort_abitonic_strategy_get(clo_sort_abitonic_step *steps,
+	size_t lws_max, unsigned int totalStages, unsigned int numel,
+	unsigned int min_inkrnl_stps, unsigned int max_inkrnl_stps, 
+	unsigned int max_inkrnl_sfs);
+	
+int clo_sort_abitonic_options_parse(const char* options, unsigned int *max_inkrnl_stps, 
+	unsigned int *min_inkrnl_stps, unsigned int *max_inkrnl_sfs, GError **err);	
 
 #endif
 
