@@ -78,7 +78,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lw
 	clo_sort_abitonic_strategy_get(steps, lws_max, totalStages, numel, 
 		min_inkrnl_stps, max_inkrnl_stps, max_inkrnl_sfs);
 
-	fprintf(stderr, "\n********* NUMEL = %d *******\n", numel);
+	g_debug("********* NUMEL = %d *******", numel);
 	
 	/* Perform sorting. */
 	for (cl_uint currentStage = 1; currentStage <= totalStages; currentStage++) {
@@ -87,7 +87,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lw
 			/* Get strategy for current step. */
 			clo_sort_abitonic_step stp_strat = steps[currentStep - 1];
 
-			fprintf(stderr, "Stage %d, Step %d | %s [GWS=%d, LWS=%d, NSTEPS=%d] \n", 
+			g_debug("Stage %d, Step %d | %s [GWS=%d, LWS=%d, NSTEPS=%d]", 
 				currentStage, currentStep, stp_strat.krnl_name, 
 				(int) stp_strat.gws, (int) stp_strat.lws, stp_strat.num_steps);
 			
