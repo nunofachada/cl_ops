@@ -87,7 +87,9 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lw
 			/* Get strategy for current step. */
 			clo_sort_abitonic_step stp_strat = steps[currentStep - 1];
 
-			fprintf(stderr, "Stage %d, Step %d | %s [GWS=%d, LWS=%d, NSTEPS=%d] \n", currentStage, currentStep, stp_strat.krnl_name, stp_strat.gws, stp_strat.lws, stp_strat.num_steps);
+			fprintf(stderr, "Stage %d, Step %d | %s [GWS=%d, LWS=%d, NSTEPS=%d] \n", 
+				currentStage, currentStep, stp_strat.krnl_name, 
+				(int) stp_strat.gws, (int) stp_strat.lws, stp_strat.num_steps);
 			
 			/* Set kernel arguments. */
 			/* Current stage. */
@@ -563,7 +565,7 @@ void clo_sort_abitonic_strategy_get(clo_sort_abitonic_step *steps, size_t lws_ma
 				 * memory steps AND IF required LWS within limits of 
 				 * maximum LWS, THEN chose this kernel. */
 				if ((priv_steps <= max_inkrnl_stps) && (priv_steps >= min_inkrnl_stps) &&
-					(lws_max >= (1 << (step - priv_steps)))) {
+					(((int) lws_max) >= (1 << (step - priv_steps)))) {
 					steps[step - 1].krnl_name = krnl_name;
 					steps[step - 1].krnl_idx = possible_krnls[i];
 					steps[step - 1].gws = clo_nlpo2(numel) / (1 << priv_steps);

@@ -36,7 +36,76 @@
 	ABIT_CMPXCH(data, index1, index2); \
 	/* Local memory barrier */ \
 	barrier(CLK_LOCAL_MEM_FENCE);
+
+#define ABIT_SORT_LOAD4(data_priv, data, baddr, inc) \
+	data_priv[0] = data[baddr]; \
+	data_priv[1] = data[baddr + inc]; \
+	data_priv[2] = data[baddr + 2 * inc]; \
+	data_priv[3] = data[baddr + 3 * inc];
+
+#define ABIT_SORT_STORE4(data_priv, data, baddr, inc) \
+	data[baddr] = data_priv[0]; \
+	data[baddr + inc] = data_priv[1]; \
+	data[baddr + 2 * inc] = data_priv[2]; \
+	data[baddr + 3 * inc] = data_priv[3];
+
+#define ABIT_SORT_LOAD8(data_priv, data, baddr, inc) \
+	data_priv[0] = data[baddr]; \
+	data_priv[1] = data[baddr + inc]; \
+	data_priv[2] = data[baddr + 2 * inc]; \
+	data_priv[3] = data[baddr + 3 * inc]; \
+	data_priv[4] = data[baddr + 4 * inc]; \
+	data_priv[5] = data[baddr + 5 * inc]; \
+	data_priv[6] = data[baddr + 6 * inc]; \
+	data_priv[7] = data[baddr + 7 * inc];
+
+#define ABIT_SORT_STORE8(data_priv, data, baddr, inc) \
+	data[baddr] = data_priv[0]; \
+	data[baddr + inc] = data_priv[1]; \
+	data[baddr + 2 * inc] = data_priv[2]; \
+	data[baddr + 3 * inc] = data_priv[3]; \
+	data[baddr + 4 * inc] = data_priv[4]; \
+	data[baddr + 5 * inc] = data_priv[5]; \
+	data[baddr + 6 * inc] = data_priv[6]; \
+	data[baddr + 7 * inc] = data_priv[7];
 	
+#define ABIT_SORT_LOAD16(data_priv, data, baddr, inc) \
+	data_priv[0] = data[baddr]; \
+	data_priv[1] = data[baddr + inc]; \
+	data_priv[2] = data[baddr + 2 * inc]; \
+	data_priv[3] = data[baddr + 3 * inc]; \
+	data_priv[4] = data[baddr + 4 * inc]; \
+	data_priv[5] = data[baddr + 5 * inc]; \
+	data_priv[6] = data[baddr + 6 * inc]; \
+	data_priv[7] = data[baddr + 7 * inc]; \
+	data_priv[8] = data[baddr + 8 * inc]; \
+	data_priv[9] = data[baddr + 9 * inc]; \
+	data_priv[10] = data[baddr + 10 * inc]; \
+	data_priv[11] = data[baddr + 11 * inc]; \
+	data_priv[12] = data[baddr + 12 * inc]; \
+	data_priv[13] = data[baddr + 13 * inc]; \
+	data_priv[14] = data[baddr + 14 * inc]; \
+	data_priv[15] = data[baddr + 15 * inc];
+
+
+#define ABIT_SORT_STORE16(data_priv, data, baddr, inc) \	
+	data[baddr] = data_priv[0]; \
+	data[baddr + inc] = data_priv[1]; \
+	data[baddr + 2 * inc] = data_priv[2]; \
+	data[baddr + 3 * inc] = data_priv[3]; \
+	data[baddr + 4 * inc] = data_priv[4]; \
+	data[baddr + 5 * inc] = data_priv[5]; \
+	data[baddr + 6 * inc] = data_priv[6]; \
+	data[baddr + 7 * inc] = data_priv[7]; \
+	data[baddr + 8 * inc] = data_priv[8]; \
+	data[baddr + 9 * inc] = data_priv[9]; \
+	data[baddr + 10 * inc] = data_priv[10]; \
+	data[baddr + 11 * inc] = data_priv[11]; \
+	data[baddr + 12 * inc] = data_priv[12]; \
+	data[baddr + 13 * inc] = data_priv[13]; \
+	data[baddr + 14 * inc] = data_priv[14]; \
+	data[baddr + 15 * inc] = data_priv[15];
+			
 #define ABIT_LOCAL_INIT() \
 	/* Global and local ids for this work-item. */ \
 	uint gid = get_global_id(0); \
@@ -535,22 +604,13 @@ __kernel void abit_priv_2s4v(
 	ABIT_PRIV_INIT(4);
 	
 	/* ***** Transfer 4 values to sort to private memory ***** */
-
-	data_priv[0] = data_global[gaddr];
-	data_priv[1] = data_global[gaddr + inc];
-	data_priv[2] = data_global[gaddr + 2 * inc];
-	data_priv[3] = data_global[gaddr + 3 * inc];
+	ABIT_SORT_LOAD4(data_priv, data_global, gaddr, inc);
 
 	/* ***** Sort the 4 values ***** */
-	
 	ABIT_SORT_2S4V(data_priv);
 
 	/* ***** Transfer the 4 values to global memory ***** */
-
-	data_global[gaddr] = data_priv[0];
-	data_global[gaddr + inc] = data_priv[1];
-	data_global[gaddr + 2 * inc] = data_priv[2];
-	data_global[gaddr + 3 * inc] = data_priv[3];
+	ABIT_SORT_STORE4(data_priv, data_global, gaddr, inc);
 
 }
 
@@ -566,30 +626,13 @@ __kernel void abit_priv_3s8v(
 	ABIT_PRIV_INIT(8);
 	
 	/* ***** Transfer 8 values to sort to private memory ***** */
-
-	data_priv[0] = data_global[gaddr];
-	data_priv[1] = data_global[gaddr + inc];
-	data_priv[2] = data_global[gaddr + 2 * inc];
-	data_priv[3] = data_global[gaddr + 3 * inc];
-	data_priv[4] = data_global[gaddr + 4 * inc];
-	data_priv[5] = data_global[gaddr + 5 * inc];
-	data_priv[6] = data_global[gaddr + 6 * inc];
-	data_priv[7] = data_global[gaddr + 7 * inc];
+	ABIT_SORT_LOAD8(data_priv, data_global, gaddr, inc);
 
 	/* ***** Sort the 8 values ***** */
-	
 	ABIT_SORT_3S8V(data_priv);
 
 	/* ***** Transfer the n values to global memory ***** */
-
-	data_global[gaddr] = data_priv[0];
-	data_global[gaddr + inc] = data_priv[1];
-	data_global[gaddr + 2 * inc] = data_priv[2];
-	data_global[gaddr + 3 * inc] = data_priv[3];
-	data_global[gaddr + 4 * inc] = data_priv[4];
-	data_global[gaddr + 5 * inc] = data_priv[5];
-	data_global[gaddr + 6 * inc] = data_priv[6];
-	data_global[gaddr + 7 * inc] = data_priv[7];
+	ABIT_SORT_STORE8(data_priv, data_global, gaddr, inc);
 
 }
 
@@ -604,46 +647,14 @@ __kernel void abit_priv_4s16v(
 	ABIT_PRIV_INIT(16);
 	
 	/* ***** Transfer 16 values to sort to private memory ***** */
-
-	data_priv[0] = data_global[gaddr];
-	data_priv[1] = data_global[gaddr + inc];
-	data_priv[2] = data_global[gaddr + 2 * inc];
-	data_priv[3] = data_global[gaddr + 3 * inc];
-	data_priv[4] = data_global[gaddr + 4 * inc];
-	data_priv[5] = data_global[gaddr + 5 * inc];
-	data_priv[6] = data_global[gaddr + 6 * inc];
-	data_priv[7] = data_global[gaddr + 7 * inc];
-	data_priv[8] = data_global[gaddr + 8 * inc];
-	data_priv[9] = data_global[gaddr + 9 * inc];
-	data_priv[10] = data_global[gaddr + 10 * inc];
-	data_priv[11] = data_global[gaddr + 11 * inc];
-	data_priv[12] = data_global[gaddr + 12 * inc];
-	data_priv[13] = data_global[gaddr + 13 * inc];
-	data_priv[14] = data_global[gaddr + 14 * inc];
-	data_priv[15] = data_global[gaddr + 15 * inc];
+	ABIT_SORT_LOAD16(data_priv, data_global, gaddr, inc);
 
 	/* ***** Sort the 16 values ***** */
-
 	ABIT_SORT_4S16V(data_priv);
 
 	/* ***** Transfer the n values to global memory ***** */
+	ABIT_SORT_STORE16(data_priv, data_global, gaddr, inc);
 
-	data_global[gaddr] = data_priv[0];
-	data_global[gaddr + inc] = data_priv[1];
-	data_global[gaddr + 2 * inc] = data_priv[2];
-	data_global[gaddr + 3 * inc] = data_priv[3];
-	data_global[gaddr + 4 * inc] = data_priv[4];
-	data_global[gaddr + 5 * inc] = data_priv[5];
-	data_global[gaddr + 6 * inc] = data_priv[6];
-	data_global[gaddr + 7 * inc] = data_priv[7];
-	data_global[gaddr + 8 * inc] = data_priv[8];
-	data_global[gaddr + 9 * inc] = data_priv[9];
-	data_global[gaddr + 10 * inc] = data_priv[10];
-	data_global[gaddr + 11 * inc] = data_priv[11];
-	data_global[gaddr + 12 * inc] = data_priv[12];
-	data_global[gaddr + 13 * inc] = data_priv[13];
-	data_global[gaddr + 14 * inc] = data_priv[14];
-	data_global[gaddr + 15 * inc] = data_priv[15];
 }
 
 #define ABIT_HYB_2S4V_INIT() \
@@ -692,17 +703,11 @@ __kernel void abit_priv_4s16v(
 	blockSize = 1 << step; \
 	laddr = ((lid * 4) / blockSize) * blockSize + (lid % (blockSize / 4)); \
 	inc = blockSize / 4; \
-	data_priv[0] = data_local[laddr]; \
-	data_priv[1] = data_local[laddr + inc]; \
-	data_priv[2] = data_local[laddr + 2 * inc]; \
-	data_priv[3] = data_local[laddr + 3 * inc]; \
+	ABIT_SORT_LOAD4(data_priv, data_local, laddr, inc); \
 	/* ***** Sort the 4 values ***** */ \
 	ABIT_SORT_2S4V(data_priv); \
 	/* ***** Transfer 4 sorted values from private to local memory ***** */ \
-	data_local[laddr] = data_priv[0]; \
-	data_local[laddr + inc] = data_priv[1]; \
-	data_local[laddr + 2 * inc] = data_priv[2]; \
-	data_local[laddr + 3 * inc] = data_priv[3]; \
+	ABIT_SORT_STORE4(data_priv, data_local, laddr, inc); \
 	/* Local memory barrier */ \
 	barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -847,25 +852,11 @@ __kernel void abit_hyb_s12_2s4v(
 	blockSize = 1 << step; \
 	laddr = ((lid * 8) / blockSize) * blockSize + (lid % (blockSize / 8)); \
 	inc = blockSize / 8; \
-	data_priv[0] = data_local[laddr]; \
-	data_priv[1] = data_local[laddr + inc]; \
-	data_priv[2] = data_local[laddr + 2 * inc]; \
-	data_priv[3] = data_local[laddr + 3 * inc]; \
-	data_priv[4] = data_local[laddr + 4 * inc]; \
-	data_priv[5] = data_local[laddr + 5 * inc]; \
-	data_priv[6] = data_local[laddr + 6 * inc]; \
-	data_priv[7] = data_local[laddr + 7 * inc]; \
+	ABIT_SORT_LOAD8(data_priv, data_local, laddr, inc); \
 	/* ***** Sort the 8 values ***** */ \
 	ABIT_SORT_3S8V(data_priv); \
 	/* ***** Transfer 4 sorted values from private to local memory ***** */ \
-	data_local[laddr] = data_priv[0]; \
-	data_local[laddr + inc] = data_priv[1]; \
-	data_local[laddr + 2 * inc] = data_priv[2]; \
-	data_local[laddr + 3 * inc] = data_priv[3]; \
-	data_local[laddr + 4 * inc] = data_priv[4]; \
-	data_local[laddr + 5 * inc] = data_priv[5]; \
-	data_local[laddr + 6 * inc] = data_priv[6]; \
-	data_local[laddr + 7 * inc] = data_priv[7]; \
+	ABIT_SORT_STORE8(data_priv, data_local, laddr, inc); \
 	/* Local memory barrier */ \
 	barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -1018,41 +1009,11 @@ __kernel void abit_hyb_s12_3s8v(
 	blockSize = 1 << step; \
 	laddr = ((lid * 16) / blockSize) * blockSize + (lid % (blockSize / 16)); \
 	inc = blockSize / 16; \
-	data_priv[0] = data_local[laddr]; \
-	data_priv[1] = data_local[laddr + inc]; \
-	data_priv[2] = data_local[laddr + 2 * inc]; \
-	data_priv[3] = data_local[laddr + 3 * inc]; \
-	data_priv[4] = data_local[laddr + 4 * inc]; \
-	data_priv[5] = data_local[laddr + 5 * inc]; \
-	data_priv[6] = data_local[laddr + 6 * inc]; \
-	data_priv[7] = data_local[laddr + 7 * inc]; \
-	data_priv[8] = data_local[laddr + 8 * inc]; \
-	data_priv[9] = data_local[laddr + 9 * inc]; \
-	data_priv[10] = data_local[laddr + 10 * inc]; \
-	data_priv[11] = data_local[laddr + 11 * inc]; \
-	data_priv[12] = data_local[laddr + 12 * inc]; \
-	data_priv[13] = data_local[laddr + 13 * inc]; \
-	data_priv[14] = data_local[laddr + 14 * inc]; \
-	data_priv[15] = data_local[laddr + 15 * inc]; \
+	ABIT_SORT_LOAD16(data_priv, data_local, laddr, inc); \
 	/* ***** Sort the 16 values ***** */ \
 	ABIT_SORT_4S16V(data_priv); \
 	/* ***** Transfer 16 sorted values from private to local memory ***** */ \
-	data_local[laddr] = data_priv[0]; \
-	data_local[laddr + inc] = data_priv[1]; \
-	data_local[laddr + 2 * inc] = data_priv[2]; \
-	data_local[laddr + 3 * inc] = data_priv[3]; \
-	data_local[laddr + 4 * inc] = data_priv[4]; \
-	data_local[laddr + 5 * inc] = data_priv[5]; \
-	data_local[laddr + 6 * inc] = data_priv[6]; \
-	data_local[laddr + 7 * inc] = data_priv[7]; \
-	data_local[laddr + 8 * inc] = data_priv[8]; \
-	data_local[laddr + 9 * inc] = data_priv[9]; \
-	data_local[laddr + 10 * inc] = data_priv[10]; \
-	data_local[laddr + 11 * inc] = data_priv[11]; \
-	data_local[laddr + 12 * inc] = data_priv[12]; \
-	data_local[laddr + 13 * inc] = data_priv[13]; \
-	data_local[laddr + 14 * inc] = data_priv[14]; \
-	data_local[laddr + 15 * inc] = data_priv[15]; \
+	ABIT_SORT_STORE16(data_priv, data_local, laddr, inc); \
 	/* Local memory barrier */ \
 	barrier(CLK_LOCAL_MEM_FENCE);
 
