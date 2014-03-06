@@ -49,7 +49,9 @@
  * @return @link clo_error_codes::CLO_SUCCESS @endlink if function 
  * terminates successfully, or an error code otherwise.
  */
-typedef int (*clo_sort_sort)(cl_command_queue *queues, cl_kernel *krnls, size_t lws_max, unsigned int numel, const char* options, cl_event **evts, gboolean profile, GError **err);
+typedef int (*clo_sort_sort)(cl_command_queue *queues, cl_kernel *krnls, 
+	size_t lws_max, unsigned int numel, const char* options, 
+	GArray *evts, gboolean profile, GError **err);
 
 /** 
  * @brief Returns the name of the kernel identified by the given
@@ -103,37 +105,6 @@ typedef int (*clo_sort_kernelargs_set)(cl_kernel **krnls, cl_mem data, size_t lw
 typedef void (*clo_sort_kernels_free)(cl_kernel **krnls);
 
 /**
- * @brief Create sort events.
- * 
- * @param evts Sort events.
- * @param iters Number of iterations.
- * @param err GError error reporting object.
- * @param max_agents Maximum number of agents for this simulation.
- * @param lws_max Maximum local worksize for sort kernels.
- * @return @link clo_error_codes::CLO_SUCCESS @endlink if function 
- * terminates successfully, or an error code otherwise.
- */
-typedef int (*clo_sort_events_create)(cl_event ***evts, unsigned int iters, size_t numel, size_t lws_max, GError **err);
-
-/**
- * @brief Free sort events.
- * 
- * @param evts Sort events.
- */
-typedef void (*clo_sort_events_free)(cl_event ***evts);
-
-/**
- * @brief Add sort events to profiler object.
- * 
- * @param evts Sort events.
- * @param profile Profiler object.
- * @param err GError error reporting object.
- * @return @link clo_error_codes::CLO_SUCCESS @endlink if function 
- * terminates successfully, or an error code otherwise.
- */
-typedef int (*clo_sort_events_profile)(cl_event **evts, ProfCLProfile *profile, GError **err);
-
-/**
  * @brief Object which represents an agent sorting algorithm.
  * */	
 typedef struct clo_sort_info {
@@ -147,9 +118,6 @@ typedef struct clo_sort_info {
 	clo_sort_localmem_usage localmem_usage;  /**< Function which returns the local memory usage for the specified kernel. */
 	clo_sort_kernelargs_set kernelargs_set;  /**< Set sort kernels arguments function. */
 	clo_sort_kernels_free kernels_free;      /**< Free sort kernels function. */
-	clo_sort_events_create events_create;    /**< Create sort events function.*/
-	clo_sort_events_free events_free;        /**< Free sort events function. */
-	clo_sort_events_profile events_profile;  /**< Add sort events to profiler object function. */
 } CloSortInfo;
 
 /** @brief Information about the available agent sorting algorithms. */

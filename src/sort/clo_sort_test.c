@@ -55,7 +55,7 @@ static GOptionEntry entries[] = {
 
 
 /** Information about the requested random number generation algorithm. */
-static CloSortInfo sort_info = {NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+static CloSortInfo sort_info = {NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL};
 
 /**
  * @brief Main program.

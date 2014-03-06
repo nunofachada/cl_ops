@@ -131,7 +131,9 @@ typedef struct {
 } clo_sort_abitonic_step;
 
 /** @brief Sort agents using the advanced bitonic sort. */
-int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lws_max, unsigned int numel, const char* options, cl_event **evts, gboolean profile, GError **err);
+int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, 
+	size_t lws_max, unsigned int numel, const char* options, 
+	GArray *evts, gboolean profile, GError **err);
 
 /** @brief Returns the name of the kernel identified by the given
  * index. */
@@ -148,15 +150,6 @@ int clo_sort_abitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws,
 
 /** @brief Free the advanced bitonic sort kernels. */
 void clo_sort_abitonic_kernels_free(cl_kernel **krnls);
-
-/** @brief Create events for the advanced bitonic sort kernels. */
-int clo_sort_abitonic_events_create(cl_event ***evts, unsigned int iters, size_t numel, size_t lws_max, GError **err);
-
-/** @brief Free the advanced bitonic sort events. */
-void clo_sort_abitonic_events_free(cl_event ***evts);
-
-/** @brief Add bitonic sort events to the profiler object. */
-int clo_sort_abitonic_events_profile(cl_event **evts, ProfCLProfile *profile, GError **err);
 
 void clo_sort_abitonic_strategy_get(clo_sort_abitonic_step *steps,
 	size_t lws_max, unsigned int totalStages, unsigned int numel,

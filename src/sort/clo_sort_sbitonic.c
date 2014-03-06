@@ -23,9 +23,6 @@
 
 #include "clo_sort_sbitonic.h"
 
-/* Event index for simple bitonic sort kernel. */
-static unsigned int sbitonic_evt_idx;
-
 /* Array of kernel names. */
 static const char* const kernel_names[] = CLO_SORT_SBITONIC_KERNELNAMES;
 
@@ -34,7 +31,9 @@ static const char* const kernel_names[] = CLO_SORT_SBITONIC_KERNELNAMES;
  * 
  * @see clo_sort_sort()
  */
-int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lws_max, unsigned int numel, const char* options, cl_event **evts, gboolean profile, GError **err) {
+int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, 
+	size_t lws_max, unsigned int numel, const char* options, 
+	GArray *evts, gboolean profile, GError **err) {
 	
 	/* Aux. var. */
 	int status, ocl_status;
@@ -48,25 +47,27 @@ int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lw
 	/* Number of bitonic sort stages. */
 	cl_uint totalStages = (cl_uint) clo_tzc(gws * 2);
 	
-	/* Event pointer, in case profiling is on. */
-	cl_event* evt;
+	/* OpenCL event, in case profiling is on. */
+	cl_event evt;
 	
 	/* Avoid compiler warnings. */
 	options = options;
-		
+	
 	/* Perform sorting. */
 	for (cl_uint currentStage = 1; currentStage <= totalStages; currentStage++) {
 		cl_uint step = currentStage;
 		for (cl_uint currentStep = step; currentStep > 0; currentStep--) {
 			
 			ocl_status = clSetKernelArg(krnls[0], 1, sizeof(cl_uint), (void *) &currentStage);
-			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 1 of " CLO_SORT_SBITONIC_KNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, 
+				status = CLO_ERROR_LIBRARY, error_handler, 
+				"arg 1 of " CLO_SORT_SBITONIC_KNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 			
 			ocl_status = clSetKernelArg(krnls[0], 2, sizeof(cl_uint), (void *) &currentStep);
-			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "arg 2 of " CLO_SORT_SBITONIC_KNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-			
-			evt = profile ? &evts[0][sbitonic_evt_idx] : NULL;
-			
+			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, 
+				status = CLO_ERROR_LIBRARY, error_handler, 
+				"arg 2 of " CLO_SORT_SBITONIC_KNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+
 			ocl_status = clEnqueueNDRangeKernel(
 				queues[0], 
 				krnls[0], 
@@ -76,10 +77,16 @@ int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lw
 				&lws, 
 				0, 
 				NULL,
-				evt
+				profile ? &evt : NULL
 			);
 			gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing " CLO_SORT_SBITONIC_KNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-			sbitonic_evt_idx++;
+
+			/* If profilling is on, add event to array. */
+			if (profile) {
+				ProfCLEvName ev_name = { .eventName = CLO_SORT_SBITONIC_KNAME_0, .event = evt};
+				g_array_append_val(evts, ev_name);
+			}
+
 		}
 	}
 	
@@ -207,99 +214,4 @@ void clo_sort_sbitonic_kernels_free(cl_kernel **krnls) {
 		if ((*krnls)[0]) clReleaseKernel((*krnls)[0]);
 		free(*krnls);
 	}
-}
-
-/** 
- * @brief Create events for the simple bitonic sort kernels. 
- * 
- * @see clo_sort_events_create()
- * */
-int clo_sort_sbitonic_events_create(cl_event ***evts, unsigned int iters, size_t numel, size_t lws_max, GError **err) {
-
-	/* Aux. var. */
-	int status;
-	
-	/* LWS not used for simple bitonic sort. */
-	lws_max = lws_max;
-	
-	/* Required number of events, worst case usage scenario. The instruction 
-	 * below sums all numbers from 0 to x, where is is the log2 (clo_tzc) of
-	 * the next larger power of 2 of the maximum possible agents. */
-	int num_evts = iters * clo_sum(clo_tzc(clo_nlpo2(numel))); 
-	
-	/* Set simple bitonic sort event index to zero (global var) */
-	sbitonic_evt_idx = 0;
-	
-	/* Only one type of event required for the simple bitonic sort kernel. */
-	*evts = (cl_event**) calloc(1, sizeof(cl_event*));
-	gef_if_error_create_goto(*err, CLO_ERROR, *evts == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for simple bitonic sort events (1).");	
-	
-	/* Allocate memory for all occurrences of the event (i.e. executions of the simple bitonic sort kernel). */
-	(*evts)[0] = (cl_event*) calloc(num_evts, sizeof(cl_event));
-	gef_if_error_create_goto(*err, CLO_ERROR, (*evts)[0] == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for simple bitonic sort events (2).");	
-	
-	/* If we got here, everything is OK. */
-	g_assert(err == NULL || *err == NULL);
-	status = CLO_SUCCESS;
-	goto finish;
-	
-error_handler:
-	/* If we got here there was an error, verify that it is so. */
-	g_assert(err == NULL || *err != NULL);
-
-finish:
-	
-	/* Return. */
-	return status;	
-}
-
-/** 
- * @brief Free the simple bitonic sort events. 
- * 
- * @see clo_sort_events_free()
- * */
-void clo_sort_sbitonic_events_free(cl_event ***evts) {
-	if (evts) {
-		if (*evts) {
-			if ((*evts)[0]) {
-				for (unsigned int i = 0; i < sbitonic_evt_idx; i++) {
-					if ((*evts)[0][i]) {
-						clReleaseEvent((*evts)[0][i]);
-					}
-				}
-				free((*evts)[0]);
-			}
-			free(*evts);
-		}
-	}
-}
-
-/** 
- * @brief Add bitonic sort events to the profiler object. 
- * 
- * @see clo_sort_events_profile()
- * */
-int clo_sort_sbitonic_events_profile(cl_event **evts, ProfCLProfile *profile, GError **err) {
-	
-	int status;
-
-	for (unsigned int i = 0; i < sbitonic_evt_idx; i++) {
-		profcl_profile_add(profile, CLO_SORT_SBITONIC_KNAME_0, evts[0][i], err);
-		gef_if_error_goto(*err, CLO_ERROR_LIBRARY, status, error_handler);
-	}
-
-	/* If we got here, everything is OK. */
-	g_assert(err == NULL || *err == NULL);
-	status = CLO_SUCCESS;
-	goto finish;
-	
-error_handler:
-	/* If we got here there was an error, verify that it is so. */
-	g_assert(err == NULL || *err != NULL);
-	
-finish:
-	
-	/* Return. */
-	return status;	
-	
 }

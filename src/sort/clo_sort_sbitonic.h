@@ -39,7 +39,9 @@
 #define CLO_SORT_SBITONIC_KERNELNAMES {CLO_SORT_SBITONIC_KNAME_0}
 
 /** @brief Sort agents using the simple bitonic sort. */
-int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lws_max, unsigned int numel, const char* options, cl_event **evts, gboolean profile, GError **err);
+int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, 
+	size_t lws_max, unsigned int numel, const char* options, 
+	GArray *evts, gboolean profile, GError **err);
 
 /** @brief Returns the name of the kernel identified by the given
  * index. */
@@ -56,14 +58,5 @@ int clo_sort_sbitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws,
 
 /** @brief Free the simple bitonic sort kernels. */
 void clo_sort_sbitonic_kernels_free(cl_kernel **krnls);
-
-/** @brief Create events for the simple bitonic sort kernels. */
-int clo_sort_sbitonic_events_create(cl_event ***evts, unsigned int iters, size_t numel, size_t lws_max, GError **err);
-
-/** @brief Free the simple bitonic sort events. */
-void clo_sort_sbitonic_events_free(cl_event ***evts);
-
-/** @brief Add bitonic sort events to the profiler object. */
-int clo_sort_sbitonic_events_profile(cl_event **evts, ProfCLProfile *profile, GError **err);
 
 #endif

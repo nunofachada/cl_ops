@@ -23,9 +23,6 @@
 
 #include "clo_sort_abitonic.h"
 
-/* Event index for advanced bitonic sort kernel. */
-static unsigned int abitonic_evt_idx[CLO_SORT_ABITONIC_NUMKERNELS];
-
 /* Array of kernel names. */
 static const char* const kernel_names[] = CLO_SORT_ABITONIC_KERNELNAMES;
 
@@ -34,13 +31,15 @@ static const char* const kernel_names[] = CLO_SORT_ABITONIC_KERNELNAMES;
  * 
  * @see clo_sort_sort()
  */
-int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lws_max, unsigned int numel, const char* options, cl_event **evts, gboolean profile, GError **err) {
+int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, 
+	size_t lws_max, unsigned int numel, const char* options, 
+	GArray *evts, gboolean profile, GError **err) {
 	
 	/* Aux. var. */
 	int status, ocl_status;
 		
-	/* Event pointer, in case profiling is on. */
-	cl_event* evt;
+	/* OpenCL event, in case profiling is on. */
+	cl_event evt;
 
 	/* Number of bitonic sort stages. */
 	unsigned int totalStages;
@@ -106,9 +105,6 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lw
 					stp_strat.krnl_name, ocl_status, clerror_get(ocl_status));
 			}
 			
-			/* Determine wether to profile the kernel or not. */
-			evt = profile ? &evts[stp_strat.krnl_idx][abitonic_evt_idx[stp_strat.krnl_idx]] : NULL;
-					
 			/* Execute kernel. */
 			ocl_status = clEnqueueNDRangeKernel(
 				queues[0], 
@@ -119,7 +115,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lw
 				&stp_strat.lws, 
 				0, 
 				NULL,
-				evt
+				profile ? &evt : NULL
 			);
 				
 			gef_if_error_create_goto(*err, CLO_ERROR, 
@@ -127,8 +123,11 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, size_t lw
 				"Executing %s kernel, OpenCL error %d: %s", 
 				stp_strat.krnl_name, ocl_status, clerror_get(ocl_status));
 					
-			/* Increment event index for this kernel. */
-			abitonic_evt_idx[stp_strat.krnl_idx]++;
+			/* If profilling is on, add event to array. */
+			if (profile) {
+				ProfCLEvName ev_name = { .eventName = stp_strat.krnl_name, .event = evt};
+				g_array_append_val(evts, ev_name);
+			}
 				
 			/* Update step. */
 			currentStep -= stp_strat.num_steps;
@@ -320,107 +319,6 @@ void clo_sort_abitonic_kernels_free(cl_kernel **krnls) {
 		}
 		free(*krnls);
 	}
-}
-
-/** 
- * @brief Create events for the advanced bitonic sort kernels. 
- * 
- * @see clo_sort_events_create()
- * */
-int clo_sort_abitonic_events_create(cl_event ***evts, unsigned int iters, size_t numel, size_t lws_max, GError **err) {
-
-	/* Aux. var. */
-	int status;
-	
-	/* LWS not used for advanced bitonic sort. */
-	lws_max = lws_max;
-	
-	/* Required number of events, worst case usage scenario. The instruction 
-	 * below sums all numbers from 0 to x, where is is the log2 (clo_tzc) of
-	 * the next larger power of 2 of the maximum possible agents. */
-	int num_evts = iters * clo_sum(clo_tzc(clo_nlpo2(numel)));  /// @todo Not so many events required
-	
-	/* Two types of event required for the advanced bitonic sort kernel. */
-	*evts = (cl_event**) calloc(CLO_SORT_ABITONIC_NUMKERNELS, sizeof(cl_event*));
-	gef_if_error_create_goto(*err, CLO_ERROR, *evts == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for advanced bitonic sort events.");	
-	
-	/* Allocate memory for all occurrences of the event (i.e. executions of the advanced bitonic sort kernel). */
-	for (unsigned int i = 0; i < CLO_SORT_ABITONIC_NUMKERNELS; i++) {
-		
-		(*evts)[i] = (cl_event*) calloc(num_evts, sizeof(cl_event)); /// @todo Adjust according to kernel, find some formula
-		gef_if_error_create_goto(*err, CLO_ERROR, (*evts)[i] == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for %s kernel events.", clo_sort_abitonic_kernelname_get(i));	
-		
-		/* Set current kernel event index to zero. */
-		abitonic_evt_idx[i] = 0;
-	}
-	
-	/* If we got here, everything is OK. */
-	g_assert(err == NULL || *err == NULL);
-	status = CLO_SUCCESS;
-	goto finish;
-	
-error_handler:
-	/* If we got here there was an error, verify that it is so. */
-	g_assert(err == NULL || *err != NULL);
-
-finish:
-	
-	/* Return. */
-	return status;	
-}
-
-/** 
- * @brief Free the advanced bitonic sort events. 
- * 
- * @see clo_sort_events_free()
- * */
-void clo_sort_abitonic_events_free(cl_event ***evts) {
-	if (*evts) {
-		for (int k = 0; k < CLO_SORT_ABITONIC_NUMKERNELS; k++) {
-			if ((*evts)[k]) {
-				for (unsigned int i = 0; i < abitonic_evt_idx[k]; i++) {
-					if (((*evts)[k])[i]) {
-						clReleaseEvent(((*evts)[k])[i]);
-					}
-				}
-				free((*evts)[k]);
-			}
-		}
-		free(*evts);
-	}
-}
-
-/** 
- * @brief Add bitonic sort events to the profiler object. 
- * 
- * @see clo_sort_events_profile()
- * */
-int clo_sort_abitonic_events_profile(cl_event **evts, ProfCLProfile *profile, GError **err) {
-	
-	int status;
-
-	for (unsigned int j = 0; j < CLO_SORT_ABITONIC_NUMKERNELS; j++) {
-		const char* kernel_name = clo_sort_abitonic_kernelname_get(j);
-		for (unsigned int i = 0; i < abitonic_evt_idx[j]; i++) {
-			profcl_profile_add(profile, kernel_name, evts[j][i], err);
-			gef_if_error_goto(*err, CLO_ERROR_LIBRARY, status, error_handler);
-		}
-	}
-	
-	/* If we got here, everything is OK. */
-	g_assert(err == NULL || *err == NULL);
-	status = CLO_SUCCESS;
-	goto finish;
-	
-error_handler:
-	/* If we got here there was an error, verify that it is so. */
-	g_assert(err == NULL || *err != NULL);
-	
-finish:
-	
-	/* Return. */
-	return status;	
-	
 }
 
 void clo_sort_abitonic_strategy_get(clo_sort_abitonic_step *steps, size_t lws_max,
