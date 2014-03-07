@@ -25,6 +25,7 @@
 #define CLO_SORT_LWS 256
 #define CLO_SORT_BITS 32
 #define CLO_SORT_RUNS 1
+#define CLO_SORT_MAXPO2 24
 
 /** A description of the program. */
 #define CLO_SORT_DESCRIPTION "Test sorting algorithms"
@@ -40,6 +41,7 @@ static int dev_idx = -1;
 static guint32 rng_seed = CLO_DEFAULT_SEED;
 static unsigned int bits = CLO_SORT_BITS;
 static gchar* path = NULL;
+static guint32 maxpo2 = CLO_SORT_MAXPO2;
 
 /* Valid command line options. */
 static GOptionEntry entries[] = {
@@ -49,7 +51,8 @@ static GOptionEntry entries[] = {
 	{"device",       'd', 0, G_OPTION_ARG_INT,      &dev_idx,       "Device index",                                                                 "INDEX"},
 	{"rng-seed",     's', 0, G_OPTION_ARG_INT,      &rng_seed,      "Seed for random number generator (default is " STR(CLO_DEFAULT_SEED) ")",      "SEED"},
 	{"bits",         'b', 0, G_OPTION_ARG_INT,      &bits,          "Number of bits in unsigned integers to sort (default " STR(CLO_SORT_BITS) ")", NULL},
-	{"path",         'p', 0, G_OPTION_ARG_STRING,   &path,          "Path of OpenCL source files (default is " CLO_DEFAULT_PATH,                    "PATH"},  
+	{"path",         'p', 0, G_OPTION_ARG_STRING,   &path,          "Path of OpenCL source files (default is " CLO_DEFAULT_PATH,                    "PATH"}, 
+	{"maxpo2",       'n', 0, G_OPTION_ARG_INT,      &maxpo2,        "Log2 of the maximum number of elements to sort, e.g. 2^N (default N=" STR(CLO_SORT_MAXPO2) ")", "N"},
 	{ NULL, 0, 0, 0, NULL, NULL, NULL }	
 };
 
@@ -157,7 +160,7 @@ int main(int argc, char **argv)
 	timer = g_timer_new();
 
 	/* Perform test. */
-	for (unsigned int N = 1; N < 25; N++) {
+	for (unsigned int N = 1; N <= maxpo2; N++) {
 		
 		unsigned int num_elems = 1 << N;
 		gboolean sorted_ok;
