@@ -42,6 +42,7 @@ static guint32 rng_seed = CLO_DEFAULT_SEED;
 static unsigned int bits = CLO_SORT_BITS;
 static gchar* path = NULL;
 static guint32 maxpo2 = CLO_SORT_MAXPO2;
+static gchar* out = NULL;
 
 /* Valid command line options. */
 static GOptionEntry entries[] = {
@@ -53,6 +54,7 @@ static GOptionEntry entries[] = {
 	{"bits",         'b', 0, G_OPTION_ARG_INT,      &bits,          "Number of bits in unsigned integers to sort (default " STR(CLO_SORT_BITS) ")", NULL},
 	{"path",         'p', 0, G_OPTION_ARG_STRING,   &path,          "Path of OpenCL source files (default is " CLO_DEFAULT_PATH,                    "PATH"}, 
 	{"maxpo2",       'n', 0, G_OPTION_ARG_INT,      &maxpo2,        "Log2 of the maximum number of elements to sort, e.g. 2^N (default N=" STR(CLO_SORT_MAXPO2) ")", "N"},
+	{"out",          'o', 0, G_OPTION_ARG_STRING,   &out,           "File where to output sorting benchmarks (default is no file output)",          "FILENAME"}, 
 	{ NULL, 0, 0, 0, NULL, NULL, NULL }	
 };
 
@@ -87,6 +89,8 @@ int main(int argc, char **argv)
 	gchar* compilerOpts = NULL;
 	cl_kernel *krnls = NULL;
 	size_t bytes;
+	gdouble total_time;
+	FILE *outfile = NULL;
 	
 	/* Algorithm options. */
 	gchar *options = NULL;
@@ -102,6 +106,9 @@ int main(int argc, char **argv)
 
 	/* How long will it take? */
 	GTimer* timer = NULL;
+	
+	/* Sorting benchmarks. */
+	gdouble** benchmarks = NULL;
 	
 	/* Parse command line options. */
 	context = g_option_context_new (" - " CLO_SORT_DESCRIPTION);
@@ -158,6 +165,11 @@ int main(int argc, char **argv)
 	
 	/* Create timer. */
 	timer = g_timer_new();
+	
+	/* Create benchmarks table. */
+	benchmarks = g_new(gdouble*, maxpo2);
+	for (unsigned int i = 0; i < maxpo2; i++)
+		benchmarks[i] = g_new0(gdouble, runs);
 
 	/* Perform test. */
 	for (unsigned int N = 1; N <= maxpo2; N++) {
@@ -202,10 +214,7 @@ int main(int argc, char **argv)
 			gef_if_error_goto(err, GEF_USE_GERROR, status, error_handler);
 			
 			/* Start timming. */
-			if (r == 0)
-				g_timer_start(timer);
-			else
-				g_timer_continue(timer);
+			g_timer_start(timer);
 			
 			/* Perform sort. */
 			sort_info.sort(
@@ -224,8 +233,9 @@ int main(int argc, char **argv)
 			ocl_status = clFinish(zone->queues[0]);
 			gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Waiting for kernel to terminate, OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 			
-			/* Stop timming. */
+			/* Stop timming and save time to benchmarks. */
 			g_timer_stop(timer);
+			benchmarks[N - 1][r] = g_timer_elapsed(timer, NULL);
 			
 			/* Copy data to host. */
 			ocl_status = clEnqueueReadBuffer(
@@ -264,7 +274,23 @@ int main(int argc, char **argv)
 		}
 			
 		/* Print info. */
-		printf("       - 2^%d: %f Mkeys/s %s\n", N, 1e-6 * num_elems * runs / g_timer_elapsed(timer, NULL), sorted_ok ? "" : "(sort did not work)");
+		total_time = 0;
+		for (unsigned int i = 0;  i < runs; i++)
+			total_time += benchmarks[N - 1][i];
+		printf("       - 2^%d: %f Mkeys/s %s\n", N, 1e-6 * num_elems * runs / total_time, sorted_ok ? "" : "(sort did not work)");
+	}
+	
+	/* Save benchmarks to file, if filename was given as cli option. */
+	if (out) {
+		outfile = fopen(out, "w");
+		for (unsigned int i = 0; i < maxpo2; i++) {
+			fprintf(outfile, "%d", i);
+			for (unsigned int j = 0; j < runs; j++) {
+				fprintf(outfile, "\t%lf", benchmarks[i][j]);
+			}
+			fprintf(outfile, "\n");
+		}
+		fclose(outfile);
 	}
 
 	/* If we get here, everything went Ok. */
@@ -287,6 +313,14 @@ cleanup:
 	if (path) g_free(path);
 	if (kernelFile) g_free(kernelFile);
 	if (compilerOpts) g_free(compilerOpts);
+	if (out) g_free(out);
+	
+	/* Free benchmarks. */
+	if (benchmarks) {
+		for (unsigned int i = 0; i < maxpo2; i++)
+			if (benchmarks[i]) g_free(benchmarks[i]);
+		g_free(benchmarks);
+	}
 	
 	/* Free timer. */
 	if (timer) g_timer_destroy(timer);

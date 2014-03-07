@@ -88,7 +88,7 @@
 	data_priv[15] = data[baddr + 15 * inc];
 
 
-#define ABIT_SORT_STORE16(data_priv, data, baddr, inc) \	
+#define ABIT_SORT_STORE16(data_priv, data, baddr, inc) \
 	data[baddr] = data_priv[0]; \
 	data[baddr + inc] = data_priv[1]; \
 	data[baddr + 2 * inc] = data_priv[2]; \
@@ -942,9 +942,9 @@ __kernel void abit_hyb_s12_3s8v(
 	uint local_index11 = local_size * 10 + lid; \
 	uint local_index12 = local_size * 11 + lid; \
 	uint local_index13 = local_size * 12 + lid; \
-	uint local_index14 = local_size * 13 + lid; \	
-	uint local_index15 = local_size * 14 + lid; \	
-	uint local_index16 = local_size * 15 + lid; \	
+	uint local_index14 = local_size * 13 + lid; \
+	uint local_index15 = local_size * 14 + lid; \
+	uint local_index16 = local_size * 15 + lid; \
 	uint global_index1 = local_size * group_id * 16 + lid; \
 	uint global_index2 = local_size * (group_id * 16 + 1) + lid; \
 	uint global_index3 = local_size * (group_id * 16 + 2) + lid; \
