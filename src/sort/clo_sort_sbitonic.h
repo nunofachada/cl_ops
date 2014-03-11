@@ -38,7 +38,7 @@
 /** @brief Array of strings containing names of the kernels used by the simple bitonic sort strategy. */
 #define CLO_SORT_SBITONIC_KERNELNAMES {CLO_SORT_SBITONIC_KNAME_0}
 
-/** @brief Sort agents using the simple bitonic sort. */
+/** @brief Sort elements using the simple bitonic sort. */
 int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, 
 	size_t lws_max, unsigned int numel, const char* options, 
 	GArray *evts, gboolean profile, GError **err);

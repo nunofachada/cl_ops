@@ -23,7 +23,7 @@
 /**
  * @brief A simple bitonic sort kernel.
  * 
- * @param data Array of agent data.
+ * @param data Array of elements to sort.
  * @param stage Current bitonic sort step.
  * @param step Current bitonic sort stage.
  */
