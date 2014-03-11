@@ -29,7 +29,7 @@
 /**
  * @brief Available sorting algorithms.
  * */
-#define CLO_SORT_ALGS "s-bitonic, a-bitonic"
+#define CLO_SORT_ALGS "s-bitonic, a-bitonic, g-select"
 
 /**
  * @brief Default sorting algorithm.
