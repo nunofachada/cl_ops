@@ -36,16 +36,16 @@ __kernel void gselectSort(
 	
 	size_t pos = 0;
 	uint count = 0;
-	CLO_SORT_ELEM_TYPE data2 = data_in[gid];
+	CLO_SORT_ELEM_TYPE data_gid = data_in[gid];
 	
 	if (gid < size) {
 		for (uint i = 0; i < size; i++) {
-			CLO_SORT_ELEM_TYPE data1 = data_in[i];
-			if (CLO_SORT_COMPARE(data1, data2) || ((data1 == data2) && (i < gid))) {
+			CLO_SORT_ELEM_TYPE data_i = data_in[i];
+			if (CLO_SORT_COMPARE(data_gid, data_i) || ((data_i == data_gid) && (i < gid))) {
 				pos++;
 			}
 		}
-		data_out[pos] = data2;
+		data_out[pos] = data_gid;
 	}
 }
 
