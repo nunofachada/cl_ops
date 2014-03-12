@@ -221,6 +221,7 @@ int main(int argc, char **argv)
 				&(zone->queues[0]), 
 				krnls, 
 				lws,
+				bytes,
 				num_elems,
 				options,
 				NULL, 

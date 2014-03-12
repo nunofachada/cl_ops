@@ -43,6 +43,7 @@
  * @param krnls Sort kernels.
  * @param evts Associated events.
  * @param lws_max Maximum local worksize.
+ * @param len Size in bytes of each element to sort.
  * @param numel Number of elements to sort.
  * @param profile TRUE if profiling is to be performed, FALSE otherwise.
  * @param err GError error reporting object.
@@ -50,7 +51,7 @@
  * terminates successfully, or an error code otherwise.
  */
 typedef int (*clo_sort_sort)(cl_command_queue *queues, cl_kernel *krnls, 
-	size_t lws_max, unsigned int numel, const char* options, 
+	size_t lws_max, size_t len, unsigned int numel, const char* options, 
 	GArray *evts, gboolean profile, GError **err);
 
 /** 

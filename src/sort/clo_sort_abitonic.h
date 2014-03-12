@@ -132,7 +132,7 @@ typedef struct {
 
 /** @brief Sort agents using the advanced bitonic sort. */
 int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, 
-	size_t lws_max, unsigned int numel, const char* options, 
+	size_t lws_max, size_t len, unsigned int numel, const char* options, 
 	GArray *evts, gboolean profile, GError **err);
 
 /** @brief Returns the name of the kernel identified by the given

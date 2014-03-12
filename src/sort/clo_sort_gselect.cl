@@ -29,7 +29,7 @@
 __kernel void gselectSort(
 			__global CLO_SORT_ELEM_TYPE *data_in,
 			__global CLO_SORT_ELEM_TYPE *data_out,
-			size_t len)
+			uint size)
 {
 	/* Global id for this work-item. */
 	size_t gid = get_global_id(0);
@@ -48,3 +48,15 @@ __kernel void gselectSort(
 		data_out[pos] = data2;
 	}
 }
+
+__kernel void gselectCopy(
+			__global CLO_SORT_ELEM_TYPE *data_in,
+			__global CLO_SORT_ELEM_TYPE *data_out,
+			uint size)
+{
+	size_t gid = get_global_id(0);
+	if (gid < size) {
+		data_in[gid] = data_out[gid];
+	}
+}
+	

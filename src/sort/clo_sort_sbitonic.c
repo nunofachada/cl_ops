@@ -32,7 +32,7 @@ static const char* const kernel_names[] = CLO_SORT_SBITONIC_KERNELNAMES;
  * @see clo_sort_sort()
  */
 int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls, 
-	size_t lws_max, unsigned int numel, const char* options, 
+	size_t lws_max, size_t len, unsigned int numel, const char* options, 
 	GArray *evts, gboolean profile, GError **err) {
 	
 	/* Aux. var. */
@@ -52,6 +52,7 @@ int clo_sort_sbitonic_sort(cl_command_queue *queues, cl_kernel *krnls,
 	
 	/* Avoid compiler warnings. */
 	options = options;
+	len = len;
 	
 	/* Perform sorting. */
 	for (cl_uint currentStage = 1; currentStage <= totalStages; currentStage++) {

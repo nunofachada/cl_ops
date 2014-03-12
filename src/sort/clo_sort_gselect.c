@@ -18,7 +18,7 @@
  
 /** 
  * @file
- * @brief Global memory select sort host implementation.
+ * @brief Global memory selection sort host implementation.
  */
 
 #include "clo_sort_gselect.h"
@@ -27,12 +27,12 @@
 static const char* const kernel_names[] = CLO_SORT_GSELECT_KERNELNAMES;
 
 /**
- * @brief Sort agents using the select sort.
+ * @brief Sort agents using the selection sort.
  * 
  * @see clo_sort_sort()
  */
 int clo_sort_gselect_sort(cl_command_queue *queues, cl_kernel *krnls, 
-	size_t lws_max, unsigned int numel, const char* options, 
+	size_t lws_max, size_t len, unsigned int numel, const char* options, 
 	GArray *evts, gboolean profile, GError **err) {
 	
 	/* Aux. var. */
@@ -45,18 +45,44 @@ int clo_sort_gselect_sort(cl_command_queue *queues, cl_kernel *krnls,
 	size_t gws = lws * ((numel + lws - 1) / lws);
 
 	/* OpenCL event, in case profiling is on. */
-	cl_event evt;
+	cl_event evt0, evt1;
+	
+	/* Output buffer. */
+	cl_mem outbuf = NULL;
+	
+	/* OpenCL context. */
+	cl_context context;
 	
 	/* Avoid compiler warnings. */
 	options = options;
+
+	/* Get the OpenCL context. */
+	ocl_status = clGetCommandQueueInfo(queues[0], CL_QUEUE_CONTEXT, 
+		sizeof(cl_context), &context, NULL);
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, 
+		status = CLO_ERROR_LIBRARY, error_handler, 
+		"Get context from command queue. OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+	
+	/* Allocate memory for the output buffer. */
+	outbuf = clCreateBuffer(context, CL_MEM_READ_WRITE, len * numel, NULL, &ocl_status);
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, 
+		status = CLO_ERROR_LIBRARY, error_handler, 
+		"Create buffer: gselection sort output buffer. OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+	
+	/* Set sort time kernel arguments. */
+	for (guint32 i = 0; i < CLO_SORT_GSELECT_NUMKERNELS; i++) {
+		ocl_status = clSetKernelArg(krnls[i], 1, sizeof(cl_mem), &outbuf);
+		gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, 
+			status = CLO_ERROR_LIBRARY, error_handler, 
+			"Set arg 1 of %s kernel. OpenCL error %d: %s", clo_sort_gselect_kernelname_get(i), ocl_status, clerror_get(ocl_status));
+
+		ocl_status = clSetKernelArg(krnls[i], 2, sizeof(cl_uint), (void *) &numel);
+		gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, 
+			status = CLO_ERROR_LIBRARY, error_handler, 
+			"arg 2 of %s kernel, OpenCL error %d: %s", clo_sort_gselect_kernelname_get(i), ocl_status, clerror_get(ocl_status));
+	}
 	
 	/* Perform sorting. */		
-	ocl_status = clSetKernelArg(krnls[0], 2, sizeof(cl_uint), (void *) &numel);
-	
-	gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, 
-		status = CLO_ERROR_LIBRARY, error_handler, 
-		"arg 2 of " CLO_SORT_GSELECT_KNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
-
 	ocl_status = clEnqueueNDRangeKernel(
 		queues[0], 
 		krnls[0], 
@@ -66,14 +92,34 @@ int clo_sort_gselect_sort(cl_command_queue *queues, cl_kernel *krnls,
 		&lws, 
 		0, 
 		NULL,
-		profile ? &evt : NULL
+		profile ? &evt0 : NULL
 	);
-	gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, status = CLO_ERROR_LIBRARY, error_handler, "Executing " CLO_SORT_GSELECT_KNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, 
+		status = CLO_ERROR_LIBRARY, error_handler, 
+		"Executing " CLO_SORT_GSELECT_KNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+
+	/* Perform copy. */
+	ocl_status = clEnqueueNDRangeKernel(
+		queues[0], 
+		krnls[1], 
+		1, 
+		NULL, 
+		&gws, 
+		&lws, 
+		0, 
+		NULL,
+		profile ? &evt1 : NULL
+	);
+	gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, 
+		status = CLO_ERROR_LIBRARY, error_handler, 
+		"Executing " CLO_SORT_GSELECT_KNAME_1 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
 	/* If profilling is on, add event to array. */
 	if (profile) {
-		ProfCLEvName ev_name = { .eventName = CLO_SORT_GSELECT_KNAME_0, .event = evt};
-		g_array_append_val(evts, ev_name);
+		ProfCLEvName ev_name0 = { .eventName = CLO_SORT_GSELECT_KNAME_0, .event = evt0};
+		ProfCLEvName ev_name1 = { .eventName = CLO_SORT_GSELECT_KNAME_1, .event = evt1};
+		g_array_append_val(evts, ev_name0);
+		g_array_append_val(evts, ev_name1);
 	}
 
 	/* If we got here, everything is OK. */
@@ -87,6 +133,9 @@ error_handler:
 	
 finish:
 	
+	/* Release helper memory buffer. */
+	if (outbuf) clReleaseMemObject(outbuf);
+
 	/* Return. */
 	return status;	
 }
@@ -103,7 +152,7 @@ const char* clo_sort_gselect_kernelname_get(unsigned int index) {
 }
 
 /** 
- * @brief Create kernels for the select sort. 
+ * @brief Create kernels for the selection sort. 
  * 
  * @see clo_sort_kernels_create()
  * */
@@ -112,14 +161,20 @@ int clo_sort_gselect_kernels_create(cl_kernel **krnls, cl_program program, GErro
 	/* Aux. var. */
 	int status, ocl_status;
 	
-	/* Allocate memory for single kernel required for select sort. */
-	*krnls = (cl_kernel*) calloc(1, sizeof(cl_kernel));
-	gef_if_error_create_goto(*err, CLO_ERROR, *krnls == NULL, status = CLO_ERROR_NOALLOC, error_handler, "Unable to allocate memory for " CLO_SORT_GSELECT_KNAME_0 " kernel.");	
-	
-	/* Create kernel. */
-	(*krnls)[0] = clCreateKernel(program, CLO_SORT_GSELECT_KNAME_0, &ocl_status);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Create " CLO_SORT_GSELECT_KNAME_0 " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	/* Allocate memory for single kernel required for selection sort. */
+	*krnls = (cl_kernel*) calloc(CLO_SORT_GSELECT_NUMKERNELS, sizeof(cl_kernel));
+	gef_if_error_create_goto(*err, CLO_ERROR, *krnls == NULL, 
+		status = CLO_ERROR_NOALLOC, error_handler, 
+		"Unable to allocate memory for global memory selection sort kernels.");	
 
+	/* Create kernels. */
+	for (guint32 i = 0; i < CLO_SORT_GSELECT_NUMKERNELS; i++) {
+		(*krnls)[i] = clCreateKernel(program, clo_sort_gselect_kernelname_get(i), &ocl_status);
+		gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, 
+			status = CLO_ERROR_LIBRARY, error_handler, 
+			"Create %s kernel. OpenCL error %d: %s", clo_sort_gselect_kernelname_get(i), ocl_status, clerror_get(ocl_status));
+	}
+	
 	/* If we got here, everything is OK. */
 	status = CLO_SUCCESS;
 	g_assert(err == NULL || *err == NULL);
@@ -137,9 +192,9 @@ finish:
 }
 
 /** 
- * @brief Get local memory usage for the select sort kernels.
+ * @brief Get local memory usage for the selection sort kernels.
  * 
- * Global memory select sort only uses one kernel which doesn't require
+ * Global memory selection sort only uses one kernel which doesn't require
  * local memory. 
  * 
  * @see clo_sort_localmem_usage()
@@ -152,12 +207,12 @@ size_t clo_sort_gselect_localmem_usage(const char* kernel_name, size_t lws_max, 
 	numel = numel;
 	len = len;
 	
-	/* Global memory select sort doesn't use local memory. */
+	/* Global memory selection sort doesn't use local memory. */
 	return 0;
 }
 
 /** 
- * @brief Set kernels arguments for the select sort. 
+ * @brief Set kernels arguments for the selection sort. 
  * 
  * @see clo_sort_kernelargs_set()
  * */
@@ -170,9 +225,13 @@ int clo_sort_gselect_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws, 
 	lws = lws;
 	len = len;
 	
-	/* Set kernel arguments. */
-	ocl_status = clSetKernelArg(*krnls[0], 0, sizeof(cl_mem), &data);
-	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SORT_GSELECT_KNAME_0 " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+	/* Set sort time kernel arguments. */
+	for (guint32 i = 0; i < CLO_SORT_GSELECT_NUMKERNELS; i++) {
+		ocl_status = clSetKernelArg((*krnls)[i], 0, sizeof(cl_mem), &data);
+		gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, 
+			status = CLO_ERROR_LIBRARY, error_handler, 
+			"Set arg 0 of %s kernel. OpenCL error %d: %s", clo_sort_gselect_kernelname_get(i), ocl_status, clerror_get(ocl_status));
+	}
 
 	/* If we got here, everything is OK. */
 	status = CLO_SUCCESS;
@@ -191,13 +250,15 @@ finish:
 }
 
 /** 
- * @brief Free the select sort kernels. 
+ * @brief Free the selection sort kernels. 
  * 
  * @see clo_sort_kernels_free()
  * */
 void clo_sort_gselect_kernels_free(cl_kernel **krnls) {
 	if (*krnls) {
-		if ((*krnls)[0]) clReleaseKernel((*krnls)[0]);
+		for (guint32 i = 0; i < CLO_SORT_GSELECT_NUMKERNELS; i++) {
+			if ((*krnls)[i]) clReleaseKernel((*krnls)[i]);
+		}
 		free(*krnls);
 	}
 }

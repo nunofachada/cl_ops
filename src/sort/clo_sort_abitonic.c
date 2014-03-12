@@ -32,7 +32,7 @@ static const char* const kernel_names[] = CLO_SORT_ABITONIC_KERNELNAMES;
  * @see clo_sort_sort()
  */
 int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, 
-	size_t lws_max, unsigned int numel, const char* options, 
+	size_t lws_max, size_t len, unsigned int numel, const char* options, 
 	GArray *evts, gboolean profile, GError **err) {
 	
 	/* Aux. var. */
@@ -55,6 +55,9 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls,
 	
 	/* Implementation of the strategy to follow on each step. */
 	clo_sort_abitonic_step *steps = NULL;
+	
+	/* Avoid compiler warnings. */
+	len = len;	
 
 	/* Parse options. */
 	status = clo_sort_abitonic_options_parse(options, &max_inkrnl_stps, &min_inkrnl_stps, &max_inkrnl_sfs, err);

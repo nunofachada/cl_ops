@@ -33,5 +33,7 @@
 	#include "clo_sort_sbitonic.cl"
 #elif defined CLO_SORT_ABITONIC
 	#include "clo_sort_abitonic.cl"
+#elif defined CLO_SORT_GSELECT
+	#include "clo_sort_gselect.cl"
 #endif
 
