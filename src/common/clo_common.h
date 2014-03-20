@@ -61,7 +61,26 @@
 			info = info_v[i___priv]; \
 			break; \
 		} \
-	} \
+	}
+
+/**
+ * @brief Performs integer division returning the ceiling instead of
+ * the floor if it is not an exact division.
+ * 
+ * @param a Integer numerator.
+ * @param b Integer denominator.
+ * */
+#define CLO_DIV_CEIL(a, b) ((a + b - 1) / b)
+
+/** 
+ * @brief Calculates an adjusted global worksize equal or larger than 
+ * the given global worksize and is a multiple of the given local 
+ * worksize. 
+ * 
+ * @param gws Minimum global worksize.
+ * @param lws Local worksize. 
+ * */
+#define CLO_GWS_MULT(gws, lws) (lws * CLO_DIV_CEIL(gws, lws))
 
 /**
  * @brief Program error codes.
