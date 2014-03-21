@@ -80,7 +80,7 @@
  * @param gws Minimum global worksize.
  * @param lws Local worksize. 
  * */
-#define CLO_GWS_MULT(gws, lws) (lws * PP_DIV_CEIL(gws, lws))
+#define CLO_GWS_MULT(gws, lws) (lws * CLO_DIV_CEIL(gws, lws))
 
 /**
  * @brief Program error codes.

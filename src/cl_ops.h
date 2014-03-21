@@ -28,5 +28,5 @@
 #include <cl_ops/clo_common.h>
 #include <cl_ops/clo_rng.h>
 #include <cl_ops/clo_sort.h>
-
+#include <cl_ops/clo_scan.h>
 #endif
