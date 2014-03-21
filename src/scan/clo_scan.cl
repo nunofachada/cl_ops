@@ -23,6 +23,10 @@
  * [GPU Gems 3 - Chapter 39. Parallel Prefix Sum (Scan) with CUDA](http://http.developer.nvidia.com/GPUGems3/gpugems3_ch39.html).
  */
 
+#ifndef CLO_SCAN_ELEM_TYPE
+	#define CLO_SCAN_ELEM_TYPE uint
+#endif
+
 /**
  * @brief Performs a workgroup-wise scan.
  * 
@@ -48,7 +52,7 @@ __kernel void workgroupScan(
 	/* Upsweep: build sum in place up the tree. */
 	for (uint d = n >> 1; d > 0; d >>= 1) {
 		barrier(CLK_LOCAL_MEM_FENCE);
-		if (thid < d) {
+		if (gid < d) {
 			uint ai = offset * (2 * gid + 1) - 1;  
 			uint bi = offset * (2 * gid + 2) - 1;  
 			tmp[bi] += tmp[ai];

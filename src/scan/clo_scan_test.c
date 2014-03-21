@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 	/* Build compiler options. */
 	compilerOpts = g_strconcat(
 		"-I ", path,
-		" -D ", "CLO_CAN_ELEM_TYPE=", bits == 8 ? "uchar" : (bits == 16 ? "ushort" : (bits == 32 ? "uint" : "ulong")),
+		" -D ", "CLO_SCAN_ELEM_TYPE=", bits == 8 ? "uchar" : (bits == 16 ? "ushort" : (bits == 32 ? "uint" : "ulong")),
 		NULL);
 	
 	/* Build program. */
