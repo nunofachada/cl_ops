@@ -98,6 +98,7 @@ int main(int argc, char **argv)
 	gchar* compilerOpts = NULL;
 	cl_kernel *krnls = NULL;
 	size_t bytes;
+	size_t max_buffer_size;
 	gdouble total_time;
 	FILE *outfile = NULL;
 	
@@ -177,14 +178,34 @@ int main(int argc, char **argv)
 	for (unsigned int i = 0; i < num_doub; i++)
 		benchmarks[i] = g_new0(gdouble, runs);
 
+	/* Determine maximum buffer size. */
+	max_buffer_size = bytes * init_elems * (1 << num_doub);
+	
 	/* Create host buffers */
-	host_data = g_new0(gchar, bytes * init_elems * num_doub);
-	host_data_scanned = g_new0(gchar, bytes * init_elems * num_doub);
+	host_data = g_new0(gchar, max_buffer_size);
+	host_data_scanned = g_new0(gchar, max_buffer_size);
+
+	/* Create device buffers. */
+	dev_data = clCreateBuffer(zone->context, CL_MEM_READ_ONLY, max_buffer_size, NULL, &ocl_status);
+	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, 
+		status = CLO_ERROR_LIBRARY, error_handler, 
+		"Error creating device buffer for original data: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+
+	dev_data_scanned = clCreateBuffer(zone->context, CL_MEM_READ_WRITE, max_buffer_size, NULL, &ocl_status);
+	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, 
+		status = CLO_ERROR_LIBRARY, error_handler, 
+		"Error creating device buffer for scanned data: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+
+	/* Set kernel parameters. */
+	status = clo_scan_kernelargs_set(&krnls, dev_data, dev_data_scanned, lws, bytes, &err);
+	gef_if_error_goto(err, GEF_USE_GERROR, status, error_handler);
+	
+	/* Start with the inital number of elements. */
+	unsigned int num_elems = init_elems;
 
 	/* Perform test. */
 	for (unsigned int N = 1; N <= num_doub; N++) {
 		
-		unsigned int num_elems = init_elems;
 		gboolean scan_ok;
 		
 		for (unsigned int r = 0; r < runs; r++) {
@@ -197,22 +218,11 @@ int main(int argc, char **argv)
 				memcpy(host_data + bytes*i, &value, bytes);
 			}
 			
-			/* Create device buffera. */
-			dev_data = clCreateBuffer(zone->context, CL_MEM_READ_ONLY, num_elems * bytes, NULL, &ocl_status);
-			gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, 
-				status = CLO_ERROR_LIBRARY, error_handler, 
-				"Error creating device buffer for original data: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
-			
-			dev_data_scanned = clCreateBuffer(zone->context, CL_MEM_READ_WRITE, num_elems * bytes, NULL, &ocl_status);
-			gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, 
-				status = CLO_ERROR_LIBRARY, error_handler, 
-				"Error creating device buffer for scanned data: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
-
 			/* Copy data to device. */
 			ocl_status = clEnqueueWriteBuffer(
 				zone->queues[0], 
 				dev_data, 
-				CL_FALSE, 
+				CL_TRUE, 
 				0, 
 				num_elems * bytes, 
 				host_data, 
@@ -223,10 +233,6 @@ int main(int argc, char **argv)
 			gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, 
 				status = CLO_ERROR_LIBRARY, error_handler, 
 				"Error writing data to device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
-			
-			/* Set kernel parameters. */
-			status = clo_scan_kernelargs_set(&krnls, dev_data, dev_data_scanned, lws, bytes, &err);
-			gef_if_error_goto(err, GEF_USE_GERROR, status, error_handler);
 			
 			/* Start timming. */
 			g_timer_start(timer);
@@ -271,10 +277,6 @@ int main(int argc, char **argv)
 				status = CLO_ERROR_LIBRARY, error_handler, 
 				"Error reading data from device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 			
-			/* Release device buffer. */
-			clReleaseMemObject(dev_data);
-			clReleaseMemObject(dev_data_scanned);
-			
 			/* Check if scan was well performed. */
 			scan_ok = TRUE;
 			gulong value_dev = 0, value_host = 0;
@@ -291,15 +293,17 @@ int main(int argc, char **argv)
 				
 			}
 			
-			num_elems *= 2;
-		
+	
 		}
 			
 		/* Print info. */
 		total_time = 0;
 		for (unsigned int i = 0;  i < runs; i++)
 			total_time += benchmarks[N - 1][i];
-		printf("       - 2^%d: %f MValues/s %s\n", N, 1e-6 * num_elems * runs / total_time, scan_ok ? "" : "(scan did not work)");
+		printf("       - %10d : %f MValues/s %s\n", num_elems, 1e-6 * num_elems * runs / total_time, scan_ok ? "" : "(scan did not work)");
+
+		num_elems *= 2;
+
 	}
 	
 	/* Save benchmarks to file, if filename was given as cli option. */
@@ -329,6 +333,14 @@ error_handler:
 
 cleanup:
 
+	/* Release device buffers. */
+	if (dev_data) clReleaseMemObject(dev_data);
+	if (dev_data_scanned) clReleaseMemObject(dev_data_scanned);
+
+	/* Free host resources */
+	g_free(host_data);
+	g_free(host_data_scanned);
+
 	/* Free command line options. */
 	if (context) g_option_context_free(context);
 	if (path) g_free(path);
@@ -355,9 +367,6 @@ cleanup:
 	/* Release OpenCL zone (program, command queue, context) */
 	if (zone) clu_zone_free(zone);
 
-	/* Free host resources */
-	g_free(host_data);
-	g_free(host_data_scanned);
 	
 	/* Bye bye. */
 	return status;
