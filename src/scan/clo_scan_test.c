@@ -233,7 +233,7 @@ int main(int argc, char **argv)
 			
 			/* Perform scan. */
 			clo_scan(
-				&(zone->queues[0]), 
+				zone->queues[0], 
 				krnls, 
 				lws,
 				bytes,
@@ -331,7 +331,6 @@ cleanup:
 
 	/* Free command line options. */
 	if (context) g_option_context_free(context);
-	if (algorithm) g_free(algorithm);
 	if (path) g_free(path);
 	if (kernelFile) g_free(kernelFile);
 	if (compilerOpts) g_free(compilerOpts);
@@ -351,7 +350,7 @@ cleanup:
 	if (rng_host) g_rand_free(rng_host);
 	
 	/* Release OpenCL kernels */
-	if (krnls) sort_info.kernels_free(&krnls);
+	if (krnls) clo_scan_kernels_free(&krnls);
 	
 	/* Release OpenCL zone (program, command queue, context) */
 	if (zone) clu_zone_free(zone);
@@ -362,7 +361,6 @@ cleanup:
 	
 	/* Bye bye. */
 	return status;
-	
-	return 0;
+
 }
 
