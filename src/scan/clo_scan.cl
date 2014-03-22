@@ -32,54 +32,60 @@
  * 
  * @param data_in Vector to scan.
  * @param data_out Location where to place scan results.
- * @param tmp Auxiliary local memory.
+ * @param aux Auxiliary local memory.
  * @param n Size of vector to scan.
  */
 __kernel void workgroupScan(
 			__global CLO_SCAN_ELEM_TYPE *data_in,
 			__global CLO_SCAN_ELEM_TYPE *data_out,
-			__local CLO_SCAN_ELEM_TYPE *tmp,
-			uint n) 
+			__global CLO_SCAN_ELEM_TYPE *data_wgsum,
+			__local CLO_SCAN_ELEM_TYPE *aux) 
 {
 
 	uint gid = get_global_id(0);
+	uint lid = get_local_id(0);
+	uint lws = get_local_size(0);
 	uint offset = 1;
 
 	/* Load input data into local memory. */
-	tmp[2 * gid] = data_in[2 * gid];
-	tmp[2 * gid + 1] = data_in[2 * gid + 1];
+	aux[2 * lid] = data_in[2 * gid];
+	aux[2 * lid + 1] = data_in[2 * gid + 1];
 	
 	/* Upsweep: build sum in place up the tree. */
-	for (uint d = n >> 1; d > 0; d >>= 1) {
+	for (uint d = lws >> 1; d > 0; d >>= 1) {
 		barrier(CLK_LOCAL_MEM_FENCE);
-		if (gid < d) {
-			uint ai = offset * (2 * gid + 1) - 1;  
-			uint bi = offset * (2 * gid + 2) - 1;  
-			tmp[bi] += tmp[ai];
+		if (lid < d) {
+			uint ai = offset * (2 * lid + 1) - 1;  
+			uint bi = offset * (2 * lid + 2) - 1;  
+			aux[bi] += aux[ai];
 		}  
 		offset *= 2;  
 	}
 
-	/* Clear the last element. */
-	if (gid == 0) { 
-		tmp[n - 1] = 0; 
+	barrier(CLK_LOCAL_MEM_FENCE);
+	if (lid == 0) { 
+		/* Store the last element in workgroup sums. */
+		data_wgsum[get_group_id(0)] = aux[lws - 1];
+		/* Clear the last element. */
+		aux[lws - 1] = 0; 
 	}
-                 
+	barrier(CLK_LOCAL_MEM_FENCE);              
+	
  	/* Downsweep: traverse down tree and build scan. */
-	for (uint d = 1; d < n; d *= 2) {
+	for (uint d = 1; d < lws; d *= 2) {
 		offset >>= 1;
 		barrier(CLK_LOCAL_MEM_FENCE);
-		if (gid < d) {
-			uint ai = offset * (2 * gid + 1) - 1;
-			uint bi = offset * (2 * gid + 2) - 1;
-			CLO_SCAN_ELEM_TYPE t = tmp[ai];
-			tmp[ai] = tmp[bi];
-			tmp[bi] += t;
+		if (lid < d) {
+			uint ai = offset * (2 * lid + 1) - 1;
+			uint bi = offset * (2 * lid + 2) - 1;
+			CLO_SCAN_ELEM_TYPE t = aux[ai];
+			aux[ai] = aux[bi];
+			aux[bi] += t;
 		}  
 	}
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	/* Save scan result to global memory. */
-	data_out[2 * gid] = tmp[2 * gid];
-	data_out[2 * gid + 1] = tmp[2 * gid + 1];  
-}  
+	data_out[2 * gid] = aux[2 * lid];
+	data_out[2 * gid + 1] = aux[2 * lid + 1];  
+} 

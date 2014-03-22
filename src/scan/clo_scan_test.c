@@ -95,6 +95,7 @@ int main(int argc, char **argv)
 	gchar* host_data_scanned = NULL;
 	cl_mem dev_data = NULL;
 	cl_mem dev_data_scanned = NULL;
+	cl_mem dev_wgsums = NULL;
 	gchar* compilerOpts = NULL;
 	cl_kernel *krnls = NULL;
 	size_t bytes;
@@ -196,8 +197,13 @@ int main(int argc, char **argv)
 		status = CLO_ERROR_LIBRARY, error_handler, 
 		"Error creating device buffer for scanned data: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 
+	dev_wgsums = clCreateBuffer(zone->context, CL_MEM_READ_WRITE, max_buffer_size / lws, NULL, &ocl_status);
+	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, 
+		status = CLO_ERROR_LIBRARY, error_handler, 
+		"Error creating device buffer for scanned data: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+		
 	/* Set kernel parameters. */
-	status = clo_scan_kernelargs_set(&krnls, dev_data, dev_data_scanned, lws, bytes, &err);
+	status = clo_scan_kernelargs_set(&krnls, dev_data, dev_data_scanned, dev_wgsums, lws, bytes, &err);
 	gef_if_error_goto(err, GEF_USE_GERROR, status, error_handler);
 	
 	/* Start with the inital number of elements. */
@@ -336,7 +342,8 @@ cleanup:
 	/* Release device buffers. */
 	if (dev_data) clReleaseMemObject(dev_data);
 	if (dev_data_scanned) clReleaseMemObject(dev_data_scanned);
-
+	if (dev_wgsums) clReleaseMemObject(dev_wgsums);
+	
 	/* Free host resources */
 	g_free(host_data);
 	g_free(host_data_scanned);

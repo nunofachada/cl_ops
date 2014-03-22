@@ -48,12 +48,6 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 	//~ /* Avoid compiler warnings. */
 	//~ options = options;
 	//~ len = len;
-	
-	/* Perform scan. */
-	ocl_status = clSetKernelArg(krnls[CLO_SCAN_KIDX_WGSCAN], 3, sizeof(cl_uint), (void *) &numel);
-	gef_if_error_create_goto(*err, CLO_ERROR, ocl_status != CL_SUCCESS, 
-		status = CLO_ERROR_LIBRARY, error_handler, 
-		"arg 3 of " CLO_SCAN_KNAME_WGSCAN " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 			
 	ocl_status = clEnqueueNDRangeKernel(
 		queue, 
@@ -186,7 +180,7 @@ size_t clo_scan_localmem_usage(const char* kernel_name, size_t lws_max, size_t l
 /** 
  * @brief Set kernels arguments for the scan implemenation. 
  * */
-int clo_scan_kernelargs_set(cl_kernel **krnls, cl_mem data2scan, cl_mem scanned_data, size_t lws, size_t len, GError **err) {
+int clo_scan_kernelargs_set(cl_kernel **krnls, cl_mem data2scan, cl_mem scanned_data, cl_mem wgsums, size_t lws, size_t len, GError **err) {
 	
 	/* Aux. var. */
 	int status, ocl_status;
@@ -198,8 +192,11 @@ int clo_scan_kernelargs_set(cl_kernel **krnls, cl_mem data2scan, cl_mem scanned_
 	ocl_status = clSetKernelArg(*krnls[CLO_SCAN_KIDX_WGSCAN], 1, sizeof(cl_mem), &scanned_data);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 1 of " CLO_SCAN_KNAME_WGSCAN " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
-	ocl_status = clSetKernelArg((*krnls)[CLO_SCAN_KIDX_WGSCAN], 2, len * lws * 2, NULL);
+	ocl_status = clSetKernelArg(*krnls[CLO_SCAN_KIDX_WGSCAN], 2, sizeof(cl_mem), &wgsums);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 2 of " CLO_SCAN_KNAME_WGSCAN " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+
+	ocl_status = clSetKernelArg((*krnls)[CLO_SCAN_KIDX_WGSCAN], 3, len * lws * 2, NULL);
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 3 of " CLO_SCAN_KNAME_WGSCAN " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
 	/* If we got here, everything is OK. */
 	status = CLO_SUCCESS;
