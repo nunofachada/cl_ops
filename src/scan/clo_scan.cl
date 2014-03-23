@@ -32,8 +32,8 @@
  * 
  * @param data_in Vector to scan.
  * @param data_out Location where to place scan results.
+ * @param data_wgsum Workgroup-wise sums.
  * @param aux Auxiliary local memory.
- * @param n Size of vector to scan.
  */
 __kernel void workgroupScan(
 			__global CLO_SCAN_ELEM_TYPE *data_in,
@@ -89,3 +89,81 @@ __kernel void workgroupScan(
 	data_out[2 * gid] = aux[2 * lid];
 	data_out[2 * gid + 1] = aux[2 * lid + 1];  
 } 
+
+/**
+ * @brief Performs a scan on the workgroup sums vector.
+ * 
+ * @param data_wgsum Workgroup-wise sums.
+ * @param aux Auxiliary local memory.
+ */
+__kernel void workgroupSumsScan(
+			__global CLO_SCAN_ELEM_TYPE *data_wgsum,
+			__local CLO_SCAN_ELEM_TYPE *aux) 
+{
+	
+	uint lid = get_local_id(0);
+	uint lws = get_local_size(0);
+	uint offset = 1;
+
+    /* Load input data into local memory. */
+	aux[2 * lid] = data_wgsum[2 * lid];
+	aux[2 * lid + 1] = data_wgsum[2 * lid + 1];	
+
+    /* Upsweep: build sum in place up the tree. */
+	for (uint d = lws >> 1; d > 0; d >>= 1) {
+		barrier(CLK_LOCAL_MEM_FENCE);
+		if (lid < d) {
+			uint ai = offset * (2 * lid + 1) - 1;  
+			uint bi = offset * (2 * lid + 2) - 1;  
+			aux[bi] += aux[ai];
+		}  
+		offset *= 2;  
+	}
+
+ 	barrier(CLK_LOCAL_MEM_FENCE);
+	if (lid == 0) { 
+		/* Clear the last element. */
+		aux[lws - 1] = 0; 
+	}
+
+ 	/* Downsweep: traverse down tree and build scan. */
+	for (uint d = 1; d < lws; d *= 2) {
+		offset >>= 1;
+		barrier(CLK_LOCAL_MEM_FENCE);
+		if (lid < d) {
+			uint ai = offset * (2 * lid + 1) - 1;
+			uint bi = offset * (2 * lid + 2) - 1;
+			CLO_SCAN_ELEM_TYPE t = aux[ai];
+			aux[ai] = aux[bi];
+			aux[bi] += t;
+		}  
+	}
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	/* Save scan result to global memory. */
+	data_wgsum[2 * lid] = aux[2 * lid];
+	data_wgsum[2 * lid + 1] = aux[2 * lid + 1]; 
+}
+
+/**
+ * @brief Adds the workgroup-wise sums to the respective workgroup
+ * elements.
+ * 
+ * @param data_wgsum Workgroup-wise sums.
+ * @param data_out Location where to place scan results.
+ */
+__kernel void addWorkgroupSums(
+	__global CLO_SCAN_ELEM_TYPE *data_wgsum, 
+	__global CLO_SCAN_ELEM_TYPE *data_out)
+{	
+	__local CLO_SCAN_ELEM_TYPE wgsum[1];
+
+	/* The first workitem loads the respective workgroup sum. */
+	if(get_local_id(0) == 0) {
+		wgsum[0] = data_wgsum[get_group_id(0)];
+	}
+	barrier(CLK_LOCAL_MEM_FENCE);
+
+	/* Then each workitem adds the sum to their respective array element. */
+	data_out[get_global_id(0)] += wgsum[0];
+}
