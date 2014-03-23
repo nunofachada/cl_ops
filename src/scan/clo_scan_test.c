@@ -215,13 +215,17 @@ int main(int argc, char **argv)
 		gboolean scan_ok;
 		
 		for (unsigned int r = 0; r < runs; r++) {
+
+			g_debug("|===== Num. elems: %d (run %d): =====|", num_elems, r);
 			
 			/* Initialize host buffer. */
 			for (unsigned int i = 0;  i < num_elems; i++) {
-				/* Get a random 64-bit value by default... */
-				gulong value = (gulong) (g_rand_double(rng_host) * G_MAXULONG);
+				/* Get a random 64-bit value by default, but keep it small... */
+				gulong value = (gulong) (g_rand_double(rng_host) * 256);
 				/* But just use the specified bits. */
-				memcpy(host_data + bytes*i, &value, bytes);
+				memcpy(host_data + bytes * i, &value, bytes);
+				gulong in_mem = CLO_SCAN_HOST_GET(host_data, i, bytes);
+				g_debug("Value: %lx\tIn memory: %lx [%lu]", value, in_mem, in_mem);
 			}
 			
 			/* Copy data to device. */
@@ -284,18 +288,21 @@ int main(int argc, char **argv)
 				"Error reading data from device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 			
 			/* Check if scan was well performed. */
+			g_debug("== CHECK ==");
+			g_debug("%10s %10s %10s", "Host", "Serial", "Dev");
 			scan_ok = TRUE;
 			gulong value_dev = 0, value_host = 0;
 			for (unsigned int i = 0; i < num_elems; i++) {
 				/* Perform a CPU scan. */
-				value_host = (i == 0) ? 0 : value_host + host_data[i - 1];
+				value_host = (i == 0) ? 0 : value_host + CLO_SCAN_HOST_GET(host_data, i - 1, bytes);
 				/* Get device value. */
-				memcpy(&value_dev, host_data_scanned + bytes*i, bytes);
+				memcpy(&value_dev, host_data_scanned + bytes * i, bytes);
 				/* Compare. */
 				if (value_dev != value_host) {
 					scan_ok = FALSE;
-					break;
+					//break;
 				}
+				g_debug("%10lu %10lu %10lu", CLO_SCAN_HOST_GET(host_data, i, bytes), value_host, value_dev);
 				
 			}
 			
@@ -335,7 +342,7 @@ error_handler:
 	g_assert(err != NULL);
 	g_assert(status != CLO_SUCCESS);
 	fprintf(stderr, "Error: %s\n", err->message);
-	g_error_free(err);	
+	g_error_free(err);
 
 cleanup:
 

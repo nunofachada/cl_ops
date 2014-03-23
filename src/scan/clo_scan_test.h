@@ -26,5 +26,12 @@
 
 #include "clo_scan.h"
 
+#define CLO_SCAN_HOST_GET(host_data, i, bytes) \
+	((unsigned long) \
+	(bytes == 1) ? ((unsigned char*) host_data)[i] : \
+	((bytes == 2) ? ((unsigned short*) host_data)[i] : \
+	((bytes == 4) ? ((unsigned int*) host_data)[i] : \
+	((unsigned long*) host_data)[i])))
+	
 #endif
 
