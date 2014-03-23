@@ -33,16 +33,19 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 	size_t lws_max, size_t len, unsigned int numel, const char* options, 
 	GArray *evts, gboolean profile, GError **err) {
 	
-	/* Aux. var. */
+	/* Aux. vars. */
 	int status, ocl_status;
+	
+	/* Temporary buffer. */
+	cl_mem dev_wgsums;
 		
 	/* Local worksize. */
 	size_t lws = MIN(lws_max, clo_nlpo2(numel));
 
 	/* Global worksizes. */
-	size_t gws_wgscan = CLO_GWS_MULT(numel, lws);
-	size_t gws_wgsumsscan = lws;
-	size_t gws_addwgsums = gws_wgscan;
+	size_t gws_wgscan = CLO_GWS_MULT(numel / 2, lws);
+	size_t ws_wgsumsscan = (gws_wgscan / lws) / 2;
+	size_t gws_addwgsums = CLO_GWS_MULT(numel, lws);
 	
 	/* OpenCL events, in case profiling is set to true. */
 	cl_event evt_wgscan, evt_wgsumscan, evt_addwgsums;
@@ -50,7 +53,12 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 	//~ /* Avoid compiler warnings. */
 	//~ options = options;
 	//~ len = len;
-			
+	
+	dev_wgsums = clCreateBuffer(zone->context, CL_MEM_READ_WRITE, gws_wgscan / lws, NULL, &ocl_status);
+	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, 
+		status = CLO_ERROR_LIBRARY, error_handler, 
+		"Error creating device buffer for scanned data: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
+		
 	/* Perform workgroup-wise scan on complete array. */
 	ocl_status = clEnqueueNDRangeKernel(
 		queue, 
@@ -75,8 +83,8 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 			krnls[CLO_SCAN_KIDX_WGSUMSSCAN], 
 			1, 
 			NULL, 
-			&gws_wgsumsscan, 
-			&lws, 
+			&ws_wgsumsscan, 
+			&ws_wgsumsscan, 
 			0, 
 			NULL,
 			profile ? &evt_wgsumscan : NULL
