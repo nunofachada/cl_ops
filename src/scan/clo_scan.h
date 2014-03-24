@@ -52,7 +52,7 @@ int clo_scan_kernels_create(cl_kernel **krnls, cl_program program, GError **err)
 size_t clo_scan_localmem_usage(const char* kernel_name, size_t lws_max, size_t len);
 
 /** @brief Set kernels arguments for the scan implemenation. */
-int clo_scan_kernelargs_set(cl_kernel **krnls, cl_mem data2scan, cl_mem scanned_data, cl_mem wgsums, size_t lws, size_t len, GError **err);
+int clo_scan_kernelargs_set(cl_kernel **krnls, cl_mem data2scan, cl_mem scanned_data, size_t lws, size_t len, GError **err);
 
 /** @brief Free the scan kernels. */
 void clo_scan_kernels_free(cl_kernel **krnls);

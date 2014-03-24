@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 				/* But just use the specified bits. */
 				memcpy(host_data + bytes * i, &value, bytes);
 				gulong in_mem = CLO_SCAN_HOST_GET(host_data, i, bytes);
-				g_debug("Value: %lx\tIn memory: %lx [%lu]", value, in_mem, in_mem);
+				//g_debug("Value: %lx\tIn memory: %lx [%lu]", value, in_mem, in_mem);
 			}
 			
 			/* Copy data to device. */
