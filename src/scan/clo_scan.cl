@@ -44,7 +44,7 @@ __kernel void workgroupScan(
 
 	uint gid = get_global_id(0);
 	uint lid = get_local_id(0);
-	uint lws = get_local_size(0);
+	uint block_size = get_local_size(0) * 2;
 	uint offset = 1;
 
 	/* Load input data into local memory. */
@@ -52,7 +52,7 @@ __kernel void workgroupScan(
 	aux[2 * lid + 1] = data_in[2 * gid + 1];
 	
 	/* Upsweep: build sum in place up the tree. */
-	for (uint d = lws >> 1; d > 0; d >>= 1) {
+	for (uint d = block_size >> 1; d > 0; d >>= 1) {
 		barrier(CLK_LOCAL_MEM_FENCE);
 		if (lid < d) {
 			uint ai = offset * (2 * lid + 1) - 1;  
@@ -65,14 +65,14 @@ __kernel void workgroupScan(
 	barrier(CLK_LOCAL_MEM_FENCE);
 	if (lid == 0) { 
 		/* Store the last element in workgroup sums. */
-		data_wgsum[get_group_id(0)] = aux[lws - 1];
+		data_wgsum[get_group_id(0)] = aux[block_size - 1];
 		/* Clear the last element. */
-		aux[lws - 1] = 0; 
+		aux[block_size - 1] = 0; 
 	}
 	barrier(CLK_LOCAL_MEM_FENCE);              
 	
  	/* Downsweep: traverse down tree and build scan. */
-	for (uint d = 1; d < lws; d *= 2) {
+	for (uint d = 1; d < block_size; d *= 2) {
 		offset >>= 1;
 		barrier(CLK_LOCAL_MEM_FENCE);
 		if (lid < d) {
@@ -102,7 +102,7 @@ __kernel void workgroupSumsScan(
 {
 	
 	uint lid = get_local_id(0);
-	uint lws = get_local_size(0);
+	uint block_size = get_local_size(0) * 2;
 	uint offset = 1;
 
     /* Load input data into local memory. */
@@ -110,7 +110,7 @@ __kernel void workgroupSumsScan(
 	aux[2 * lid + 1] = data_wgsum[2 * lid + 1];	
 
     /* Upsweep: build sum in place up the tree. */
-	for (uint d = lws >> 1; d > 0; d >>= 1) {
+	for (uint d = block_size >> 1; d > 0; d >>= 1) {
 		barrier(CLK_LOCAL_MEM_FENCE);
 		if (lid < d) {
 			uint ai = offset * (2 * lid + 1) - 1;  
@@ -123,11 +123,11 @@ __kernel void workgroupSumsScan(
  	barrier(CLK_LOCAL_MEM_FENCE);
 	if (lid == 0) { 
 		/* Clear the last element. */
-		aux[lws - 1] = 0; 
+		aux[block_size - 1] = 0; 
 	}
 
  	/* Downsweep: traverse down tree and build scan. */
-	for (uint d = 1; d < lws; d *= 2) {
+	for (uint d = 1; d < block_size; d *= 2) {
 		offset >>= 1;
 		barrier(CLK_LOCAL_MEM_FENCE);
 		if (lid < d) {

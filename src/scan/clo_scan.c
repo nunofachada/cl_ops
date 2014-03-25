@@ -97,32 +97,32 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 		status = CLO_ERROR_LIBRARY, error_handler, 
 		"Executing " CLO_SCAN_KNAME_WGSCAN " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
-		g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | Enter? %s", numel, (int) gws_wgscan, (int) ws_wgsumsscan, (int) gws_addwgsums, (int) lws, gws_wgscan > lws ? "YES!" : "NO!");
+	g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | Enter? %s", numel, (int) gws_wgscan, (int) ws_wgsumsscan, (int) gws_addwgsums, (int) lws, gws_wgscan > lws ? "YES!" : "NO!");
 	if (gws_wgscan > lws) {
 		
-		gchar* host_data = g_new0(gchar, (gws_wgscan / lws) * len);
-		ocl_status = clEnqueueReadBuffer(
-			queue, 
-			dev_wgsums,
-			CL_TRUE, 
-			0, 
-			(gws_wgscan / lws) * len, 
-			host_data, 
-			0, 
-			NULL, 
-			NULL
-		);
+		//~ gchar* host_data = g_new0(gchar, (gws_wgscan / lws) * len);
+		//~ ocl_status = clEnqueueReadBuffer(
+			//~ queue, 
+			//~ dev_wgsums,
+			//~ CL_TRUE, 
+			//~ 0, 
+			//~ (gws_wgscan / lws) * len, 
+			//~ host_data, 
+			//~ 0, 
+			//~ NULL, 
+			//~ NULL
+		//~ );
 		
-		GString* deb_out = g_string_new("[");
-		for (guint k = 0; k < gws_wgscan / lws; k++) {
-			gulong value = 0;
-			memcpy(&value, host_data + k * len, len);
-			g_string_append_printf(deb_out, "%lu ", value);
-		}
-		g_string_append(deb_out, "]");
-		g_debug("SCAN WGSUMS BEFOR: %s", deb_out->str);
-		g_string_free(deb_out, TRUE);
-	
+		//~ GString* deb_out = g_string_new("[");
+		//~ for (guint k = 0; k < gws_wgscan / lws; k++) {
+			//~ gulong value = 0;
+			//~ memcpy(&value, host_data + k * len, len);
+			//~ g_string_append_printf(deb_out, "%lu ", value);
+		//~ }
+		//~ g_string_append(deb_out, "]");
+		//~ g_debug("SCAN WGSUMS BEFOR: %s", deb_out->str);
+		//~ g_string_free(deb_out, TRUE);
+	//~ 
 		
 		/* Perform scan on workgroup sums array. */
 		ocl_status = clEnqueueNDRangeKernel(
@@ -140,28 +140,28 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 			status = CLO_ERROR_LIBRARY, error_handler, 
 			"Executing " CLO_SCAN_KNAME_WGSUMSSCAN " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 		
-		ocl_status = clEnqueueReadBuffer(
-			queue, 
-			dev_wgsums,
-			CL_TRUE, 
-			0, 
-			(gws_wgscan / lws) * len, 
-			host_data, 
-			0, 
-			NULL, 
-			NULL
-		);
-		
-		deb_out = g_string_new("[");
-		for (guint k = 0; k < gws_wgscan / lws; k++) {
-			gulong value = 0;
-			memcpy(&value, host_data + k * len, len);
-			g_string_append_printf(deb_out, "%lu ", value);
-		}
-		g_string_append(deb_out, "]");
-		g_debug("SCAN WGSUMS AFTER: %s", deb_out->str);
-		g_free(host_data);
-		g_string_free(deb_out, TRUE);
+		//~ ocl_status = clEnqueueReadBuffer(
+			//~ queue, 
+			//~ dev_wgsums,
+			//~ CL_TRUE, 
+			//~ 0, 
+			//~ (gws_wgscan / lws) * len, 
+			//~ host_data, 
+			//~ 0, 
+			//~ NULL, 
+			//~ NULL
+		//~ );
+		//~ 
+		//~ deb_out = g_string_new("[");
+		//~ for (guint k = 0; k < gws_wgscan / lws; k++) {
+			//~ gulong value = 0;
+			//~ memcpy(&value, host_data + k * len, len);
+			//~ g_string_append_printf(deb_out, "%lu ", value);
+		//~ }
+		//~ g_string_append(deb_out, "]");
+		//~ g_debug("SCAN WGSUMS AFTER: %s", deb_out->str);
+		//~ g_free(host_data);
+		//~ g_string_free(deb_out, TRUE);
 			
 		/* Add the workgroup-wise sums to the respective workgroup elements.*/
 		ocl_status = clEnqueueNDRangeKernel(
@@ -204,7 +204,7 @@ error_handler:
 finish:
 	
 	/* Release temporary buffer. */
-	if (dev_wgsums) clReleaseMemObject(dev_wgsums);
+	//~ if (dev_wgsums) clReleaseMemObject(dev_wgsums);
 	
 	/* Return. */
 	return status;	
