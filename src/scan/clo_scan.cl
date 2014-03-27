@@ -44,12 +44,19 @@ __kernel void workgroupScan(
 
 	uint gid = get_global_id(0);
 	uint lid = get_local_id(0);
-	uint block_size = get_local_size(0) * 2;
+	uint lsize = get_local_size(0);
+	uint block_size =  lsize * 2;
+	uint wgid = get_group_id(0);
+
+	/* These global memory offsets improve memory coalescing. */
+	uint goffset1 = wgid * lsize * 2 + lid;
+	uint goffset2 = goffset1 + lsize;
+
 	uint offset = 1;
 
 	/* Load input data into local memory. */
-	aux[2 * lid] = data_in[2 * gid];
-	aux[2 * lid + 1] = data_in[2 * gid + 1];
+	aux[lid] = data_in[goffset1];
+	aux[lid + lsize] = data_in[goffset2];
 	
 	/* Upsweep: build sum in place up the tree. */
 	for (uint d = block_size >> 1; d > 0; d >>= 1) {
@@ -65,7 +72,7 @@ __kernel void workgroupScan(
 	barrier(CLK_LOCAL_MEM_FENCE);
 	if (lid == 0) { 
 		/* Store the last element in workgroup sums. */
-		data_wgsum[get_group_id(0)] = aux[block_size - 1];
+		data_wgsum[wgid] = aux[block_size - 1];
 		/* Clear the last element. */
 		aux[block_size - 1] = 0; 
 	}
@@ -86,8 +93,8 @@ __kernel void workgroupScan(
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	/* Save scan result to global memory. */
-	data_out[2 * gid] = aux[2 * lid];
-	data_out[2 * gid + 1] = aux[2 * lid + 1];  
+	data_out[goffset1] = aux[lid];
+	data_out[goffset2] = aux[lid + get_local_size(0)];
 } 
 
 /**
@@ -102,12 +109,13 @@ __kernel void workgroupSumsScan(
 {
 	
 	uint lid = get_local_id(0);
-	uint block_size = get_local_size(0) * 2;
+	uint lsize = get_local_size(0);
+	uint block_size = lsize * 2;
 	uint offset = 1;
 
     /* Load input data into local memory. */
-	aux[2 * lid] = data_wgsum[2 * lid];
-	aux[2 * lid + 1] = data_wgsum[2 * lid + 1];	
+	aux[lid] = data_wgsum[lid];
+	aux[lid + lsize] = data_wgsum[lid + lsize];	
 
     /* Upsweep: build sum in place up the tree. */
 	for (uint d = block_size >> 1; d > 0; d >>= 1) {
@@ -141,8 +149,8 @@ __kernel void workgroupSumsScan(
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	/* Save scan result to global memory. */
-	data_wgsum[2 * lid] = aux[2 * lid];
-	data_wgsum[2 * lid + 1] = aux[2 * lid + 1]; 
+	data_wgsum[lid] = aux[lid];
+	data_wgsum[lid + lsize] = aux[lid + lsize]; 
 }
 
 /**
