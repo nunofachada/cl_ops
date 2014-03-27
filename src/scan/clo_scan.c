@@ -49,7 +49,7 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 	/* Global worksizes. */
 	size_t gws_wgscan = CLO_GWS_MULT(numel / 2, lws);
 	size_t ws_wgsumsscan = (gws_wgscan / lws) / 2;
-	size_t gws_addwgsums = gws_wgscan;
+	size_t gws_addwgsums = gws_wgscan * 2;
 	
 	/* OpenCL events, in case profiling is set to true. */
 	cl_event evt_wgscan, evt_wgsumscan, evt_addwgsums;

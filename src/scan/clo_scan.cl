@@ -161,11 +161,11 @@ __kernel void addWorkgroupSums(
 
 	/* The first workitem loads the respective workgroup sum. */
 	if(get_local_id(0) == 0) {
-		wgsum[0] = data_wgsum[get_group_id(0)];
+		wgsum[0] = data_wgsum[get_group_id(0) / 2];
 	}
 	barrier(CLK_LOCAL_MEM_FENCE);
 
 	/* Then each workitem adds the sum to their respective array element. */
-	data_out[2 * gid] += wgsum[0];
-	data_out[2 * gid + 1] += wgsum[0];
+	data_out[gid] += wgsum[0];
+
 }
