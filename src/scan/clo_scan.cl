@@ -39,7 +39,9 @@ __kernel void workgroupScan(
 			__global CLO_SCAN_ELEM_TYPE *data_in,
 			__global CLO_SCAN_ELEM_TYPE *data_out,
 			__global CLO_SCAN_ELEM_TYPE *data_wgsum,
-			__local CLO_SCAN_ELEM_TYPE *aux) 
+			__local CLO_SCAN_ELEM_TYPE *aux,
+			uint numel,
+			uint blocks_per_wg) 
 {
 
 	uint gid = get_global_id(0);
@@ -47,54 +49,69 @@ __kernel void workgroupScan(
 	uint lsize = get_local_size(0);
 	uint block_size =  lsize * 2;
 	uint wgid = get_group_id(0);
-
-	/* These global memory offsets improve memory coalescing. */
-	uint goffset1 = wgid * lsize * 2 + lid;
-	uint goffset2 = goffset1 + lsize;
-
-	uint offset = 1;
-
-	/* Load input data into local memory. */
-	aux[lid] = data_in[goffset1];
-	aux[lid + lsize] = data_in[goffset2];
 	
-	/* Upsweep: build sum in place up the tree. */
-	for (uint d = block_size >> 1; d > 0; d >>= 1) {
-		barrier(CLK_LOCAL_MEM_FENCE);
-		if (lid < d) {
-			uint ai = offset * (2 * lid + 1) - 1;  
-			uint bi = offset * (2 * lid + 2) - 1;  
-			aux[bi] += aux[ai];
-		}  
-		offset *= 2;  
+	__local CLO_SCAN_ELEM_TYPE in_sum[1];
+
+	if (lid == 0) { 
+		in_sum[0] = 0; 
 	}
 
-	barrier(CLK_LOCAL_MEM_FENCE);
+
+	for (uint b = 0; (b < blocks_per_wg) && (wgid * blocks_per_wg + b < numel / block_size); b++) {
+		
+		/* These global memory offsets improve memory coalescing. */
+		uint goffset1 = (blocks_per_wg * (wgid / blocks_per_wg) + b) * block_size + wgid * lsize * 2 + lid;
+		uint goffset2 = goffset1 + lsize;
+
+		uint offset = 1;
+		
+		/* Load input data into local memory, add the intermediate sum. */
+		aux[lid] = data_in[goffset1] + in_sum[0];
+		aux[lid + lsize] = data_in[goffset2] + in_sum[0];
+		
+		/* Upsweep: build sum in place up the tree. */
+		for (uint d = block_size >> 1; d > 0; d >>= 1) {
+			barrier(CLK_LOCAL_MEM_FENCE);
+			if (lid < d) {
+				uint ai = offset * (2 * lid + 1) - 1;  
+				uint bi = offset * (2 * lid + 2) - 1;  
+				aux[bi] += aux[ai];
+			}  
+			offset *= 2;  
+		}
+
+		barrier(CLK_LOCAL_MEM_FENCE);
+		if (lid == 0) { 
+			/* Store the last element in intermediate sum. */
+			in_sum[0] += aux[block_size - 1];
+			/* Clear the last element. */
+			aux[block_size - 1] = 0; 
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);              
+		
+		/* Downsweep: traverse down tree and build scan. */
+		for (uint d = 1; d < block_size; d *= 2) {
+			offset >>= 1;
+			barrier(CLK_LOCAL_MEM_FENCE);
+			if (lid < d) {
+				uint ai = offset * (2 * lid + 1) - 1;
+				uint bi = offset * (2 * lid + 2) - 1;
+				CLO_SCAN_ELEM_TYPE t = aux[ai];
+				aux[ai] = aux[bi];
+				aux[bi] += t;
+			}  
+		}
+		barrier(CLK_LOCAL_MEM_FENCE);
+		
+		/* Save scan result to global memory. */
+		data_out[goffset1] = aux[lid];
+		data_out[goffset2] = aux[lid + get_local_size(0)];
+	}
+
 	if (lid == 0) { 
 		/* Store the last element in workgroup sums. */
-		data_wgsum[wgid] = aux[block_size - 1];
-		/* Clear the last element. */
-		aux[block_size - 1] = 0; 
+		data_wgsum[wgid] = in_sum[0];
 	}
-	barrier(CLK_LOCAL_MEM_FENCE);              
-	
- 	/* Downsweep: traverse down tree and build scan. */
-	for (uint d = 1; d < block_size; d *= 2) {
-		offset >>= 1;
-		barrier(CLK_LOCAL_MEM_FENCE);
-		if (lid < d) {
-			uint ai = offset * (2 * lid + 1) - 1;
-			uint bi = offset * (2 * lid + 2) - 1;
-			CLO_SCAN_ELEM_TYPE t = aux[ai];
-			aux[ai] = aux[bi];
-			aux[bi] += t;
-		}  
-	}
-	barrier(CLK_LOCAL_MEM_FENCE);
-
-	/* Save scan result to global memory. */
-	data_out[goffset1] = aux[lid];
-	data_out[goffset2] = aux[lid + get_local_size(0)];
 } 
 
 /**
@@ -162,14 +179,15 @@ __kernel void workgroupSumsScan(
  */
 __kernel void addWorkgroupSums(
 	__global CLO_SCAN_ELEM_TYPE *data_wgsum, 
-	__global CLO_SCAN_ELEM_TYPE *data_out)
+	__global CLO_SCAN_ELEM_TYPE *data_out,
+	uint blocks_per_wg)
 {	
 	__local CLO_SCAN_ELEM_TYPE wgsum[1];
 	uint gid = get_global_id(0);
 
 	/* The first workitem loads the respective workgroup sum. */
 	if(get_local_id(0) == 0) {
-		wgsum[0] = data_wgsum[get_group_id(0) / 2];
+		wgsum[0] = data_wgsum[get_group_id(0) / (2 * blocks_per_wg)];
 	}
 	barrier(CLK_LOCAL_MEM_FENCE);
 

@@ -45,11 +45,8 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 	/* OpenCL context. */
 	cl_context context;
 
-
 	/* Global worksizes. */
-	size_t gws_wgscan = CLO_GWS_MULT(numel / 2, lws);
-	size_t ws_wgsumsscan = (gws_wgscan / lws) / 2;
-	size_t gws_addwgsums = gws_wgscan * 2;
+	size_t gws_wgscan, ws_wgsumsscan, gws_addwgsums;
 	
 	/* OpenCL events, in case profiling is set to true. */
 	cl_event evt_wgscan, evt_wgsumscan, evt_addwgsums;
@@ -57,6 +54,14 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 	//~ /* Avoid compiler warnings. */
 	//~ options = options;
 	//~ len = len;
+	
+	/* Determine worksizes. */
+	gws_wgscan = MIN(CLO_GWS_MULT(numel / 2, lws), lws * lws);
+	ws_wgsumsscan = (gws_wgscan / lws) / 2;
+	gws_addwgsums = CLO_GWS_MULT(numel, lws);
+
+	/* Determine number of blocks to be processed per workgroup. */
+	cl_uint blocks_per_wg = 1 + ((numel / 2) - 1) / (lws * lws);
 
 	/* Get the OpenCL context. */
 	ocl_status = clGetCommandQueueInfo(queue, CL_QUEUE_CONTEXT, 
@@ -74,12 +79,20 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 	ocl_status = clSetKernelArg(krnls[CLO_SCAN_KIDX_WGSCAN], 2, sizeof(cl_mem), &dev_wgsums);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 2 of " CLO_SCAN_KNAME_WGSCAN " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
+	ocl_status = clSetKernelArg(krnls[CLO_SCAN_KIDX_WGSCAN], 4, sizeof(cl_uint), &numel);
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 4 of " CLO_SCAN_KNAME_WGSCAN " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+
+	ocl_status = clSetKernelArg(krnls[CLO_SCAN_KIDX_WGSCAN], 5, sizeof(cl_uint), &blocks_per_wg);
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 5 of " CLO_SCAN_KNAME_WGSCAN " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
+
 	ocl_status = clSetKernelArg(krnls[CLO_SCAN_KIDX_WGSUMSSCAN], 0, sizeof(cl_mem), &dev_wgsums);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SCAN_KNAME_WGSUMSSCAN " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
 	ocl_status = clSetKernelArg(krnls[CLO_SCAN_KIDX_ADDWGSUMS], 0, sizeof(cl_mem), &dev_wgsums);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SCAN_KNAME_ADDWGSUMS " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
+	ocl_status = clSetKernelArg(krnls[CLO_SCAN_KIDX_ADDWGSUMS], 2, sizeof(cl_uint), &blocks_per_wg);
+	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 2 of " CLO_SCAN_KNAME_ADDWGSUMS " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
 	/* Perform workgroup-wise scan on complete array. */
 	ocl_status = clEnqueueNDRangeKernel(
