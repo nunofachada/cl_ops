@@ -61,7 +61,8 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 	gws_addwgsums = CLO_GWS_MULT(numel, lws);
 
 	/* Determine number of blocks to be processed per workgroup. */
-	cl_uint blocks_per_wg = 1 + ((numel / 2) - 1) / (lws * lws);
+	cl_uint blocks_per_wg = CLO_DIV_CEIL(numel / 2, gws_wgscan);
+	cl_uint numel_cl = numel;
 
 	/* Get the OpenCL context. */
 	ocl_status = clGetCommandQueueInfo(queue, CL_QUEUE_CONTEXT, 
@@ -79,7 +80,7 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 	ocl_status = clSetKernelArg(krnls[CLO_SCAN_KIDX_WGSCAN], 2, sizeof(cl_mem), &dev_wgsums);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 2 of " CLO_SCAN_KNAME_WGSCAN " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
-	ocl_status = clSetKernelArg(krnls[CLO_SCAN_KIDX_WGSCAN], 4, sizeof(cl_uint), &numel);
+	ocl_status = clSetKernelArg(krnls[CLO_SCAN_KIDX_WGSCAN], 4, sizeof(cl_uint), &numel_cl);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 4 of " CLO_SCAN_KNAME_WGSCAN " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
 	ocl_status = clSetKernelArg(krnls[CLO_SCAN_KIDX_WGSCAN], 5, sizeof(cl_uint), &blocks_per_wg);
@@ -110,7 +111,7 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 		status = CLO_ERROR_LIBRARY, error_handler, 
 		"Executing " CLO_SCAN_KNAME_WGSCAN " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
-	g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | Enter? %s", numel, (int) gws_wgscan, (int) ws_wgsumsscan, (int) gws_addwgsums, (int) lws, gws_wgscan > lws ? "YES!" : "NO!");
+	g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | BPWG=%d | Enter? %s", numel, (int) gws_wgscan, (int) ws_wgsumsscan, (int) gws_addwgsums, (int) lws, blocks_per_wg, gws_wgscan > lws ? "YES!" : "NO!");
 	if (gws_wgscan > lws) {
 		
 		//~ gchar* host_data = g_new0(gchar, (gws_wgscan / lws) * len);
@@ -125,7 +126,7 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 			//~ NULL, 
 			//~ NULL
 		//~ );
-		
+		//~ 
 		//~ GString* deb_out = g_string_new("[");
 		//~ for (guint k = 0; k < gws_wgscan / lws; k++) {
 			//~ gulong value = 0;
@@ -135,7 +136,7 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 		//~ g_string_append(deb_out, "]");
 		//~ g_debug("SCAN WGSUMS BEFOR: %s", deb_out->str);
 		//~ g_string_free(deb_out, TRUE);
-	//~ 
+	
 		
 		/* Perform scan on workgroup sums array. */
 		ocl_status = clEnqueueNDRangeKernel(
@@ -217,7 +218,7 @@ error_handler:
 finish:
 	
 	/* Release temporary buffer. */
-	//~ if (dev_wgsums) clReleaseMemObject(dev_wgsums);
+	if (dev_wgsums) clReleaseMemObject(dev_wgsums);
 	
 	/* Return. */
 	return status;	

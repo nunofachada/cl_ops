@@ -56,18 +56,17 @@ __kernel void workgroupScan(
 		in_sum[0] = 0; 
 	}
 
-
-	for (uint b = 0; (b < blocks_per_wg) && (wgid * blocks_per_wg + b < numel / block_size); b++) {
+	for (uint b = 0; (b < blocks_per_wg) && ((wgid * blocks_per_wg + b) < (numel / block_size)); b++) {
 		
 		/* These global memory offsets improve memory coalescing. */
-		uint goffset1 = (blocks_per_wg * (wgid / blocks_per_wg) + b) * block_size + wgid * lsize * 2 + lid;
+		uint goffset1 = (blocks_per_wg * wgid + b) * block_size + lid;
 		uint goffset2 = goffset1 + lsize;
 
 		uint offset = 1;
 		
-		/* Load input data into local memory, add the intermediate sum. */
-		aux[lid] = data_in[goffset1] + in_sum[0];
-		aux[lid + lsize] = data_in[goffset2] + in_sum[0];
+		/* Load input data into local memory. */
+		aux[lid] = data_in[goffset1];
+		aux[lid + lsize] = data_in[goffset2];
 		
 		/* Upsweep: build sum in place up the tree. */
 		for (uint d = block_size >> 1; d > 0; d >>= 1) {
@@ -80,6 +79,7 @@ __kernel void workgroupScan(
 			offset *= 2;  
 		}
 
+		uint in_sum_prev = in_sum[0];
 		barrier(CLK_LOCAL_MEM_FENCE);
 		if (lid == 0) { 
 			/* Store the last element in intermediate sum. */
@@ -103,9 +103,9 @@ __kernel void workgroupScan(
 		}
 		barrier(CLK_LOCAL_MEM_FENCE);
 		
-		/* Save scan result to global memory. */
-		data_out[goffset1] = aux[lid];
-		data_out[goffset2] = aux[lid + get_local_size(0)];
+		/* Save scan result to global memory, adding the intermediate sum. */
+		data_out[goffset1] = aux[lid] + in_sum_prev;
+		data_out[goffset2] = aux[lid + lsize] + in_sum_prev;
 	}
 
 	if (lid == 0) { 
