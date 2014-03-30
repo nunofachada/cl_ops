@@ -33,7 +33,7 @@
 	((bytes == 4) ? ((unsigned int*) host_data)[i] : \
 	((unsigned long*) host_data)[i])))
 
-#define CLO_SCAN_MAXU(bytes) \	
+#define CLO_SCAN_MAXU(bytes) \
 	((unsigned long) \
 	(bytes == 1) ? 0xFF : \
 	((bytes == 2) ? G_MAXUSHORT : \

@@ -46,6 +46,7 @@ static gchar* path = NULL;
 static guint32 init_elems = CLO_SCAN_INITELEMS;
 static guint32 num_doub = CLO_SCAN_NUMDOUB;
 static gchar* out = NULL;
+static gboolean no_check = FALSE;
 
 /* Valid command line options. */
 static GOptionEntry entries[] = {
@@ -58,15 +59,17 @@ static GOptionEntry entries[] = {
 	{"rng-seed",     's', 0, G_OPTION_ARG_INT,    &rng_seed,
 		"Seed for random number generator (default is " STR(CLO_DEFAULT_SEED) ")",          "SEED"},
 	{"bits",         'b', 0, G_OPTION_ARG_INT,    &bits,
-		"Number of bits in unsigned integers to scan (default " STR(CLO_SCAN_BITS) ")",     NULL},
+		"Number of bits in unsigned integers to scan (default " STR(CLO_SCAN_BITS) ")",     "BITS"},
 	{"bits-sum",     'e', 0, G_OPTION_ARG_INT,    &bits_sum,
-		"Number of bits for elements of scan result (default " STR(CLO_SCAN_BITS_SUM) ")",  NULL},
+		"Number of bits for elements of scan result (default " STR(CLO_SCAN_BITS_SUM) ")",  "BITS"},
 	{"path",         'p', 0, G_OPTION_ARG_STRING, &path,
 		"Path of OpenCL source files (default is " CLO_DEFAULT_PATH,                        "PATH"}, 
 	{"init-elems",   'i', 0, G_OPTION_ARG_INT,    &init_elems,
 		"The starting number of elements to scan (default is " STR(CLO_SCAN_INITELEMS) ")", "INIT"},
 	{"num-doub",     'n', 0, G_OPTION_ARG_INT,    &num_doub,
 		"Number of times min-elems is doubled (default is " STR(CLO_SCAN_NUMDOUB) ")",      "DOUB"},
+	{"no-check",     'u', 0, G_OPTION_ARG_NONE,   &no_check,
+		"Don't check scan with serial version",                                             NULL},
 	{"out",          'o', 0, G_OPTION_ARG_STRING, &out,
 		"File where to output scan benchmarks (default is no file output)",                 "FILENAME"}, 
 	{ NULL, 0, 0, 0, NULL, NULL, NULL }	
@@ -292,27 +295,31 @@ int main(int argc, char **argv)
 				"Error reading data from device: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 			
 			/* Check if scan was well performed. */
-			g_debug("== CHECK ==");
-			g_debug("%10s %10s %10s", "Host", "Serial", "Dev");
-			scan_ok = "";
-			gulong value_dev = 0, value_host = 0;
-			for (unsigned int i = 0; i < num_elems; i++) {
-				/* Perform a CPU scan. */
-				value_host = (i == 0) ? 0 : value_host + CLO_SCAN_HOST_GET(host_data, i - 1, bytes);
-				/* Check for overflow. */
-				if (value_host > CLO_SCAN_MAXU(bytes_sum)) {
-					scan_ok = "[Overflow]";
-					break;
+			if (no_check) {
+				scan_ok = "[Unverified]";
+			} else {
+				g_debug("== CHECK ==");
+				g_debug("%10s %10s %10s", "Host", "Serial", "Dev");
+				scan_ok = "";
+				gulong value_dev = 0, value_host = 0;
+				for (unsigned int i = 0; i < num_elems; i++) {
+					/* Perform a CPU scan. */
+					value_host = (i == 0) ? 0 : value_host + CLO_SCAN_HOST_GET(host_data, i - 1, bytes);
+					/* Check for overflow. */
+					if (value_host > CLO_SCAN_MAXU(bytes_sum)) {
+						scan_ok = "[Overflow]";
+						break;
+					}
+					/* Get device value. */
+					memcpy(&value_dev, host_data_scanned + bytes_sum * i, bytes_sum);
+					/* Compare. */
+					if (value_dev != value_host) {
+						scan_ok = "[Scan did not work]";
+						break;
+					}
+					g_debug("%10lu %10lu %10lu", CLO_SCAN_HOST_GET(host_data, i, bytes), value_host, value_dev);
+					
 				}
-				/* Get device value. */
-				memcpy(&value_dev, host_data_scanned + bytes_sum * i, bytes_sum);
-				/* Compare. */
-				if (value_dev != value_host) {
-					scan_ok = "[Scan did not work]";
-					break;
-				}
-				g_debug("%10lu %10lu %10lu", CLO_SCAN_HOST_GET(host_data, i, bytes), value_host, value_dev);
-				
 			}
 			
 	
