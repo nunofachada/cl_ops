@@ -19,12 +19,23 @@
  * @file
  * @brief Parallel prefix sum (scan) implementation.
  * 
- * This implementation is based on 
- * [GPU Gems 3 - Chapter 39. Parallel Prefix Sum (Scan) with CUDA](http://http.developer.nvidia.com/GPUGems3/gpugems3_ch39.html).
+ * This implementation is based on the design described in:
+ * Blelloch, G. E. "Prefix Sums and Their Applications.", Technical 
+ * Report CMU-CS-90-190, School of Computer Science, Carnegie Mellon 
+ * University, 1990.
+ * 
+ * A maximum of three kernels are called for problems of any size, with
+ * the first kernel serializing the scan operation when the array size
+ * is larger than the squared local worksize.
+ * 
  */
 
 #ifndef CLO_SCAN_ELEM_TYPE
 	#define CLO_SCAN_ELEM_TYPE uint
+#endif
+
+#ifndef CLO_SCAN_SUM_TYPE
+	#define CLO_SCAN_SUM_TYPE ulong
 #endif
 
 /**
@@ -37,9 +48,9 @@
  */
 __kernel void workgroupScan(
 			__global CLO_SCAN_ELEM_TYPE *data_in,
-			__global CLO_SCAN_ELEM_TYPE *data_out,
-			__global CLO_SCAN_ELEM_TYPE *data_wgsum,
-			__local CLO_SCAN_ELEM_TYPE *aux,
+			__global CLO_SCAN_SUM_TYPE *data_out,
+			__global CLO_SCAN_SUM_TYPE *data_wgsum,
+			__local CLO_SCAN_SUM_TYPE *aux,
 			uint numel,
 			uint blocks_per_wg) 
 {
@@ -50,7 +61,7 @@ __kernel void workgroupScan(
 	uint block_size =  lsize * 2;
 	uint wgid = get_group_id(0);
 	
-	__local CLO_SCAN_ELEM_TYPE in_sum[1];
+	__local CLO_SCAN_SUM_TYPE in_sum[1];
 
 	if (lid == 0) { 
 		in_sum[0] = 0; 
@@ -79,7 +90,7 @@ __kernel void workgroupScan(
 			offset *= 2;  
 		}
 
-		uint in_sum_prev = in_sum[0];
+		CLO_SCAN_SUM_TYPE in_sum_prev = in_sum[0];
 		barrier(CLK_LOCAL_MEM_FENCE);
 		if (lid == 0) { 
 			/* Store the last element in intermediate sum. */
@@ -96,7 +107,7 @@ __kernel void workgroupScan(
 			if (lid < d) {
 				uint ai = offset * (2 * lid + 1) - 1;
 				uint bi = offset * (2 * lid + 2) - 1;
-				CLO_SCAN_ELEM_TYPE t = aux[ai];
+				CLO_SCAN_SUM_TYPE t = aux[ai];
 				aux[ai] = aux[bi];
 				aux[bi] += t;
 			}  
@@ -121,8 +132,8 @@ __kernel void workgroupScan(
  * @param aux Auxiliary local memory.
  */
 __kernel void workgroupSumsScan(
-			__global CLO_SCAN_ELEM_TYPE *data_wgsum,
-			__local CLO_SCAN_ELEM_TYPE *aux) 
+			__global CLO_SCAN_SUM_TYPE *data_wgsum,
+			__local CLO_SCAN_SUM_TYPE *aux) 
 {
 	
 	uint lid = get_local_id(0);
@@ -158,7 +169,7 @@ __kernel void workgroupSumsScan(
 		if (lid < d) {
 			uint ai = offset * (2 * lid + 1) - 1;
 			uint bi = offset * (2 * lid + 2) - 1;
-			CLO_SCAN_ELEM_TYPE t = aux[ai];
+			CLO_SCAN_SUM_TYPE t = aux[ai];
 			aux[ai] = aux[bi];
 			aux[bi] += t;
 		}  
@@ -178,11 +189,11 @@ __kernel void workgroupSumsScan(
  * @param data_out Location where to place scan results.
  */
 __kernel void addWorkgroupSums(
-	__global CLO_SCAN_ELEM_TYPE *data_wgsum, 
-	__global CLO_SCAN_ELEM_TYPE *data_out,
+	__global CLO_SCAN_SUM_TYPE *data_wgsum, 
+	__global CLO_SCAN_SUM_TYPE *data_out,
 	uint blocks_per_wg)
 {	
-	__local CLO_SCAN_ELEM_TYPE wgsum[1];
+	__local CLO_SCAN_SUM_TYPE wgsum[1];
 	uint gid = get_global_id(0);
 
 	/* The first workitem loads the respective workgroup sum. */

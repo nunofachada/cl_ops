@@ -24,6 +24,7 @@
 
 #define CLO_SCAN_LWS 256
 #define CLO_SCAN_BITS 32
+#define CLO_SCAN_BITS_SUM 32
 #define CLO_SCAN_RUNS 1
 #define CLO_SCAN_INITELEMS 4
 #define CLO_SCAN_NUMDOUB 24
@@ -40,6 +41,7 @@ static size_t lws = CLO_SCAN_LWS;
 static int dev_idx = -1;
 static guint32 rng_seed = CLO_DEFAULT_SEED;
 static unsigned int bits = CLO_SCAN_BITS;
+static unsigned int bits_sum = CLO_SCAN_BITS_SUM;
 static gchar* path = NULL;
 static guint32 init_elems = CLO_SCAN_INITELEMS;
 static guint32 num_doub = CLO_SCAN_NUMDOUB;
@@ -57,6 +59,8 @@ static GOptionEntry entries[] = {
 		"Seed for random number generator (default is " STR(CLO_DEFAULT_SEED) ")",          "SEED"},
 	{"bits",         'b', 0, G_OPTION_ARG_INT,    &bits,
 		"Number of bits in unsigned integers to scan (default " STR(CLO_SCAN_BITS) ")",     NULL},
+	{"bits-sum",     'e', 0, G_OPTION_ARG_INT,    &bits_sum,
+		"Number of bits for elements of scan result (default " STR(CLO_SCAN_BITS_SUM) ")",  NULL},
 	{"path",         'p', 0, G_OPTION_ARG_STRING, &path,
 		"Path of OpenCL source files (default is " CLO_DEFAULT_PATH,                        "PATH"}, 
 	{"init-elems",   'i', 0, G_OPTION_ARG_INT,    &init_elems,
@@ -98,8 +102,8 @@ int main(int argc, char **argv)
 	cl_mem dev_wgsums = NULL;
 	gchar* compilerOpts = NULL;
 	cl_kernel *krnls = NULL;
-	size_t bytes;
-	size_t max_buffer_size;
+	size_t bytes, bytes_sum;
+	size_t max_buffer_size, max_buffer_size_sum;
 	gdouble total_time;
 	FILE *outfile = NULL;
 	
@@ -139,6 +143,7 @@ int main(int argc, char **argv)
 
 	/* Determine size in bytes of each element to sort. */
 	bytes = bits / 8;
+	bytes_sum = bits_sum / 8;
 	
 	/* Initialize random number generator. */
 	rng_host = g_rand_new_with_seed(rng_seed);
@@ -151,6 +156,7 @@ int main(int argc, char **argv)
 	compilerOpts = g_strconcat(
 		"-I ", path,
 		" -D ", "CLO_SCAN_ELEM_TYPE=", bits == 8 ? "uchar" : (bits == 16 ? "ushort" : (bits == 32 ? "uint" : "ulong")),
+		" -D ", "CLO_SCAN_SUM_TYPE=", bits_sum == 8 ? "uchar" : (bits_sum == 16 ? "ushort" : (bits_sum == 32 ? "uint" : "ulong")),
 		NULL);
 	
 	/* Build program. */
@@ -166,6 +172,7 @@ int main(int argc, char **argv)
 	printf("     Random number generator seed: %u\n", rng_seed);
 	printf("     Maximum local worksize: %d\n", (int) lws);
 	printf("     Size in bits (bytes) of elements to scan: %d (%d)\n", bits, (int) bytes);
+	printf("     Size in bits (bytes) of elements of scan result: %d (%d)\n", bits_sum, (int) bytes_sum);
 	printf("     Starting number of elements: %d\n", init_elems);
 	printf("     Number of times number of elements will be doubled: %d\n", num_doub);
 	printf("     Number of runs: %d\n", runs);
@@ -181,10 +188,11 @@ int main(int argc, char **argv)
 
 	/* Determine maximum buffer size. */
 	max_buffer_size = bytes * init_elems * (1 << num_doub);
+	max_buffer_size_sum = bytes_sum * init_elems * (1 << num_doub);
 	
 	/* Create host buffers */
 	host_data = g_new0(gchar, max_buffer_size);
-	host_data_scanned = g_new0(gchar, max_buffer_size);
+	host_data_scanned = g_new0(gchar, max_buffer_size_sum);
 
 	/* Create device buffers. */
 	dev_data = clCreateBuffer(zone->context, CL_MEM_READ_ONLY, max_buffer_size, NULL, &ocl_status);
@@ -192,13 +200,13 @@ int main(int argc, char **argv)
 		status = CLO_ERROR_LIBRARY, error_handler, 
 		"Error creating device buffer for original data: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 
-	dev_data_scanned = clCreateBuffer(zone->context, CL_MEM_READ_WRITE, max_buffer_size, NULL, &ocl_status);
+	dev_data_scanned = clCreateBuffer(zone->context, CL_MEM_READ_WRITE, max_buffer_size_sum, NULL, &ocl_status);
 	gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, 
 		status = CLO_ERROR_LIBRARY, error_handler, 
 		"Error creating device buffer for scanned data: OpenCL error %d (%s).", ocl_status, clerror_get(ocl_status));
 
 	/* Set kernel parameters. */
-	status = clo_scan_kernelargs_set(&krnls, dev_data, dev_data_scanned, lws, bytes, &err);
+	status = clo_scan_kernelargs_set(&krnls, dev_data, dev_data_scanned, lws, bytes, bytes_sum, &err);
 	gef_if_error_goto(err, GEF_USE_GERROR, status, error_handler);
 	
 	/* Start with the inital number of elements. */
@@ -207,7 +215,7 @@ int main(int argc, char **argv)
 	/* Perform test. */
 	for (unsigned int N = 1; N <= num_doub; N++) {
 		
-		gboolean scan_ok;
+		const gchar* scan_ok;
 		
 		for (unsigned int r = 0; r < runs; r++) {
 
@@ -219,7 +227,7 @@ int main(int argc, char **argv)
 				gulong value = (gulong) (g_rand_double(rng_host) * 256);
 				/* But just use the specified bits. */
 				memcpy(host_data + bytes * i, &value, bytes);
-				gulong in_mem = CLO_SCAN_HOST_GET(host_data, i, bytes);
+				//gulong in_mem = CLO_SCAN_HOST_GET(host_data, i, bytes);
 				//g_debug("Value: %lx\tIn memory: %lx [%lu]", value, in_mem, in_mem);
 			}
 			
@@ -248,6 +256,7 @@ int main(int argc, char **argv)
 				krnls, 
 				lws,
 				bytes,
+				bytes_sum,
 				num_elems,
 				options,
 				NULL, 
@@ -272,10 +281,10 @@ int main(int argc, char **argv)
 				dev_data_scanned,
 				CL_TRUE, 
 				0, 
-				num_elems * bytes, 
-				host_data_scanned, 
-				0, 
-				NULL, 
+				num_elems * bytes_sum, 
+				host_data_scanned,
+				0,
+				NULL,
 				NULL
 			);
 			gef_if_error_create_goto(err, CLO_ERROR, CL_SUCCESS != ocl_status, 
@@ -285,17 +294,22 @@ int main(int argc, char **argv)
 			/* Check if scan was well performed. */
 			g_debug("== CHECK ==");
 			g_debug("%10s %10s %10s", "Host", "Serial", "Dev");
-			scan_ok = TRUE;
+			scan_ok = "";
 			gulong value_dev = 0, value_host = 0;
 			for (unsigned int i = 0; i < num_elems; i++) {
 				/* Perform a CPU scan. */
 				value_host = (i == 0) ? 0 : value_host + CLO_SCAN_HOST_GET(host_data, i - 1, bytes);
+				/* Check for overflow. */
+				if (value_host > CLO_SCAN_MAXU(bytes_sum)) {
+					scan_ok = "[Overflow]";
+					break;
+				}
 				/* Get device value. */
-				memcpy(&value_dev, host_data_scanned + bytes * i, bytes);
+				memcpy(&value_dev, host_data_scanned + bytes_sum * i, bytes_sum);
 				/* Compare. */
 				if (value_dev != value_host) {
-					scan_ok = FALSE;
-					//break;
+					scan_ok = "[Scan did not work]";
+					break;
 				}
 				g_debug("%10lu %10lu %10lu", CLO_SCAN_HOST_GET(host_data, i, bytes), value_host, value_dev);
 				
@@ -308,7 +322,7 @@ int main(int argc, char **argv)
 		total_time = 0;
 		for (unsigned int i = 0;  i < runs; i++)
 			total_time += benchmarks[N - 1][i];
-		printf("       - %10d : %f MValues/s %s\n", num_elems, 1e-6 * num_elems * runs / total_time, scan_ok ? "" : "(scan did not work)");
+		printf("       - %10d : %f MValues/s %s\n", num_elems, 1e-6 * num_elems * runs / total_time, scan_ok);
 
 		num_elems *= 2;
 

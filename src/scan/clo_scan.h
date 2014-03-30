@@ -38,8 +38,8 @@
 
 /** @brief Perform scan. */
 int clo_scan(cl_command_queue queue, cl_kernel *krnls, 
-	size_t lws_max, size_t len, unsigned int numel, const char* options, 
-	GArray *evts, gboolean profile, GError **err);
+	size_t lws_max, size_t size_elem, size_t size_sum, unsigned int numel, 
+	const char* options, GArray *evts, gboolean profile, GError **err);
 
 /** @brief Returns the name of the kernel identified by the given
  * index. */
@@ -49,10 +49,10 @@ const char* clo_scan_kernelname_get(unsigned int index);
 int clo_scan_kernels_create(cl_kernel **krnls, cl_program program, GError **err);
 
 /** @brief Get local memory usage for the scan kernels. */
-size_t clo_scan_localmem_usage(const char* kernel_name, size_t lws_max, size_t len);
+size_t clo_scan_localmem_usage(const char* kernel_name, size_t lws_max, size_t size_elem, size_t size_sum);
 
 /** @brief Set kernels arguments for the scan implemenation. */
-int clo_scan_kernelargs_set(cl_kernel **krnls, cl_mem data2scan, cl_mem scanned_data, size_t lws, size_t len, GError **err);
+int clo_scan_kernelargs_set(cl_kernel **krnls, cl_mem data2scan, cl_mem scanned_data, size_t lws, size_t size_elem, size_t size_sum, GError **err);
 
 /** @brief Free the scan kernels. */
 void clo_scan_kernels_free(cl_kernel **krnls);
