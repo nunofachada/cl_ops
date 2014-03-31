@@ -19,10 +19,18 @@
 /** 
  * @file
  * @brief Parallel prefix sum (scan) implementation.
- */
+ * 
+ * This implementation is based on the design described in:
+ * Blelloch, G. E. "Prefix Sums and Their Applications.", Technical 
+ * Report CMU-CS-90-190, School of Computer Science, Carnegie Mellon 
+ * University, 1990.
+ * 
+ * A maximum of three kernels are called for problems of any size, with
+ * the first kernel serializing the scan operation when the array size
+ * is larger than the squared local worksize. 
+ * */
 
 #include "clo_scan.h"
-
 
 /**
  * @brief Perform scan.
@@ -114,34 +122,7 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 	g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | BPWG=%d | Enter? %s", numel, (int) gws_wgscan, (int) ws_wgsumsscan, (int) gws_addwgsums, (int) lws, blocks_per_wg, gws_wgscan > lws ? "YES!" : "NO!");
 	if (gws_wgscan > lws) {
 		
-		/// TO COMMENT BLOCK
-		gchar* host_data = g_new0(gchar, (gws_wgscan / lws) * size_sum);
-		ocl_status = clEnqueueReadBuffer(
-			queue, 
-			dev_wgsums,
-			CL_TRUE, 
-			0, 
-			(gws_wgscan / lws) * size_sum, 
-			host_data, 
-			0, 
-			NULL, 
-			NULL
-		);
-		
-		GString* deb_out = g_string_new("[");
-		for (guint k = 0; k < gws_wgscan / lws; k++) {
-			gulong value = 0;
-			memcpy(&value, host_data + k * size_sum, size_sum);
-			g_string_append_printf(deb_out, "%lu ", value);
-		}
-		g_string_append(deb_out, "]");
-		g_debug("SCAN WGSUMS BEFOR: %s", deb_out->str);
-		g_string_free(deb_out, TRUE);
-	
 
-
-
-		
 		/* Perform scan on workgroup sums array. */
 		ocl_status = clEnqueueNDRangeKernel(
 			queue, 
@@ -158,33 +139,6 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 			status = CLO_ERROR_LIBRARY, error_handler, 
 			"Executing " CLO_SCAN_KNAME_WGSUMSSCAN " kernel, OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
 
-		/// TO COMMENT BLOCK
-		ocl_status = clEnqueueReadBuffer(
-			queue, 
-			dev_wgsums,
-			CL_TRUE, 
-			0, 
-			(gws_wgscan / lws) * size_sum, 
-			host_data, 
-			0, 
-			NULL, 
-			NULL
-		);
-		
-		deb_out = g_string_new("[");
-		for (guint k = 0; k < gws_wgscan / lws; k++) {
-			gulong value = 0;
-			memcpy(&value, host_data + k * size_sum, size_sum);
-			g_string_append_printf(deb_out, "%lu ", value);
-		}
-		g_string_append(deb_out, "]");
-		g_debug("SCAN WGSUMS AFTER: %s", deb_out->str);
-		g_free(host_data);
-		g_string_free(deb_out, TRUE);
-		
-		
-		
-			
 		/* Add the workgroup-wise sums to the respective workgroup elements.*/
 		ocl_status = clEnqueueNDRangeKernel(
 			queue, 

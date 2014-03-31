@@ -45,6 +45,8 @@
  * @param data_out Location where to place scan results.
  * @param data_wgsum Workgroup-wise sums.
  * @param aux Auxiliary local memory.
+ * @param numel Number of elements to scan.
+ * @param blocks_per_wg Number of blocks for each workgroup to scan.
  */
 __kernel void workgroupScan(
 			__global CLO_SCAN_ELEM_TYPE *data_in,
@@ -187,6 +189,8 @@ __kernel void workgroupSumsScan(
  * 
  * @param data_wgsum Workgroup-wise sums.
  * @param data_out Location where to place scan results.
+ * @param blocks_per_wg Number of blocks each workgroup of "workgroupScan"
+ * kernel to scanned.
  */
 __kernel void addWorkgroupSums(
 	__global CLO_SCAN_SUM_TYPE *data_wgsum, 
