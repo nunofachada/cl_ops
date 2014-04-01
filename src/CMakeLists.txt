@@ -1,5 +1,5 @@
 # Subdirectories to process
-set(CLO_SUBDIRS common rng sort)
+set(CLO_SUBDIRS common rng sort scan)
 
 # Destination for the OpenCL kernels
 set(CLO_CL_DEST_SRC ${CMAKE_CURRENT_BINARY_DIR}/${CLO_CL_DEST})
