@@ -25,6 +25,7 @@
 #include "clo_sort_sbitonic.h"
 #include "clo_sort_abitonic.h"
 #include "clo_sort_gselect.h"
+#include "clo_sort_satradix.h"
 
 /** Available sorting algorithms and respective properties. */
 CloSortInfo sort_infos[] = {
@@ -46,6 +47,12 @@ CloSortInfo sort_infos[] = {
 		clo_sort_gselect_sort, clo_sort_gselect_kernelname_get,
 		clo_sort_gselect_kernels_create, clo_sort_gselect_localmem_usage,
 		clo_sort_gselect_kernelargs_set, clo_sort_gselect_kernels_free}, 
+	{"g-select", "CLO_SORT_SATRADIX", 
+		CLO_SORT_SATRADIX_NUMQUEUES,
+		CLO_SORT_SATRADIX_NUMKERNELS, 
+		clo_sort_satradix_sort, clo_sort_satradix_kernelname_get,
+		clo_sort_satradix_kernels_create, clo_sort_satradix_localmem_usage,
+		clo_sort_satradix_kernelargs_set, clo_sort_satradix_kernels_free}, 
 	{NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL}
 };
 
