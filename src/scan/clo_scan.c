@@ -59,9 +59,9 @@ int clo_scan(cl_command_queue queue, cl_kernel *krnls,
 	/* OpenCL events, in case profiling is set to true. */
 	cl_event evt_wgscan, evt_wgsumscan, evt_addwgsums;
 	
-	//~ /* Avoid compiler warnings. */
-	//~ options = options;
-	//~ len = len;
+	/* Avoid compiler warnings. */
+	options = options;
+	size_elem = size_elem;
 	
 	/* Determine worksizes. */
 	gws_wgscan = MIN(CLO_GWS_MULT(numel / 2, lws), lws * lws);
@@ -263,6 +263,9 @@ size_t clo_scan_localmem_usage(const char* kernel_name, size_t lws_max, size_t s
 	/* Local memory usage. */
 	size_t lmu = 0;
 	
+	/* Avoid compiler warnings. */
+	size_elem = size_elem;
+	
 	/*  Return local memory usage depending on given kernel. */
 	if (g_strcmp0(CLO_SCAN_KNAME_WGSCAN, kernel_name) == 0) {
 		/* Workgroup scan kernel. */
@@ -284,11 +287,16 @@ size_t clo_scan_localmem_usage(const char* kernel_name, size_t lws_max, size_t s
 /** 
  * @brief Set kernels arguments for the scan implemenation. 
  * */
-int clo_scan_kernelargs_set(cl_kernel **krnls, cl_mem data2scan, cl_mem scanned_data, size_t lws, size_t size_elem, size_t size_sum, GError **err) {
+int clo_scan_kernelargs_set(cl_kernel **krnls, cl_mem data2scan, 
+	cl_mem scanned_data, size_t lws, size_t size_elem, size_t size_sum, 
+	GError **err) {
 	
 	/* Aux. var. */
 	int status, ocl_status;
 	
+	/* Avoid compiler warnings. */
+	size_elem = size_elem;
+
 	/* Set CLO_SCAN_KNAME_WGSCAN arguments. */
 	ocl_status = clSetKernelArg((*krnls)[CLO_SCAN_KIDX_WGSCAN], 0, sizeof(cl_mem), &data2scan);
 	gef_if_error_create_goto(*err, CLO_ERROR, CL_SUCCESS != ocl_status, status = CLO_ERROR_LIBRARY, error_handler, "Set arg 0 of " CLO_SCAN_KNAME_WGSCAN " kernel. OpenCL error %d: %s", ocl_status, clerror_get(ocl_status));
