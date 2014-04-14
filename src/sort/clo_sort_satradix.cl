@@ -15,6 +15,27 @@
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
+__kernel void satradixLocalSort(
+	__global const CLO_SORT_ELEM_TYPE* data_in,
+	__global CLO_SORT_ELEM_TYPE* data_out,
+	__local CLO_SORT_ELEM_TYPE* data_local,
+	uint start_bit,
+	uint num_bits) {
+		
+	uint lid = get_local_id(0);
+	uint gid = get_global_id(0);
+	
+	data_local[lid] = data_in[gid];
+	barrier(CLK_LOCAL_MEM_FENCE);
+	
+	for (uint b = start_bit, b < start_bit + num_bits; b++) {
+		
+		barrier(CLK_LOCAL_MEM_FENCE);
+	}
+		
+}
+
+
 /** 
  * @file
  * @brief Satish radix sort implementation.
