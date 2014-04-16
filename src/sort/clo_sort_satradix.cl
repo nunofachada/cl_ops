@@ -115,27 +115,43 @@ __kernel void satradixLocalSort(
 	
 }
 
-//~ __kernel void satradixHistogram(
-	//~ __global CLO_SORT_ELEM_TYPE* data_global,
-	//~ __global uint tile_offsets,
-	//~ __global uint counters,
-	//~ __local uint tile_offsets_local,
-	//~ __local uint counters_local,
-	//~ __local CLO_SORT_KEY_TYPE digits_local,
-	//~ uint start_bit) {
-		//~ 
-	//~ uint lid = get_global_id(0);
-	//~ uint gid = get_global_id(0);
-	//~ uint wgid = get_group_id(0);
-	//~ 
-	//~ /* Get current digit. */
-	//~ digits_local[lid] = CLO_SORT_RADIX1 & 
-		//~ (CLO_SORT_KEY_GET(data_global[gid]) >> start_bit);
-	//~ 
-	//~ /* Synchronize work-items. */
-	//~ barrier(CLK_LOCAL_MEM_FENCE);
-	//~ 
-	//~ 
-		//~ 
-//~ }
+__kernel void satradixHistogram(
+	__global CLO_SORT_ELEM_TYPE* data_global,
+	__global uint *tile_offsets,
+	__global uint *counters,
+	__local uint *tile_offsets_local,
+	__local uint *counters_local,
+	__local CLO_SORT_KEY_TYPE *digits_local,
+	uint start_bit) {
+		
+	uint lid = get_global_id(0);
+	uint gid = get_global_id(0);
+	uint wgid = get_group_id(0);
+	
+	/* Get current digit. */
+	digits_local[lid] = CLO_SORT_RADIX1 & 
+		(CLO_SORT_KEY_GET(data_global[gid]) >> start_bit);
+	
+	/* Synchronize work-items. */
+	barrier(CLK_LOCAL_MEM_FENCE);
+	
+	/* Determine offsets where contiguous regions of same value digits
+	 * start. */
+	if (lid > 0) {
+		if (digits_local[lid] != digits_local[lid - 1]) {
+			tile_offsets_local[digits_local[lid]] = lid;
+		}
+	} else /* lid == 0*/ {
+		tile_offsets_local[0] = 0;
+	}
+	
+	/* Determine the histogram proper. */
+	if (lid < CLO_SORT_RADIX1) {
+		
+	} else if (lid == CLO_SORT_RADIX1) {
+		
+	}
+	
+		
+}
 
