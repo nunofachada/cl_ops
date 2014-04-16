@@ -29,6 +29,14 @@
 	#define CLO_SORT_COMPARE(a, b) ((a) > (b))
 #endif
 
+#ifndef CLO_SORT_KEY_GET
+	#define CLO_SORT_KEY_GET(x) (x)
+#endif
+
+#ifndef CLO_SORT_KEY_TYPE
+	#define CLO_SORT_KEY_TYPE uint
+#endif
+
 #ifdef CLO_SORT_SBITONIC
 	#include "clo_sort_sbitonic.cl"
 #elif defined CLO_SORT_ABITONIC
