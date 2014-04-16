@@ -117,9 +117,9 @@ __kernel void satradixLocalSort(
 
 __kernel void satradixHistogram(
 	__global CLO_SORT_ELEM_TYPE* data_global,
-	__global uint *tile_offsets,
+	__global uint *offsets,
 	__global uint *counters,
-	__local uint *tile_offsets_local,
+	__local uint *offsets_local,
 	__local uint *counters_local,
 	__local CLO_SORT_KEY_TYPE *digits_local,
 	uint start_bit) {
@@ -139,19 +139,27 @@ __kernel void satradixHistogram(
 	 * start. */
 	if (lid > 0) {
 		if (digits_local[lid] != digits_local[lid - 1]) {
-			tile_offsets_local[digits_local[lid]] = lid;
+			offsets_local[digits_local[lid]] = lid;
 		}
 	} else /* lid == 0*/ {
-		tile_offsets_local[0] = 0;
+		offsets_local[0] = 0;
 	}
 	
 	/* Determine the histogram proper. */
 	if (lid < CLO_SORT_RADIX1) {
-		
+		counters_local[lid] = offsets_local[lid + 1] - offsets_local[lid];
 	} else if (lid == CLO_SORT_RADIX1) {
-		
+		counters_local[lid] = get_local_size(0) - offsets_local[lid];
 	}
+
+	/* Synchronize work-items. */
+	barrier(CLK_LOCAL_MEM_FENCE);
 	
-		
+	/* Store results in global memory. */
+	if (lid < CLO_SORT_RADIX) {
+		offsets[(CLO_SORT_RADIX * wgid) + lid] = offsets_local[lid];
+		counters[(get_num_groups(0) * lid) + wgid] = counters_local[lid];
+	}
+
 }
 
