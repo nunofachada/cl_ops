@@ -29,6 +29,7 @@
 
 __kernel void satradixLocalSort(
 	__global CLO_SORT_ELEM_TYPE* data_global,
+	__global CLO_SORT_ELEM_TYPE* data_global_tmp,
 	__local CLO_SORT_ELEM_TYPE* data_local,
 	__local uint* scan_local,
 	uint start_bit) {
@@ -111,12 +112,12 @@ __kernel void satradixLocalSort(
 	}
 	
 	/* Store sorted data in global memory. */
-	data_global[gid] = data_local[lid];
+	data_global_tmp[gid] = data_local[lid];
 	
 }
 
 __kernel void satradixHistogram(
-	__global CLO_SORT_ELEM_TYPE* data_global,
+	__global CLO_SORT_ELEM_TYPE* data_global_tmp,
 	__global uint *offsets,
 	__global uint *counters,
 	__local uint *offsets_local,
@@ -130,7 +131,7 @@ __kernel void satradixHistogram(
 	
 	/* Get current digit. */
 	digits_local[lid] = CLO_SORT_RADIX1 & 
-		(CLO_SORT_KEY_GET(data_global[gid]) >> start_bit);
+		(CLO_SORT_KEY_GET(data_global_tmp[gid]) >> start_bit);
 	
 	/* Synchronize work-items. */
 	barrier(CLK_LOCAL_MEM_FENCE);
@@ -163,3 +164,37 @@ __kernel void satradixHistogram(
 
 }
 
+__kernel void satradixScatter(
+	__global CLO_SORT_ELEM_TYPE* data_global,
+	__global CLO_SORT_ELEM_TYPE* data_global_tmp,
+	__global uint *offsets,
+	__global uint *counters_sum,
+	__local CLO_SORT_ELEM_TYPE* data_local,
+	__local uint *offsets_local,
+	__local uint *counters_sum_local,
+	uint start_bit) {
+		
+	uint lid = get_global_id(0);
+	uint gid = get_global_id(0);
+	uint wgid = get_group_id(0);
+	
+	/* Load data into local memory. */
+	data_local[lid] = data_global_tmp[gid];
+	if (lid < CLO_SORT_RADIX) {
+		offsets_local[lid] = offsets[(r * wgid) + lid];
+		counters_sum_local[lid] = counters_sum((get_num_groups(0) * lid) + wgid);
+	}
+	
+	/* Synchronize work-items. */
+	barrier(CLK_LOCAL_MEM_FENCE);
+	
+	/* Get digit. */
+	CLO_SORT_KEY_TYPE digit = CLO_SORT_RADIX1 & 
+		(CLO_SORT_KEY_GET(data_local[lid]) >> start_bit);			
+		
+	/* Determine output address. */
+	uint out_idx = counters_sum_local[digit] + lid - offsets_local[digit];
+	
+	/* Scatter! */
+	data_global[out_idx] = data_local[lid];
+}
