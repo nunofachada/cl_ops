@@ -181,8 +181,8 @@ __kernel void satradixScatter(
 	/* Load data into local memory. */
 	data_local[lid] = data_global_tmp[gid];
 	if (lid < CLO_SORT_RADIX) {
-		offsets_local[lid] = offsets[(r * wgid) + lid];
-		counters_sum_local[lid] = counters_sum((get_num_groups(0) * lid) + wgid);
+		offsets_local[lid] = offsets[(CLO_SORT_RADIX * wgid) + lid];
+		counters_sum_local[lid] = counters_sum[(get_num_groups(0) * lid) + wgid];
 	}
 	
 	/* Synchronize work-items. */
