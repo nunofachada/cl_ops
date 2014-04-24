@@ -132,6 +132,10 @@ __kernel void satradixHistogram(
 	/* Get current digit. */
 	digits_local[lid] = CLO_SORT_RADIX1 & 
 		(CLO_SORT_KEY_GET(data_global_tmp[gid]) >> start_bit);
+		
+	if (lid < CLO_SORT_RADIX) {
+		offsets_local[lid] = 0;
+	}
 	
 	/* Synchronize work-items. */
 	barrier(CLK_LOCAL_MEM_FENCE);
@@ -142,9 +146,34 @@ __kernel void satradixHistogram(
 		if (digits_local[lid] != digits_local[lid - 1]) {
 			offsets_local[digits_local[lid]] = lid;
 		}
-	} else /* lid == 0*/ {
-		offsets_local[0] = 0;
 	}
+		
+	/* Synchronize work-items. */
+	barrier(CLK_LOCAL_MEM_FENCE);
+	
+	//~ if (lid == 0) {
+		//~ if (offsets_local[CLO_SORT_RADIX1] == UINT_MAX)
+			//~ offsets_local[CLO_SORT_RADIX1] = get_local_size(0);
+		//~ for (uint i = CLO_SORT_RADIX1; i > 0; i--) {
+			//~ if (offsets_local[i] == UINT_MAX)
+				//~ offsets_local[i] = offsets_local[i + 1];
+		//~ }
+	//~ }
+	
+	if ((lid > 0) && (lid < CLO_SORT_RADIX)) {
+		uint o = (lid == CLO_SORT_RADIX1) ? get_local_size(0) : offsets_local[lid + 1];
+		if ((offsets_local[lid] == 0) && (o != 0)) {
+			uint idx = lid;
+			o++;
+			do {
+				offsets_local[idx] = o;
+				idx++;
+			} while (offsets_local[idx] == 0);
+		}
+	}
+
+	/* Synchronize work-items. */
+	barrier(CLK_LOCAL_MEM_FENCE);
 	
 	/* Determine the histogram proper. */
 	if (lid < CLO_SORT_RADIX1) {
