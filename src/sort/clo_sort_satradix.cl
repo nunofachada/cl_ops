@@ -123,7 +123,8 @@ __kernel void satradixHistogram(
 	__local uint *offsets_local,
 	__local uint *counters_local,
 	__local CLO_SORT_KEY_TYPE *digits_local,
-	uint start_bit) {
+	uint start_bit,
+	uint array_len) {
 		
 	uint lid = get_global_id(0);
 	uint gid = get_global_id(0);
@@ -134,7 +135,7 @@ __kernel void satradixHistogram(
 		(CLO_SORT_KEY_GET(data_global_tmp[gid]) >> start_bit);
 		
 	if (lid < CLO_SORT_RADIX) {
-		offsets_local[lid] = 0;
+		offsets_local[lid] = UINT_MAX;
 	}
 	
 	/* Synchronize work-items. */
@@ -142,33 +143,31 @@ __kernel void satradixHistogram(
 	
 	/* Determine offsets where contiguous regions of same value digits
 	 * start. */
-	if (lid > 0) {
+	if ((lid > 0) && (lid < array_len)) {
 		if (digits_local[lid] != digits_local[lid - 1]) {
 			offsets_local[digits_local[lid]] = lid;
 		}
 	}
-		
+			
 	/* Synchronize work-items. */
 	barrier(CLK_LOCAL_MEM_FENCE);
 	
-	//~ if (lid == 0) {
-		//~ if (offsets_local[CLO_SORT_RADIX1] == UINT_MAX)
-			//~ offsets_local[CLO_SORT_RADIX1] = get_local_size(0);
-		//~ for (uint i = CLO_SORT_RADIX1; i > 0; i--) {
-			//~ if (offsets_local[i] == UINT_MAX)
-				//~ offsets_local[i] = offsets_local[i + 1];
-		//~ }
-	//~ }
-	
-	if ((lid > 0) && (lid < CLO_SORT_RADIX)) {
-		uint o = (lid == CLO_SORT_RADIX1) ? get_local_size(0) : offsets_local[lid + 1];
-		if ((offsets_local[lid] == 0) && (o != 0)) {
-			uint idx = lid;
-			o++;
-			do {
-				offsets_local[idx] = o;
-				idx++;
-			} while (offsets_local[idx] == 0);
+	if (lid == 0) {
+		uint i = 0;
+		while ((i < CLO_SORT_RADIX) && (offsets_local[i] == UINT_MAX))
+			offsets_local[i] = 0;
+	} else if (lid == CLO_SORT_RADIX) {
+		if (offsets_local[lid - 1] == UINT_MAX) {
+			offsets_local[lid - 1] = array_len;
+		}
+	} else if ((offsets_local[lid] > 0) && 
+				(offsets_local[lid - 1] == UINT_MAX) &&
+				(lid > digits_local[0] + 1)) {
+		uint curr_offset = offsets_local[lid];
+		uint i = lid - 1;
+		while ((i > 0) && (offsets_local[i] == UINT_MAX)) {
+			offsets_local[i] = curr_offset;
+			i--;
 		}
 	}
 
