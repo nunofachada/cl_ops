@@ -34,6 +34,8 @@ __kernel void satradixLocalSort(
 	__local uint* scan_local,
 	uint start_bit) {
 		
+	/// @todo Currently only sorts power of 2 sized arrays
+	
 	uint lid = get_local_id(0);
 	uint gid = get_global_id(0);
 	
@@ -147,24 +149,45 @@ __kernel void satradixHistogram(
 		if (digits_local[lid] != digits_local[lid - 1]) {
 			offsets_local[digits_local[lid]] = lid;
 		}
+	} else {
+		offsets_local[digits_local[0]] = 0; 
 	}
 			
 	/* Synchronize work-items. */
 	barrier(CLK_LOCAL_MEM_FENCE);
 	
+	/* Make sure last offset is the array lenght, if not set. */
+	if (lid == CLO_SORT_RADIX1) {
+		if (offsets_local[lid] == UINT_MAX) {
+			offsets_local[lid] = array_len;
+		}
+	}	
+	
+	/* Populate uninitialized starting offsets with 0's. */
 	if (lid == 0) {
 		uint i = 0;
-		while ((i < CLO_SORT_RADIX) && (offsets_local[i] == UINT_MAX))
+		/// @todo Do this in parallel
+		while ((i < CLO_SORT_RADIX) && (offsets_local[i] == UINT_MAX)) {
 			offsets_local[i] = 0;
-	} else if (lid == CLO_SORT_RADIX) {
-		if (offsets_local[lid - 1] == UINT_MAX) {
-			offsets_local[lid - 1] = array_len;
+			i++;
 		}
-	} else if ((offsets_local[lid] > 0) && 
-				(offsets_local[lid - 1] == UINT_MAX) &&
-				(lid > digits_local[0] + 1)) {
+	}
+
+	/* Synchronize work-items. */
+	barrier(CLK_LOCAL_MEM_FENCE);
+	
+	/* Fill uninitialized offsets. */
+	if ((lid > 0) && /* First thread won't do anything here. */
+		(offsets_local[lid] > 0) && /* Current offset must be higher than zero. */
+		(offsets_local[lid] != UINT_MAX) && /* Current offset cannot be uninitialized. */
+		(offsets_local[lid - 1] == UINT_MAX)) /* Offset bellow current one must be uninitialized. */
+	{ 
+		/* Current offset will replace uninitialized offsets. */
 		uint curr_offset = offsets_local[lid];
+		/* Get index of offset bellow current one. */
 		uint i = lid - 1;
+		/* Initialize uninitialized offsets bellow current one until we 
+		 * reach an initialized offset. */
 		while ((i > 0) && (offsets_local[i] == UINT_MAX)) {
 			offsets_local[i] = curr_offset;
 			i--;
@@ -178,7 +201,7 @@ __kernel void satradixHistogram(
 	if (lid < CLO_SORT_RADIX1) {
 		counters_local[lid] = offsets_local[lid + 1] - offsets_local[lid];
 	} else if (lid == CLO_SORT_RADIX1) {
-		counters_local[lid] = get_local_size(0) - offsets_local[lid];
+		counters_local[lid] = array_len - offsets_local[lid];
 	}
 
 	/* Synchronize work-items. */
