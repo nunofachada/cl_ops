@@ -128,7 +128,7 @@ __kernel void satradixHistogram(
 	uint start_bit,
 	uint array_len) {
 		
-	uint lid = get_global_id(0);
+	uint lid = get_local_id(0);
 	uint gid = get_global_id(0);
 	uint wgid = get_group_id(0);
 	
@@ -225,7 +225,7 @@ __kernel void satradixScatter(
 	__local uint *counters_sum_local,
 	uint start_bit) {
 		
-	uint lid = get_global_id(0);
+	uint lid = get_local_id(0);
 	uint gid = get_global_id(0);
 	uint wgid = get_group_id(0);
 	
