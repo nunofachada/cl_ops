@@ -133,8 +133,10 @@ __kernel void satradixHistogram(
 	uint wgid = get_group_id(0);
 	
 	/* Get current digit. */
-	digits_local[lid] = CLO_SORT_RADIX1 & 
-		(CLO_SORT_KEY_GET(data_global_tmp[gid]) >> start_bit);
+	if (lid < array_len) {
+		digits_local[lid] = CLO_SORT_RADIX1 & 
+			(CLO_SORT_KEY_GET(data_global_tmp[gid]) >> start_bit);
+	}
 		
 	if (lid < CLO_SORT_RADIX) {
 		offsets_local[lid] = UINT_MAX;
