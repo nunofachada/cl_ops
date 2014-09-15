@@ -341,7 +341,7 @@ int main(int argc, char **argv)
 		}
 
 		/* Copy seeds to device. */
-		ccl_buffer_enqueue_write(queue, seeds_dev, CL_FALSE, 0,
+		ccl_buffer_enqueue_write(seeds_dev, queue, CL_FALSE, 0,
 			seeds_count * sizeof(cl_ulong), seeds_host, NULL, &err);
 		ccl_if_err_goto(err, error_handler);
 
@@ -367,7 +367,7 @@ int main(int argc, char **argv)
 		ccl_if_err_goto(err, error_handler);
 
 		/* Read data. */
-		ccl_buffer_enqueue_read(queue, result_dev, CL_TRUE, 0,
+		ccl_buffer_enqueue_read(result_dev, queue, CL_TRUE, 0,
 			gws * sizeof(cl_uint), result_host, NULL, &err);
 		ccl_if_err_goto(err, error_handler);
 
