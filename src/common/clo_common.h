@@ -1,24 +1,24 @@
-/*   
+/*
  * This file is part of CL-Ops.
- * 
+ *
  * CL-Ops is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
- * CL-Ops is distributed in the hope that it will be useful, 
+ *
+ * CL-Ops is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
- 
-/** 
+
+/**
  * @file
- * @brief Common data structures and function headers for OCL-OPS.
- * 
+ * @brief Common data structures and function headers for CL-Ops.
+ *
  * @author Nuno Fachada
  */
 
@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <glib.h>
-#include <cf4ocl.h>
+#include <cf4ocl2.h>
 
 /** Helper macros to convert int to string at compile time. */
 #define STR_HELPER(x) #x
@@ -50,7 +50,7 @@
 /**
  * @brief Obtains information about an algorithm by finding where this
  * information is located within a vector.
- * 
+ *
  * @param info The requested information about an algorithm.
  * @param info_v The information vector containing info about algorithms.
  * @param arg_tag Tag identifying the requested algorithm.
@@ -66,28 +66,28 @@
 /**
  * @brief Performs integer division returning the ceiling instead of
  * the floor if it is not an exact division.
- * 
+ *
  * @param a Integer numerator.
  * @param b Integer denominator.
  * */
 #define CLO_DIV_CEIL(a, b) ((a + b - 1) / b)
 
-/** 
- * @brief Calculates an adjusted global worksize equal or larger than 
- * the given global worksize and is a multiple of the given local 
- * worksize. 
- * 
+/**
+ * @brief Calculates an adjusted global worksize equal or larger than
+ * the given global worksize and is a multiple of the given local
+ * worksize.
+ *
  * @param gws Minimum global worksize.
- * @param lws Local worksize. 
+ * @param lws Local worksize.
  * */
 #define CLO_GWS_MULT(gws, lws) (lws * CLO_DIV_CEIL(gws, lws))
 
 /**
  * @brief Program error codes.
- * */ 
+ * */
 /**
  * @brief Error codes.
- * */ 
+ * */
 enum clo_error_codes {
 	CLO_SUCCESS = 0,        /**< Successful operation. */
 	CLO_ERROR_NOALLOC = 1,  /**< Error code thrown when no memory allocation is possible. */
