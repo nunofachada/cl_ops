@@ -24,7 +24,7 @@ find_package(Doxygen 1.8.3 QUIET)
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.32.1)
 
 # Library include directories
-include_directories(${GLIB_INCLUDE_DIRS} ${OPENCL_INCLUDE_DIRS} ${CF4OCL2_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src/common)
+include_directories(${GLIB_INCLUDE_DIRS} ${OPENCL_INCLUDE_DIRS} ${CF4OCL2_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src/cl_ops)
 
 # Destination for the OpenCL kernels
 set(CLO_CL_DEST share/${PROJECT_NAME})

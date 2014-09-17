@@ -15,19 +15,30 @@
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-typedef struct clo_scan {
 
-	cl_bool (*destroy)(CloScan* scan);
-	cl_bool (*scan)(CCLQueue* queue, void* data_in, void* data_out,
-		cl_uint numel, size_t lws_max);
+/**
+ * @file
+ * @brief Header for scan test.
+ */
 
-	struct clo_scan_data* data;
+#ifndef OCLOPS_SCANTEST_H
+#define OCLOPS_SCANTEST_H
 
-} CloScan;
+#include "scan/clo_scan.h"
 
-CloScan* clo_scan_new(const char* type, const char* options,
-	CCLContext* ctx, size_t elem_size, size_t sum_size,
-	const char* compiler_opts);
+#define CLO_SCAN_HOST_GET(host_data, i, bytes) \
+	((unsigned long) \
+	(bytes == 1) ? ((unsigned char*) host_data)[i] : \
+	((bytes == 2) ? ((unsigned short*) host_data)[i] : \
+	((bytes == 4) ? ((unsigned int*) host_data)[i] : \
+	((unsigned long*) host_data)[i])))
 
+#define CLO_SCAN_MAXU(bytes) \
+	((unsigned long) \
+	(bytes == 1) ? 0xFF : \
+	((bytes == 2) ? G_MAXUSHORT : \
+	((bytes == 4) ? G_MAXUINT : \
+	(G_MAXULONG))))
 
+#endif
 

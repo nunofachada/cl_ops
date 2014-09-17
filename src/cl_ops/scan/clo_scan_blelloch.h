@@ -15,4 +15,7 @@
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
- blelloch
+CloScan* clo_scan_new_blelloch(const char* options, CCLContext* ctx,
+	size_t elem_size, size_t sum_size, const char* compiler_opts, &err);
+
+void clo_scan_destroy_blelloch(CloScan* scan);

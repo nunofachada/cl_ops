@@ -24,7 +24,7 @@
 #ifndef _CLO_SCAN_H_
 #define _CLO_SCAN_H_
 
-#include "clo_common.h"
+#include "common/clo_common.h"
 
 #define CLO_SCAN_NUMKERNELS 3
 

@@ -25,9 +25,6 @@
 #ifndef CLO_COMMON_H
 #define CLO_COMMON_H
 
-#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
-#define __NO_STD_STRING
-
 #include <CL/cl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -95,8 +92,35 @@ enum clo_error_codes {
 	CLO_ERROR_ARGS = 3,     /**< Error code thrown when passed arguments are invalid. */
 	CLO_ERROR_DEVICE_NOT_FOUND = 4, /**< Error code thrown when no OpenCL device is found. */
 	CLO_ERROR_STREAM_WRITE = 5,     /**< Error code thrown when an error occurs while writing to a stream. */
+	CLO_ERROR_IMPL_NOT_FOUND = 6,   /**< An algorithm implementation was not found. */
 	CLO_ERROR_LIBRARY = 10          /**< An error ocurred in a third party library. */
 };
+
+/**
+ * Enumeration of OpenCL types.
+ * */
+typedef enum {
+	CLO_CHAR = 0,
+	CLO_UCHAR = 1,
+	CLO_INT = 2,
+	CLO_UINT = 3,
+	CLO_LONG = 4,
+	CLO_ULONG = 5,
+	CLO_HALF = 6,
+	CLO_FLOAT = 7,
+	CLO_DOUBLE = 8
+} CloType;
+
+/**
+ * Information about an OpenCL type.
+ * */
+typedef struct clo_type_info CloTypeInfo;
+
+/* Return OpenCL type name. */
+const char* clo_type_get_name(CloType type);
+
+/* Return OpenCL type size in bytes. */
+int clo_type_sizeof(CloType type);
 
 /** @brief Returns the next larger power of 2 of the given value. */
 unsigned int clo_nlpo2(register unsigned int x);
@@ -114,7 +138,9 @@ unsigned int clo_sum(unsigned int x);
  * string given as a parameter. */
 void clo_print_to_null(const gchar *string);
 
-/** @brief Get full kernel path name. */
+/** @brief Get full kernel path name.
+ * @todo REMOVE
+ * */
 gchar* clo_kernelpath_get(gchar* kernel_filename, char* exec_name);
 
 /** @brief Resolves to error category identifying string, in this case

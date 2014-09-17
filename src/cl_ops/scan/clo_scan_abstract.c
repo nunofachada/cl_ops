@@ -20,23 +20,27 @@
 struct ocl_scan_impl {
 	const char* name;
 	CloScan* (*new)(const char* options, CCLContext* ctx,
-		size_t elem_size, size_t sum_size, const char* compiler_opts);
+		CloType elem_type, CloType sum_type, const char* compiler_opts);
 };
 
 static const struct ocl_scan_impl* const scan_impls = {
-	{ "blelloch", clo_scan_new_blelloch },
+	{ "blelloch", clo_scan_blelloch_new },
 	{ NULL, NULL }
 };
 
 CloScan* clo_scan_new(const char* type, const char* options,
-	CCLContext* ctx, size_t elem_size, size_t sum_size,
-	const char* compiler_opts) {
+	CCLContext* ctx, CloType elem_type, CloType sum_type,
+	const char* compiler_opts, GError** err) {
 
 	for (guint i = 0; scan_impls[i].name != NULL; ++i) {
 		if (g_strcmp0(type, scan_impls[i].name) == 0) {
-			return scan.impls[i].new(options, ctx, elem_size, sum_size,
-				compiler_opts);
+			return scan.impls[i].new(options, ctx, elem_type, sum_type,
+				compiler_opts, err);
 		}
 	}
 
+	g_set_error(err, CLO_ERROR, CLO_ERROR_IMPL_NOT_FOUND,
+		"The requested scan implementation, '%s', was not found.", type);
+
+	return NULL;
 }
