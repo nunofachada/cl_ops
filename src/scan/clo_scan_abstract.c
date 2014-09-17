@@ -14,3 +14,29 @@
  * You should have received a copy of the GNU General Public License
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
+
+#include "clo_scan_abstract.h"
+
+struct ocl_scan_impl {
+	const char* name;
+	CloScan* (*new)(const char* options, CCLContext* ctx,
+		size_t elem_size, size_t sum_size, const char* compiler_opts);
+};
+
+static const struct ocl_scan_impl* const scan_impls = {
+	{ "blelloch", clo_scan_new_blelloch },
+	{ NULL, NULL }
+};
+
+CloScan* clo_scan_new(const char* type, const char* options,
+	CCLContext* ctx, size_t elem_size, size_t sum_size,
+	const char* compiler_opts) {
+
+	for (guint i = 0; scan_impls[i].name != NULL; ++i) {
+		if (g_strcmp0(type, scan_impls[i].name) == 0) {
+			return scan.impls[i].new(options, ctx, elem_size, sum_size,
+				compiler_opts);
+		}
+	}
+
+}

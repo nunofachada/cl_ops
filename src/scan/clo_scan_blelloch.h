@@ -15,19 +15,4 @@
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-typedef struct clo_scan {
-
-	cl_bool (*destroy)(CloScan* scan);
-	cl_bool (*scan)(CCLQueue* queue, void* data_in, void* data_out,
-		cl_uint numel, size_t lws_max);
-
-	struct clo_scan_data* data;
-
-} CloScan;
-
-CloScan* clo_scan_new(const char* type, const char* options,
-	CCLContext* ctx, size_t elem_size, size_t sum_size,
-	const char* compiler_opts);
-
-
-
+ blelloch
