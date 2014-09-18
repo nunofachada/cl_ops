@@ -22,8 +22,13 @@
 
 typedef struct clo_scan {
 
-	cl_bool (*scan)(CCLQueue* queue, void* data_in, void* data_out,
-		cl_uint numel, size_t lws_max);
+	cl_bool (*scan_with_host_data)(struct clo_scan* scanner,
+		CCLQueue* queue, void* data_in, void* data_out, cl_uint numel,
+		size_t lws_max, double* duration, GError** err);
+
+	cl_bool (*scan_with_device_data)(struct clo_scan* scanner,
+		CCLQueue* queue, CCLBuffer* data_in, CCLBuffer* data_out,
+		cl_uint numel, size_t lws_max, double* duration, GError** err);
 
 	void (*destroy)(struct clo_scan* scan);
 

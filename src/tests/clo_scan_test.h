@@ -24,7 +24,7 @@
 #ifndef OCLOPS_SCANTEST_H
 #define OCLOPS_SCANTEST_H
 
-#include "scan/clo_scan.h"
+#include "clo_scan_abstract.h"
 
 #define CLO_SCAN_HOST_GET(host_data, i, bytes) \
 	((unsigned long) \

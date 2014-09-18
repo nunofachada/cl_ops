@@ -20,50 +20,54 @@
  * @brief Test scan implementation.
  */
 
-#include "clo_scan_test.h"
+#include "clo_scan_test_old.h"
 
-#define CLO_SCAN_TEST_RUNS 1
-#define CLO_SCAN_TEST_INITELEMS 4
-#define CLO_SCAN_TEST_NUMDOUB 24
-#define CLO_SCAN_TEST_TYPE "uint"
-#define CLO_SCAN_TEST_TYPE_SUM "cl_ulong"
+#define CLO_SCAN_LWS 256
+#define CLO_SCAN_BITS 32
+#define CLO_SCAN_BITS_SUM 32
+#define CLO_SCAN_RUNS 1
+#define CLO_SCAN_INITELEMS 4
+#define CLO_SCAN_NUMDOUB 24
 
 /** A description of the program. */
-#define CLO_SCAN_DESCRIPTION "Test CL-Ops scan implementations"
+#define CLO_SCAN_DESCRIPTION "Test CL-Ops scan implementation"
+
+/** The kernels source file. */
+#define CLO_SCAN_KERNEL_SRC "clo_scan.cl"
 
 /* Command line arguments and respective default values. */
-static guint32 runs = CLO_SCAN_TEST_RUNS;
-static size_t lws = 0;
+static guint32 runs = CLO_SCAN_RUNS;
+static size_t lws = CLO_SCAN_LWS;
 static int dev_idx = -1;
 static guint32 rng_seed = CLO_DEFAULT_SEED;
-static gchar* type = NULL;
-static gchar* type_sum = NULL;
-static guint32 init_elems = CLO_SCAN_TEST_INITELEMS;
-static guint32 num_doub = CLO_SCAN_TEST_NUMDOUB;
+static unsigned int bits = CLO_SCAN_BITS;
+static unsigned int bits_sum = CLO_SCAN_BITS_SUM;
+static gchar* path = NULL;
+static guint32 init_elems = CLO_SCAN_INITELEMS;
+static guint32 num_doub = CLO_SCAN_NUMDOUB;
 static gchar* out = NULL;
 static gboolean no_check = FALSE;
-static gchar* compiler_opts = NULL;
 
 /* Valid command line options. */
 static GOptionEntry entries[] = {
 	{"runs",         'r', 0, G_OPTION_ARG_INT,    &runs,
 		"Number of runs (default is " STR(CLO_SCAN_RUNS) ")",                               "RUNS"},
 	{"localsize",    'l', 0, G_OPTION_ARG_INT,    &lws,
-		"Maximum local work size (default is auto-discover)",                       "SIZE"},
+		"Maximum local work size (default is " STR(CLO_SCAN_LWS) ")",                       "SIZE"},
 	{"device",       'd', 0, G_OPTION_ARG_INT,    &dev_idx,
 		"Device index",                                                                     "INDEX"},
 	{"rng-seed",     's', 0, G_OPTION_ARG_INT,    &rng_seed,
-		"Seed for random number generator (default is " STR(CLO_DEFAULT_TEST_SEED) ")",          "SEED"},
-	{"type",         't', 0, G_OPTION_ARG_STRING, &type,
-		"Number of bits in unsigned integers to scan (default " CLO_SCAN_TEST_TYPE ")",     "TYPE"},
-	{"type-sum",     'y', 0, G_OPTION_ARG_STRING, &type_sum,
-		"Number of bits for elements of scan result (default " CLO_SCAN_TEST_TYPE_SUM ")",  "TYPE"},
+		"Seed for random number generator (default is " STR(CLO_DEFAULT_SEED) ")",          "SEED"},
+	{"bits",         'b', 0, G_OPTION_ARG_INT,    &bits,
+		"Number of bits in unsigned integers to scan (default " STR(CLO_SCAN_BITS) ")",     "BITS"},
+	{"bits-sum",     'e', 0, G_OPTION_ARG_INT,    &bits_sum,
+		"Number of bits for elements of scan result (default " STR(CLO_SCAN_BITS_SUM) ")",  "BITS"},
+	{"path",         'p', 0, G_OPTION_ARG_STRING, &path,
+		"Path of OpenCL source files (default is " CLO_DEFAULT_PATH,                        "PATH"},
 	{"init-elems",   'i', 0, G_OPTION_ARG_INT,    &init_elems,
-		"The starting number of elements to scan (default is " STR(CLO_SCAN_TEST_INITELEMS) ")", "INIT"},
+		"The starting number of elements to scan (default is " STR(CLO_SCAN_INITELEMS) ")", "INIT"},
 	{"num-doub",     'n', 0, G_OPTION_ARG_INT,    &num_doub,
-		"Number of times min-elems is doubled (default is " STR(CLO_SCAN_TEST_NUMDOUB) ")",      "DOUB"},
-	{"compiler",     'c', 0, G_OPTION_ARG_STRING, &compiler_opts,
-		"Compiler options",                 "STRING"},
+		"Number of times min-elems is doubled (default is " STR(CLO_SCAN_NUMDOUB) ")",      "DOUB"},
 	{"no-check",     'u', 0, G_OPTION_ARG_NONE,   &no_check,
 		"Don't check scan with serial version",                                             NULL},
 	{"out",          'o', 0, G_OPTION_ARG_STRING, &out,
@@ -90,22 +94,27 @@ int main(int argc, char **argv)
 	/* Context object for command line argument parsing. */
 	GOptionContext *context = NULL;
 
+	/* Kernel file. */
+	gchar* kernelFile = NULL;
+
 	/* Test data structures. */
 	gchar* host_data = NULL;
 	gchar* host_data_scanned = NULL;
+	gchar* compilerOpts = NULL;
 	size_t bytes, bytes_sum;
-	CloType clotype_elem;
-	CloType clotype_sum;
 	size_t max_buffer_size, max_buffer_size_sum;
 	gdouble total_time;
 	FILE *outfile = NULL;
 
-	CloScan* scanner;
-
 	/* cf4ocl wrappers. */
+	CCLProgram* prg = NULL;
 	CCLQueue* queue = NULL;
 	CCLContext* ctx = NULL;
 	CCLDevice* dev = NULL;
+	CCLKernel** krnls = NULL;
+	CCLBuffer* dev_data = NULL;
+	CCLBuffer* dev_data_scanned = NULL;
+	CCLBuffer* dev_wgsums = NULL;
 
 	/* Algorithm options. */
 	gchar *options = NULL;
@@ -117,7 +126,7 @@ int main(int argc, char **argv)
 	GError *err = NULL;
 
 	/* How long will it take? */
-	double duration = 0;
+	GTimer* timer = NULL;
 
 	/* Scan benchmarks. */
 	gdouble** benchmarks = NULL;
@@ -127,29 +136,45 @@ int main(int argc, char **argv)
 	g_option_context_add_main_entries(context, entries, NULL);
 	g_option_context_parse(context, &argc, &argv, &err);
 	ccl_if_err_goto(err, error_handler);
-	clotype_elem = clo_type_by_name(
-		type != NULL ? type : CLO_SCAN_TEST_TYPE, &err);
-	ccl_if_err_goto(err, error_handler);
-	clotype_sum = clo_type_by_name(
-		type_sum != NULL ? type_sum : CLO_SCAN_TEST_TYPE_SUM, &err);
-	ccl_if_err_goto(err, error_handler);
+	if (path == NULL) {
+		kernelFile = clo_kernelpath_get(CLO_DEFAULT_PATH G_DIR_SEPARATOR_S CLO_SCAN_KERNEL_SRC, argv[0]);
+		path = g_path_get_dirname(kernelFile);
+	} else {
+		kernelFile = g_build_filename(path, CLO_SCAN_KERNEL_SRC, NULL);
+	}
+	ccl_if_err_create_goto(err, CLO_ERROR,
+		(clo_ones32(bits) != 1) || (bits > 64) || (bits < 8),
+		CLO_ERROR_ARGS, error_handler,
+		"Number of bits must be 8, 16, 32 or 64.");
 
 	/* Determine size in bytes of each element to sort. */
-	bytes = clo_type_sizeof(clotype_elem, NULL);
-	bytes_sum = clo_type_sizeof(clotype_sum, NULL);
+	bytes = bits / 8;
+	bytes_sum = bits_sum / 8;
 
 	/* Initialize random number generator. */
 	rng_host = g_rand_new_with_seed(rng_seed);
 
-	/* Get the context wrapper and the chosen device. */
+	/* Get the context wrapper. */
 	ctx = ccl_context_new_from_menu_full(&dev_idx, &err);
 	ccl_if_err_goto(err, error_handler);
-	dev = ccl_context_get_device(ctx, 0, &err);
+
+	/* Get compiler options. */
+	compilerOpts = g_strconcat(
+		"-I ", path,
+		" -D ", "CLO_SCAN_ELEM_TYPE=", bits == 8 ? "uchar" : (bits == 16 ? "ushort" : (bits == 32 ? "uint" : "ulong")),
+		" -D ", "CLO_SCAN_SUM_TYPE=", bits_sum == 8 ? "uchar" : (bits_sum == 16 ? "ushort" : (bits_sum == 32 ? "uint" : "ulong")),
+		NULL);
+
+	/* Create and build program. */
+	prg = ccl_program_new_from_source_file(ctx, kernelFile, &err);
 	ccl_if_err_goto(err, error_handler);
 
-	/* Get scan object. */
-	scanner = clo_scan_new("blelloch", "", ctx, clotype_elem,
-		clotype_sum, compiler_opts, &err);
+	ccl_program_build(prg, compilerOpts, &err);
+	ccl_if_err_goto(err, error_handler);
+
+	/* Create scan kernel(s). */
+	krnls = clo_scan_kernels_create(prg, &err);
+	ccl_if_err_goto(err, error_handler);
 
 	/* Create command queue. */
 	queue = ccl_queue_new(ctx, dev, 0, &err);
@@ -159,13 +184,15 @@ int main(int argc, char **argv)
 	printf("\n   =========================== Selected options ============================\n\n");
 	printf("     Random number generator seed: %u\n", rng_seed);
 	printf("     Maximum local worksize: %d\n", (int) lws);
-	printf("     Type of elements to scan: %s\n", clo_type_get_name(clotype_elem, NULL));
-	printf("     Type of elements in scan result: %s\n", clo_type_get_name(clotype_sum, NULL));
+	printf("     Size in bits (bytes) of elements to scan: %d (%d)\n", bits, (int) bytes);
+	printf("     Size in bits (bytes) of elements of scan result: %d (%d)\n", bits_sum, (int) bytes_sum);
 	printf("     Starting number of elements: %d\n", init_elems);
 	printf("     Number of times number of elements will be doubled: %d\n", num_doub);
 	printf("     Number of runs: %d\n", runs);
-	printf("     Compiler Options: %s\n", compiler_opts);
+	printf("     Compiler Options: %s\n", compilerOpts);
 
+	/* Create timer. */
+	timer = g_timer_new();
 
 	/* Create benchmarks table. */
 	benchmarks = g_new(gdouble*, num_doub);
@@ -179,6 +206,20 @@ int main(int argc, char **argv)
 	/* Create host buffers */
 	host_data = g_new0(gchar, max_buffer_size);
 	host_data_scanned = g_new0(gchar, max_buffer_size_sum);
+
+	/* Create device buffers. */
+	dev_data = ccl_buffer_new(
+		ctx, CL_MEM_READ_ONLY, max_buffer_size, NULL, &err);
+	ccl_if_err_goto(err, error_handler);
+
+	dev_data_scanned = ccl_buffer_new(
+		ctx, CL_MEM_READ_WRITE, max_buffer_size_sum, NULL, &err);
+	ccl_if_err_goto(err, error_handler);
+
+	/* Set kernel parameters. */
+	clo_scan_kernelargs_set(krnls, dev_data, dev_data_scanned, lws,
+		bytes, bytes_sum, &err);
+	ccl_if_err_goto(err, error_handler);
 
 	/* Start with the inital number of elements. */
 	unsigned int num_elems = init_elems;
@@ -198,14 +239,35 @@ int main(int argc, char **argv)
 				gulong value = (gulong) (g_rand_double(rng_host) * 256);
 				/* But just use the specified bits. */
 				memcpy(host_data + bytes * i, &value, bytes);
+				//gulong in_mem = CLO_SCAN_HOST_GET(host_data, i, bytes);
+				//g_debug("Value: %lx\tIn memory: %lx [%lu]", value, in_mem, in_mem);
 			}
 
-			/* Perform scan. */
-			scanner->scan_with_host_data(scanner, queue, host_data, host_data_scanned, num_elems, lws, &duration, &err);
+			/* Copy data to device. */
+			ccl_buffer_enqueue_write(dev_data, queue, CL_TRUE, 0,
+				num_elems * bytes, host_data, NULL, &err);
 			ccl_if_err_goto(err, error_handler);
 
-			/* Save time to benchmarks. */
-			benchmarks[N - 1][r] = duration;
+			/* Start timming. */
+			g_timer_start(timer);
+
+			/* Perform scan. */
+			clo_scan(queue, krnls, lws, bytes, bytes_sum, num_elems,
+				options, &err);
+			ccl_if_err_goto(err, error_handler);
+
+			/* Wait for the kernel to terminate... */
+			ccl_queue_finish(queue, &err);
+			ccl_if_err_goto(err, error_handler);
+
+			/* Stop timming and save time to benchmarks. */
+			g_timer_stop(timer);
+			benchmarks[N - 1][r] = g_timer_elapsed(timer, NULL);
+
+			/* Copy scanned data to host. */
+			ccl_buffer_enqueue_read(dev_data_scanned, queue, CL_TRUE, 0,
+				num_elems * bytes_sum, host_data_scanned, NULL, &err);
+			ccl_if_err_goto(err, error_handler);
 
 			/* Check if scan was well performed. */
 			if (no_check) {
@@ -276,7 +338,12 @@ error_handler:
 cleanup:
 
 	/* Release OpenCL wrappers. */
+	if (dev_data) ccl_buffer_destroy(dev_data);
+	if (dev_data_scanned) ccl_buffer_destroy(dev_data_scanned);
+	if (dev_wgsums) ccl_buffer_destroy(dev_wgsums);
 	if (queue) ccl_queue_destroy(queue);
+	if (krnls) clo_scan_kernels_free(krnls);
+	if (prg) ccl_program_destroy(prg);
 	if (ctx) ccl_context_destroy(ctx);
 
 	/* Free host resources */
@@ -285,7 +352,9 @@ cleanup:
 
 	/* Free command line options. */
 	if (context) g_option_context_free(context);
-	if (compiler_opts) g_free(compiler_opts);
+	if (path) g_free(path);
+	if (kernelFile) g_free(kernelFile);
+	if (compilerOpts) g_free(compilerOpts);
 	if (out) g_free(out);
 
 	/* Free benchmarks. */
@@ -294,6 +363,9 @@ cleanup:
 			if (benchmarks[i]) g_free(benchmarks[i]);
 		g_free(benchmarks);
 	}
+
+	/* Free timer. */
+	if (timer) g_timer_destroy(timer);
 
 	/* Free host-based random number generator. */
 	if (rng_host) g_rand_free(rng_host);

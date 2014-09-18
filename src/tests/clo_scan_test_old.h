@@ -1,3 +1,4 @@
+
 /*
  * This file is part of CL-Ops.
  *
@@ -16,16 +17,29 @@
  * */
 
 
-#ifndef _CLO_SCAN_BLELLOCH_H_
-#define _CLO_SCAN_BLELLOCH_H_
+/**
+ * @file
+ * @brief Header for scan test.
+ */
 
-#include "clo_scan_abstract.h"
+#ifndef OCLOPS_SCANTEST_OLD_H
+#define OCLOPS_SCANTEST_OLD_H
 
-/** The kernels source. */
-#define CLO_SCAN_BLELLOCH_SRC "@BLELLOCH_SRC@"
+#include "scan/clo_scan.h"
 
-CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
-	CloType elem_type, CloType sum_type, const char* compiler_opts,
-	GError** err);
+#define CLO_SCAN_HOST_GET(host_data, i, bytes) \
+	((unsigned long) \
+	(bytes == 1) ? ((unsigned char*) host_data)[i] : \
+	((bytes == 2) ? ((unsigned short*) host_data)[i] : \
+	((bytes == 4) ? ((unsigned int*) host_data)[i] : \
+	((unsigned long*) host_data)[i])))
+
+#define CLO_SCAN_MAXU(bytes) \
+	((unsigned long) \
+	(bytes == 1) ? 0xFF : \
+	((bytes == 2) ? G_MAXUSHORT : \
+	((bytes == 4) ? G_MAXUINT : \
+	(G_MAXULONG))))
 
 #endif
+

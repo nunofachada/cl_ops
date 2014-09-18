@@ -55,7 +55,8 @@ static const CloTypeInfo clo_types[] = {
 	{"ulong",  8}, /* CCL_ULONG  = 7 */
 	{"half",   2}, /* CCL_HALF   = 8 */
 	{"float",  4}, /* CCL_FLOAT  = 9 */
-	{"double", 8}  /* CCL_DOUBLE = 10 */
+	{"double", 8}, /* CCL_DOUBLE = 10 */
+	{NULL,     0}
 };
 
 /**
@@ -185,9 +186,12 @@ gchar* clo_kernelpath_get(gchar* kernel_filename, char* exec_name) {
  * @param[in] type Type constant.
  * @return A string containing the OpenCL type name.
  * */
-const char* clo_type_get_name(CloType type) {
-	g_assert_cmpint(type, <=, CLO_DOUBLE);
-	g_assert_cmpint(type, >=, CLO_CHAR);
+const char* clo_type_get_name(CloType type, GError** err) {
+	if ((type < CLO_CHAR) || (type > CLO_DOUBLE)) {
+		g_set_error(err, CLO_ERROR, CLO_ERROR_UNKNOWN_TYPE,
+			"Unknown type enum '%d'", type);
+		return NULL;
+	}
 	return clo_types[type].name;
 }
 
@@ -197,12 +201,23 @@ const char* clo_type_get_name(CloType type) {
  * @param[in] type Type constant.
  * @return The size of the OpenCL type in bytes.
  * */
-int clo_type_sizeof(CloType type) {
-	g_assert_cmpint(type, <=, CLO_DOUBLE);
-	g_assert_cmpint(type, >=, CLO_CHAR);
+int clo_type_sizeof(CloType type, GError** err) {
+	if ((type < CLO_CHAR) || (type > CLO_DOUBLE)) {
+		g_set_error(err, CLO_ERROR, CLO_ERROR_UNKNOWN_TYPE,
+			"Unknown type enum '%d'", type);
+		return 0;
+	}
 	return clo_types[type].size;
 }
 
+CloType clo_type_by_name(const char* name, GError** err) {
+	for (guint i = 0; clo_types[i].name != NULL; ++i)
+		if (g_strcmp0(name, clo_types[i].name) == 0)
+			return i;
+	g_set_error(err, CLO_ERROR, CLO_ERROR_UNKNOWN_TYPE,
+		"Unknown type '%s'", name);
+	return -1;
+}
 
 /**
  * @brief Resolves to error category identifying string, in this case an

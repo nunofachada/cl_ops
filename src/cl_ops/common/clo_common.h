@@ -32,6 +32,7 @@
 #include <cf4ocl2.h>
 
 /** Helper macros to convert int to string at compile time. */
+/** @todo Use G_STRINGIFY instead*/
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
@@ -93,6 +94,7 @@ enum clo_error_codes {
 	CLO_ERROR_DEVICE_NOT_FOUND = 4, /**< Error code thrown when no OpenCL device is found. */
 	CLO_ERROR_STREAM_WRITE = 5,     /**< Error code thrown when an error occurs while writing to a stream. */
 	CLO_ERROR_IMPL_NOT_FOUND = 6,   /**< An algorithm implementation was not found. */
+	CLO_ERROR_UNKNOWN_TYPE = 7,   /**< Requested OpenCL type does not exist.  */
 	CLO_ERROR_LIBRARY = 10          /**< An error ocurred in a third party library. */
 };
 
@@ -117,10 +119,12 @@ typedef enum {
 typedef struct clo_type_info CloTypeInfo;
 
 /* Return OpenCL type name. */
-const char* clo_type_get_name(CloType type);
+const char* clo_type_get_name(CloType type, GError** err);
 
 /* Return OpenCL type size in bytes. */
-int clo_type_sizeof(CloType type);
+int clo_type_sizeof(CloType type, GError** err);
+
+CloType clo_type_by_name(const char* name, GError** err);
 
 /** @brief Returns the next larger power of 2 of the given value. */
 unsigned int clo_nlpo2(register unsigned int x);

@@ -25,8 +25,8 @@ struct ocl_scan_impl {
 		GError** err);
 };
 
-static const struct ocl_scan_impl* const scan_impls = {
-	{ "blelloch", clo_scan_new_blelloch },
+static const struct ocl_scan_impl const scan_impls[] = {
+	{ "blelloch", clo_scan_blelloch_new },
 	{ NULL, NULL }
 };
 
