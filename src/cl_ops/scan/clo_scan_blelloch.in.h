@@ -21,6 +21,9 @@
 
 #include "clo_scan_abstract.h"
 
+/** The kernels source. */
+#define CLO_SCAN_BLELLOCH_SRC "@BLELLOCH_SRC@"
+
 CloScan* clo_scan_new_blelloch(const char* options, CCLContext* ctx,
 	size_t elem_size, size_t sum_size, const char* compiler_opts,
 	GError** err);

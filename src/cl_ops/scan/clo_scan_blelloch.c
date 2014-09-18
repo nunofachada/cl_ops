@@ -17,9 +17,6 @@
 
 #include "clo_scan_blelloch.h"
 
-/** The kernels source. */
-#define CLO_SCAN_BLELLOCH_SRC "@CLO_SCAN_BLELLOCH_SRC@"
-
 struct clo_scan_blelloch_data {
 	CCLContext* ctx;
 	CCLProgram* prg;
