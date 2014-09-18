@@ -16,15 +16,17 @@
  * */
 
 #include "clo_scan_abstract.h"
+#include "clo_scan_blelloch.h"
 
 struct ocl_scan_impl {
 	const char* name;
 	CloScan* (*new)(const char* options, CCLContext* ctx,
-		CloType elem_type, CloType sum_type, const char* compiler_opts);
+		CloType elem_type, CloType sum_type, const char* compiler_opts,
+		GError** err);
 };
 
 static const struct ocl_scan_impl* const scan_impls = {
-	{ "blelloch", clo_scan_blelloch_new },
+	{ "blelloch", clo_scan_new_blelloch },
 	{ NULL, NULL }
 };
 
@@ -34,7 +36,7 @@ CloScan* clo_scan_new(const char* type, const char* options,
 
 	for (guint i = 0; scan_impls[i].name != NULL; ++i) {
 		if (g_strcmp0(type, scan_impls[i].name) == 0) {
-			return scan.impls[i].new(options, ctx, elem_type, sum_type,
+			return scan_impls[i].new(options, ctx, elem_type, sum_type,
 				compiler_opts, err);
 		}
 	}

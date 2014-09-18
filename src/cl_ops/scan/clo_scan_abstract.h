@@ -15,12 +15,17 @@
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
+#ifndef _CLO_SCAN_ABSTRACT_H_
+#define _CLO_SCAN_ABSTRACT_H_
+
+#include "common/clo_common.h"
+
 typedef struct clo_scan {
 
 	cl_bool (*scan)(CCLQueue* queue, void* data_in, void* data_out,
 		cl_uint numel, size_t lws_max);
 
-	void (*destroy)(CloScan* scan);
+	void (*destroy)(struct clo_scan* scan);
 
 	void* _data;
 
@@ -30,7 +35,7 @@ CloScan* clo_scan_new(const char* type, const char* options,
 	CCLContext* ctx, CloType elem_type, CloType sum_type,
 	const char* compiler_opts, GError** err);
 
-
+#endif
 
 
 

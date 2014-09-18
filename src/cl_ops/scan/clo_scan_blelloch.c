@@ -25,7 +25,7 @@ struct clo_scan_blelloch_data {
 	CCLProgram* prg;
 	CloType elem_type;
 	CloType sum_type;
-}
+};
 
 static cl_bool clo_scan_blelloch_scan(CCLQueue* queue, void* data_in, void* data_out,
 		cl_uint numel, size_t lws_max) {
@@ -36,15 +36,17 @@ static cl_bool clo_scan_blelloch_scan(CCLQueue* queue, void* data_in, void* data
 
 
 static void clo_scan_blelloch_destroy(CloScan* scan) {
-	ccl_context_unref(
-		((struct clo_scan_blelloch_data) scan)->_data->ctx);
-	if (scan->_data->prg) ccl_program_destroy(prg);
+	struct clo_scan_blelloch_data* data =
+		(struct clo_scan_blelloch_data*) scan->_data;
+	ccl_context_unref(data->ctx);
+	if (data->prg) ccl_program_destroy(data->prg);
 	g_free(scan->_data);
 	g_free(scan);
 }
 
 CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
-	CloType elem_type, CloType sum_type, const char* compiler_opts, &err) {
+	CloType elem_type, CloType sum_type, const char* compiler_opts,
+	GError** err) {
 
 	/* Internal error management object. */
 	GError *err_internal = NULL;
@@ -55,14 +57,14 @@ CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
 	CloScan* scan = g_new0(CloScan, 1);
 
 	/* Allocate data for private scan data. */
-	struct clo_scan_blelloch_data data =
+	struct clo_scan_blelloch_data* data =
 		g_new0(struct clo_scan_blelloch_data, 1);
 
 	/* Keep data in scan private data. */
 	ccl_context_ref(ctx);
 	data->ctx = ctx;
-	data->elem_size = elem_size;
-	data->sum_size = sum_size;
+	data->elem_type = elem_type;
+	data->sum_type = sum_type;
 
 	/* Set object methods. */
 	scan->destroy = clo_scan_blelloch_destroy;
@@ -83,7 +85,7 @@ CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
 		ctx, CLO_SCAN_BLELLOCH_SRC, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-	ccl_program_build(data->prg, compiler_opts_final, &err);
+	ccl_program_build(data->prg, compiler_opts_final, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* If we got here, everything is OK. */
