@@ -15,14 +15,13 @@
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-
 /**
  * @file
  * @brief Header for scan test.
  */
 
-#ifndef OCLOPS_SCANTEST_H
-#define OCLOPS_SCANTEST_H
+#ifndef _CLO_SCAN_TEST_H
+#define _CLO_SCAN_TEST_H
 
 #include "clo_scan_abstract.h"
 

@@ -89,8 +89,7 @@ static GOptionEntry entries[] = {
  * terminates successfully, or another value of #clo_error_codes if an
  * error occurs.
  * */
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 
 	/* Status var aux */
 	int status;
@@ -283,6 +282,9 @@ error_handler:
 	g_error_free(err);
 
 cleanup:
+
+	/* Destroy scanner object. */
+	scanner->destroy(scanner);
 
 	/* Release OpenCL wrappers. */
 	if (queue) ccl_queue_destroy(queue);

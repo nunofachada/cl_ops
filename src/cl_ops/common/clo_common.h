@@ -25,10 +25,8 @@
 #ifndef CLO_COMMON_H
 #define CLO_COMMON_H
 
-#include <CL/cl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <glib.h>
 #include <cf4ocl2.h>
 
 /** Helper macros to convert int to string at compile time. */
