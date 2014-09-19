@@ -94,6 +94,7 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 		ccl_kernel_suggest_worksizes(krnl_wgscan, dev, 1, &realws,
 			&gws_wgscan, &lws, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		gws_wgscan = MIN(gws_wgscan, lws * lws);
 	}
 	ws_wgsumsscan = (gws_wgscan / lws) / 2;
 	gws_addwgsums = CLO_GWS_MULT(numel, lws);
