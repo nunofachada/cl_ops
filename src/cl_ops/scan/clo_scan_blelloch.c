@@ -29,7 +29,127 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	CCLQueue* queue, CCLBuffer* data_in, CCLBuffer* data_out,
 	cl_uint numel, size_t lws_max, double* duration, GError** err) {
 
-	return CL_FALSE;
+	/* Function return status. */
+	cl_bool status;
+
+	/* Temporary buffer. */
+	CCLBuffer* dev_wgsums;
+
+	/* Local worksize. */
+	size_t lws = MIN(lws_max, clo_nlpo2(numel) / 2);
+
+	/* OpenCL object wrappers. */
+	CCLContext* ctx;
+	CCLKernel* krnl_wgscan;
+	CCLKernel* krnl_wgsumsscan;
+	CCLKernel* krnl_addwgsums;
+
+	/* Timer object. */
+	GTimer* timer = NULL;
+
+	/* Internal error reporting object. */
+	GError* err_internal = NULL;
+
+	/* Global worksizes. */
+	size_t gws_wgscan, ws_wgsumsscan, gws_addwgsums;
+
+	/* Scan data. */
+	struct clo_scan_blelloch_data* data = scanner->_data;
+
+	/* Size in bytes of sum scalars. */
+	size_t size_sum = clo_type_sizeof(data->sum_type, NULL);
+
+	/* Determine worksizes. */
+	gws_wgscan = MIN(CLO_GWS_MULT(numel / 2, lws), lws * lws);
+	ws_wgsumsscan = (gws_wgscan / lws) / 2;
+	gws_addwgsums = CLO_GWS_MULT(numel, lws);
+
+	/* Determine number of blocks to be processed per workgroup. */
+	cl_uint blocks_per_wg = CLO_DIV_CEIL(numel / 2, gws_wgscan);
+	cl_uint numel_cl = numel;
+
+	/* Get the context wrapper. */
+	ctx = ccl_queue_get_context(queue, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Get the wgscan kernel wrapper. */
+	krnl_wgscan = ccl_program_get_kernel(data->prg, "workgroupScan", &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Create temporary buffer. */
+	dev_wgsums = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
+		(gws_wgscan / lws) * size_sum, NULL, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Set wgscan kernel arguments. */
+	ccl_kernel_set_args(krnl_wgscan, data_in, data_out, dev_wgsums,
+		ccl_arg_full(NULL, size_sum * lws * 2),
+		ccl_arg_priv(numel_cl, cl_uint),
+		ccl_arg_priv(blocks_per_wg, cl_uint), NULL);
+
+	/* Create and start timer, if required. */
+	if (duration) { timer = g_timer_new(); g_timer_start(timer); }
+
+	/* Perform workgroup-wise scan on complete array. */
+	ccl_kernel_enqueue_ndrange(krnl_wgscan, queue, 1, NULL, &gws_wgscan,
+		&lws, NULL, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | BPWG=%d | Enter? %s", numel, (int) gws_wgscan, (int) ws_wgsumsscan, (int) gws_addwgsums, (int) lws, blocks_per_wg, gws_wgscan > lws ? "YES!" : "NO!");
+	if (gws_wgscan > lws) {
+
+		/* Get the remaining kernel wrappers. */
+		krnl_wgsumsscan = ccl_program_get_kernel(data->prg, "workgroupSumsScan", &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		krnl_addwgsums = ccl_program_get_kernel(data->prg, "addWorkgroupSums", &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+		/* Set wgsumsscan kernel arguments. */
+		ccl_kernel_set_args(krnl_wgsumsscan, dev_wgsums,
+			ccl_arg_full(NULL, size_sum * lws * 2), NULL);
+
+		/* Set addwgsums kernel arguments. */
+		ccl_kernel_set_args(krnl_addwgsums, dev_wgsums, data_out,
+			ccl_arg_priv(blocks_per_wg, cl_uint), NULL);
+
+		/* Perform scan on workgroup sums array. */
+		ccl_kernel_enqueue_ndrange(krnl_wgsumsscan, queue, 1, NULL,
+			&ws_wgsumsscan, &ws_wgsumsscan, NULL, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+		/* Add the workgroup-wise sums to the respective workgroup elements.*/
+		ccl_kernel_enqueue_ndrange(krnl_addwgsums, queue, 1, NULL,
+			&gws_addwgsums, &lws, NULL, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	}
+
+	/* Stop timer and keep time, if required. */
+	if (duration) {
+		g_timer_stop(timer);
+		*duration = g_timer_elapsed(timer, NULL);
+	}
+
+	/* If we got here, everything is OK. */
+	status = CL_TRUE;
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+	status = CL_FALSE;
+
+finish:
+
+	/* Release temporary buffer. */
+	if (dev_wgsums) ccl_buffer_destroy(dev_wgsums);
+
+	/* Free timer, if required.. */
+	if (timer) g_timer_destroy(timer);
+
+	/* Return. */
+	return status;
 
 }
 
@@ -132,6 +252,9 @@ CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
 	/* Allocate data for private scan data. */
 	struct clo_scan_blelloch_data* data =
 		g_new0(struct clo_scan_blelloch_data, 1);
+
+	/* Avoid compiler warnings. */
+	options = options;
 
 	/* Keep data in scan private data. */
 	ccl_context_ref(ctx);

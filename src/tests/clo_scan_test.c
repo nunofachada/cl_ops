@@ -26,7 +26,7 @@
 #define CLO_SCAN_TEST_INITELEMS 4
 #define CLO_SCAN_TEST_NUMDOUB 24
 #define CLO_SCAN_TEST_TYPE "uint"
-#define CLO_SCAN_TEST_TYPE_SUM "cl_ulong"
+#define CLO_SCAN_TEST_TYPE_SUM "ulong"
 
 /** A description of the program. */
 #define CLO_SCAN_DESCRIPTION "Test CL-Ops scan implementations"
@@ -165,7 +165,6 @@ int main(int argc, char **argv)
 	printf("     Number of times number of elements will be doubled: %d\n", num_doub);
 	printf("     Number of runs: %d\n", runs);
 	printf("     Compiler Options: %s\n", compiler_opts);
-
 
 	/* Create benchmarks table. */
 	benchmarks = g_new(gdouble*, num_doub);
