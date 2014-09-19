@@ -209,7 +209,8 @@ int main(int argc, char **argv) {
 			}
 
 			/* Perform scan. */
-			scanner->scan_with_host_data(scanner, queue, host_data, host_data_scanned, num_elems, lws, &duration, &err);
+			scanner->scan_with_host_data(scanner, queue, host_data,
+				host_data_scanned, num_elems, lws, &duration, &err);
 			ccl_if_err_goto(err, error_handler);
 
 			/* Save time to benchmarks. */

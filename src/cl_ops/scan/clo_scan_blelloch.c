@@ -310,7 +310,7 @@ CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
 	GError *err_internal = NULL;
 
 	/* Final compiler options. */
-	gchar* compiler_opts_final;
+	gchar* compiler_opts_final = NULL;
 
 	/* Allocate memory for scan object. */
 	CloScan* scan = g_new0(CloScan, 1);
@@ -359,6 +359,9 @@ error_handler:
 	scan = NULL;
 
 finish:
+
+	/* Free stuff. */
+	if (compiler_opts_final) g_free(compiler_opts_final);
 
 	/* Return scan object. */
 	return scan;
