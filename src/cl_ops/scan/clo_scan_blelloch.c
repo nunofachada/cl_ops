@@ -27,7 +27,7 @@ struct clo_scan_blelloch_data {
 /// Does not accept NULL queue
 static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	CCLQueue* queue, CCLBuffer* data_in, CCLBuffer* data_out,
-	cl_uint numel, size_t lws_max, double* duration, GError** err) {
+	size_t numel, size_t lws_max, double* duration, GError** err) {
 
 	/* Function return status. */
 	cl_bool status;
@@ -36,10 +36,11 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	CCLBuffer* dev_wgsums;
 
 	/* Local worksize. */
-	size_t lws = MIN(lws_max, clo_nlpo2(numel) / 2);
+	size_t lws;
 
 	/* OpenCL object wrappers. */
 	CCLContext* ctx;
+	CCLDevice* dev;
 	CCLKernel* krnl_wgscan;
 	CCLKernel* krnl_wgsumsscan;
 	CCLKernel* krnl_addwgsums;
@@ -50,6 +51,10 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	/* Internal error reporting object. */
 	GError* err_internal = NULL;
 
+	/* Number of blocks to be processed per workgroup. */
+	cl_uint blocks_per_wg;
+	cl_uint numel_cl;
+
 	/* Global worksizes. */
 	size_t gws_wgscan, ws_wgsumsscan, gws_addwgsums;
 
@@ -59,14 +64,9 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	/* Size in bytes of sum scalars. */
 	size_t size_sum = clo_type_sizeof(data->sum_type, NULL);
 
-	/* Determine worksizes. */
-	gws_wgscan = MIN(CLO_GWS_MULT(numel / 2, lws), lws * lws);
-	ws_wgsumsscan = (gws_wgscan / lws) / 2;
-	gws_addwgsums = CLO_GWS_MULT(numel, lws);
-
-	/* Determine number of blocks to be processed per workgroup. */
-	cl_uint blocks_per_wg = CLO_DIV_CEIL(numel / 2, gws_wgscan);
-	cl_uint numel_cl = numel;
+	/* Get device where scan will occurr. */
+	dev = ccl_queue_get_device(queue, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get the context wrapper. */
 	ctx = ccl_queue_get_context(queue, &err_internal);
@@ -75,6 +75,22 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	/* Get the wgscan kernel wrapper. */
 	krnl_wgscan = ccl_program_get_kernel(data->prg, "workgroupScan", &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Determine worksizes. */
+	if (lws_max != 0) {
+		lws = MIN(lws_max, clo_nlpo2(numel) / 2);
+		gws_wgscan = MIN(CLO_GWS_MULT(numel / 2, lws), lws * lws);
+	} else {
+		size_t realws = numel / 2;
+		ccl_kernel_suggest_worksizes(krnl_wgscan, dev, 1, &realws, &gws_wgscan, &lws, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	}
+	ws_wgsumsscan = (gws_wgscan / lws) / 2;
+	gws_addwgsums = CLO_GWS_MULT(numel, lws);
+
+	/* Determine number of blocks to be processed per workgroup. */
+	blocks_per_wg = CLO_DIV_CEIL(numel / 2, gws_wgscan);
+	numel_cl = numel;
 
 	/* Create temporary buffer. */
 	dev_wgsums = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
@@ -95,7 +111,7 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 		&lws, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-	g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | BPWG=%d | Enter? %s", numel, (int) gws_wgscan, (int) ws_wgsumsscan, (int) gws_addwgsums, (int) lws, blocks_per_wg, gws_wgscan > lws ? "YES!" : "NO!");
+	g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | BPWG=%d | Enter? %s", (int) numel, (int) gws_wgscan, (int) ws_wgsumsscan, (int) gws_addwgsums, (int) lws, blocks_per_wg, gws_wgscan > lws ? "YES!" : "NO!");
 	if (gws_wgscan > lws) {
 
 		/* Get the remaining kernel wrappers. */
@@ -155,7 +171,7 @@ finish:
 
 /// Accepts NULL queue
 static cl_bool clo_scan_blelloch_scan_with_host_data(CloScan* scanner,
-	CCLQueue* queue, void* data_in, void* data_out, cl_uint numel,
+	CCLQueue* queue, void* data_in, void* data_out, size_t numel,
 	size_t lws_max, double* duration, GError** err) {
 
 	cl_bool status;

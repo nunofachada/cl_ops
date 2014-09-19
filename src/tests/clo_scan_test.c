@@ -27,6 +27,8 @@
 #define CLO_SCAN_TEST_NUMDOUB 24
 #define CLO_SCAN_TEST_TYPE "uint"
 #define CLO_SCAN_TEST_TYPE_SUM "ulong"
+#define CLO_SCAN_TEST_ALGORITHM "blelloch"
+#define CLO_SCAN_TEST_ALG_OPTS ""
 
 /** A description of the program. */
 #define CLO_SCAN_DESCRIPTION "Test CL-Ops scan implementations"
@@ -43,6 +45,8 @@ static guint32 num_doub = CLO_SCAN_TEST_NUMDOUB;
 static gchar* out = NULL;
 static gboolean no_check = FALSE;
 static gchar* compiler_opts = NULL;
+static gchar* algorithm = NULL;
+static gchar* alg_options = NULL;
 
 /* Valid command line options. */
 static GOptionEntry entries[] = {
@@ -64,6 +68,10 @@ static GOptionEntry entries[] = {
 		"Number of times min-elems is doubled (default is " STR(CLO_SCAN_TEST_NUMDOUB) ")",      "DOUB"},
 	{"compiler",     'c', 0, G_OPTION_ARG_STRING, &compiler_opts,
 		"Compiler options",                 "STRING"},
+	{"algorithm",    'a', 0, G_OPTION_ARG_STRING, &algorithm,
+		"Scan algorithm to use (default is '" CLO_SCAN_TEST_ALGORITHM "')",                 "STRING"},
+	{"alg-opts",     'p', 0, G_OPTION_ARG_STRING, &alg_options,
+		"Algorithm options",                 "STRING"},
 	{"no-check",     'u', 0, G_OPTION_ARG_NONE,   &no_check,
 		"Don't check scan with serial version",                                             NULL},
 	{"out",          'o', 0, G_OPTION_ARG_STRING, &out,
@@ -107,9 +115,6 @@ int main(int argc, char **argv)
 	CCLContext* ctx = NULL;
 	CCLDevice* dev = NULL;
 
-	/* Algorithm options. */
-	gchar *options = NULL;
-
 	/* Host-based random number generator (mersenne twister) */
 	GRand* rng_host = NULL;
 
@@ -127,12 +132,16 @@ int main(int argc, char **argv)
 	g_option_context_add_main_entries(context, entries, NULL);
 	g_option_context_parse(context, &argc, &argv, &err);
 	ccl_if_err_goto(err, error_handler);
+
 	clotype_elem = clo_type_by_name(
 		type != NULL ? type : CLO_SCAN_TEST_TYPE, &err);
 	ccl_if_err_goto(err, error_handler);
 	clotype_sum = clo_type_by_name(
 		type_sum != NULL ? type_sum : CLO_SCAN_TEST_TYPE_SUM, &err);
 	ccl_if_err_goto(err, error_handler);
+
+	if (algorithm == NULL) algorithm = g_strdup(CLO_SCAN_TEST_ALGORITHM);
+	if (alg_options == NULL) alg_options = g_strdup(CLO_SCAN_TEST_ALG_OPTS);
 
 	/* Determine size in bytes of each element to sort. */
 	bytes = clo_type_sizeof(clotype_elem, NULL);
@@ -148,8 +157,9 @@ int main(int argc, char **argv)
 	ccl_if_err_goto(err, error_handler);
 
 	/* Get scan object. */
-	scanner = clo_scan_new("blelloch", "", ctx, clotype_elem,
+	scanner = clo_scan_new(algorithm, alg_options, ctx, clotype_elem,
 		clotype_sum, compiler_opts, &err);
+	ccl_if_err_goto(err, error_handler);
 
 	/* Create command queue. */
 	queue = ccl_queue_new(ctx, dev, 0, &err);
@@ -158,7 +168,7 @@ int main(int argc, char **argv)
 	/* Print options. */
 	printf("\n   =========================== Selected options ============================\n\n");
 	printf("     Random number generator seed: %u\n", rng_seed);
-	printf("     Maximum local worksize: %d\n", (int) lws);
+	printf("     Maximum local worksize (0 = auto): %d\n", (int) lws);
 	printf("     Type of elements to scan: %s\n", clo_type_get_name(clotype_elem, NULL));
 	printf("     Type of elements in scan result: %s\n", clo_type_get_name(clotype_sum, NULL));
 	printf("     Starting number of elements: %d\n", init_elems);
@@ -286,6 +296,8 @@ cleanup:
 	if (context) g_option_context_free(context);
 	if (compiler_opts) g_free(compiler_opts);
 	if (out) g_free(out);
+	if (algorithm) g_free(algorithm);
+	if (alg_options) g_free(alg_options);
 
 	/* Free benchmarks. */
 	if (benchmarks) {
