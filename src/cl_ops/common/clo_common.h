@@ -102,13 +102,15 @@ enum clo_error_codes {
 typedef enum {
 	CLO_CHAR = 0,
 	CLO_UCHAR = 1,
-	CLO_INT = 2,
-	CLO_UINT = 3,
-	CLO_LONG = 4,
-	CLO_ULONG = 5,
-	CLO_HALF = 6,
-	CLO_FLOAT = 7,
-	CLO_DOUBLE = 8
+	CLO_SHORT = 2,
+	CLO_USHORT = 3,
+	CLO_INT = 4,
+	CLO_UINT = 5,
+	CLO_LONG = 6,
+	CLO_ULONG = 7,
+	CLO_HALF = 8,
+	CLO_FLOAT = 9,
+	CLO_DOUBLE = 10
 } CloType;
 
 /**
