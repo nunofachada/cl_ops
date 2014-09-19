@@ -42,9 +42,6 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	/* Function return status. */
 	cl_bool status;
 
-	/* Temporary buffer. */
-	CCLBuffer* dev_wgsums;
-
 	/* Local worksize. */
 	size_t lws;
 
@@ -54,6 +51,7 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	CCLKernel* krnl_wgscan;
 	CCLKernel* krnl_wgsumsscan;
 	CCLKernel* krnl_addwgsums;
+	CCLBuffer* dev_wgsums;
 
 	/* Timer object. */
 	GTimer* timer = NULL;
@@ -335,10 +333,10 @@ CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
 	options = options;
 
 	/* Determine final compiler options. */
-	compiler_opts_final = g_strconcat(compiler_opts,
+	compiler_opts_final = g_strconcat(
 		" -DCLO_SCAN_ELEM_TYPE=", clo_type_get_name(elem_type, NULL),
 		" -DCLO_SCAN_SUM_TYPE=", clo_type_get_name(sum_type, NULL),
-		NULL);
+		compiler_opts, NULL);
 
 	/* Create and build program. */
 	data->prg = ccl_program_new_from_source(

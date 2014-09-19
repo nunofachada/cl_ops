@@ -30,13 +30,13 @@
  *
  */
 
-#ifndef CLO_SCAN_ELEM_TYPE
-	#define CLO_SCAN_ELEM_TYPE uint
-#endif
-
-#ifndef CLO_SCAN_SUM_TYPE
-	#define CLO_SCAN_SUM_TYPE ulong
-#endif
+//~ #ifndef CLO_SCAN_ELEM_TYPE
+	//~ #define CLO_SCAN_ELEM_TYPE uint
+//~ #endif
+//~
+//~ #ifndef CLO_SCAN_SUM_TYPE
+	//~ #define CLO_SCAN_SUM_TYPE ulong
+//~ #endif
 
 /**
  * @brief Performs a workgroup-wise scan.

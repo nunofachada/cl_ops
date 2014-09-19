@@ -107,7 +107,8 @@ int main(int argc, char **argv) {
 	gdouble total_time;
 	FILE *outfile = NULL;
 
-	CloScan* scanner;
+	/* Scanner object. */
+	CloScan* scanner = NULL;
 
 	/* cf4ocl wrappers. */
 	CCLQueue* queue = NULL;
@@ -243,8 +244,6 @@ int main(int argc, char **argv) {
 
 				}
 			}
-
-
 		}
 
 		/* Print info. */
@@ -285,7 +284,7 @@ error_handler:
 cleanup:
 
 	/* Destroy scanner object. */
-	scanner->destroy(scanner);
+	if (scanner) scanner->destroy(scanner);
 
 	/* Release OpenCL wrappers. */
 	if (queue) ccl_queue_destroy(queue);
