@@ -17,6 +17,10 @@
 
 #include "clo_scan_blelloch.h"
 
+/**
+ * @internal
+ * Blelloch scanner internal data.
+ * */
 struct clo_scan_blelloch_data {
 	CCLContext* ctx;
 	CCLProgram* prg;
@@ -24,7 +28,13 @@ struct clo_scan_blelloch_data {
 	CloType sum_type;
 };
 
-/// Does not accept NULL queue
+
+/**
+ * @internal
+ * Perform scan using device data.
+ *
+ * @copydetails ::CloScan::scan_with_device_data()
+ * */
 static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	CCLQueue* queue, CCLBuffer* data_in, CCLBuffer* data_out,
 	size_t numel, size_t lws_max, double* duration, GError** err) {
@@ -73,7 +83,8 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get the wgscan kernel wrapper. */
-	krnl_wgscan = ccl_program_get_kernel(data->prg, "workgroupScan", &err_internal);
+	krnl_wgscan = ccl_program_get_kernel(
+		data->prg, "workgroupScan", &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine worksizes. */
@@ -82,7 +93,8 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 		gws_wgscan = MIN(CLO_GWS_MULT(numel / 2, lws), lws * lws);
 	} else {
 		size_t realws = numel / 2;
-		ccl_kernel_suggest_worksizes(krnl_wgscan, dev, 1, &realws, &gws_wgscan, &lws, &err_internal);
+		ccl_kernel_suggest_worksizes(krnl_wgscan, dev, 1, &realws,
+			&gws_wgscan, &lws, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	}
 	ws_wgsumsscan = (gws_wgscan / lws) / 2;
@@ -111,31 +123,36 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 		&lws, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-	g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | BPWG=%d | Enter? %s", (int) numel, (int) gws_wgscan, (int) ws_wgsumsscan, (int) gws_addwgsums, (int) lws, blocks_per_wg, gws_wgscan > lws ? "YES!" : "NO!");
+	g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | BPWG=%d | Enter? %s",
+		(int) numel, (int) gws_wgscan, (int) ws_wgsumsscan,
+		(int) gws_addwgsums, (int) lws, blocks_per_wg,
+		gws_wgscan > lws ? "YES!" : "NO!");
+
 	if (gws_wgscan > lws) {
 
 		/* Get the remaining kernel wrappers. */
-		krnl_wgsumsscan = ccl_program_get_kernel(data->prg, "workgroupSumsScan", &err_internal);
+		krnl_wgsumsscan = ccl_program_get_kernel(
+			data->prg, "workgroupSumsScan", &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-		krnl_addwgsums = ccl_program_get_kernel(data->prg, "addWorkgroupSums", &err_internal);
+		krnl_addwgsums = ccl_program_get_kernel(
+			data->prg, "addWorkgroupSums", &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-
-		/* Set wgsumsscan kernel arguments. */
-		ccl_kernel_set_args(krnl_wgsumsscan, dev_wgsums,
-			ccl_arg_full(NULL, size_sum * lws * 2), NULL);
-
-		/* Set addwgsums kernel arguments. */
-		ccl_kernel_set_args(krnl_addwgsums, dev_wgsums, data_out,
-			ccl_arg_priv(blocks_per_wg, cl_uint), NULL);
 
 		/* Perform scan on workgroup sums array. */
-		ccl_kernel_enqueue_ndrange(krnl_wgsumsscan, queue, 1, NULL,
-			&ws_wgsumsscan, &ws_wgsumsscan, NULL, &err_internal);
+		ccl_kernel_set_args_and_enqueue_ndrange(krnl_wgsumsscan, queue,
+			1, NULL, &ws_wgsumsscan, &ws_wgsumsscan, NULL, &err_internal,
+			/* Argument list. */
+			dev_wgsums, ccl_arg_full(NULL, size_sum * lws * 2),
+			NULL);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-		/* Add the workgroup-wise sums to the respective workgroup elements.*/
-		ccl_kernel_enqueue_ndrange(krnl_addwgsums, queue, 1, NULL,
-			&gws_addwgsums, &lws, NULL, &err_internal);
+		/* Add the workgroup-wise sums to the respective workgroup
+		 * elements.*/
+		ccl_kernel_set_args_and_enqueue_ndrange(krnl_addwgsums, queue,
+			1, NULL, &gws_addwgsums, &lws, NULL, &err_internal,
+			/* Argument list. */
+			dev_wgsums, data_out, ccl_arg_priv(blocks_per_wg, cl_uint),
+			NULL);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	}
@@ -169,30 +186,43 @@ finish:
 
 }
 
-/// Accepts NULL queue
+/**
+ * @internal
+ * Perform scan using host data.
+ *
+ * @copydetails ::CloScan::scan_with_host_data()
+ * */
 static cl_bool clo_scan_blelloch_scan_with_host_data(CloScan* scanner,
 	CCLQueue* queue, void* data_in, void* data_out, size_t numel,
 	size_t lws_max, double* duration, GError** err) {
 
+	/* Function return status. */
 	cl_bool status;
 
+	/* OpenCL wrapper objects. */
 	CCLBuffer* data_in_dev = NULL;
 	CCLBuffer* data_out_dev = NULL;
 	CCLQueue* intern_queue = NULL;
 	CCLDevice* dev = NULL;
+
+	/* Internal error object. */
 	GError* err_internal = NULL;
 
+	/* Blelloch scan internal data. */
 	struct clo_scan_blelloch_data* data =
 		(struct clo_scan_blelloch_data*) scanner->_data;
 
+	/* Determine data sizes. */
 	size_t data_in_size = numel * clo_type_sizeof(data->elem_type, NULL);
 	size_t data_out_size = numel * clo_type_sizeof(data->sum_type, NULL);
 
 	/* If queue is NULL, create own queue using first device in
 	 * context. */
 	if (queue == NULL) {
+		/* Get first device in context. */
 		dev = ccl_context_get_device(data->ctx, 0, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		/* Create queue. */
 		intern_queue = ccl_queue_new(data->ctx, dev, 0, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 		queue = intern_queue;
@@ -244,6 +274,13 @@ finish:
 
 }
 
+
+/**
+ * @internal
+ * Destroy scan object.
+ *
+ * @copydetails ::CloScan::destroy()
+ * */
 static void clo_scan_blelloch_destroy(CloScan* scan) {
 	struct clo_scan_blelloch_data* data =
 		(struct clo_scan_blelloch_data*) scan->_data;
@@ -253,6 +290,18 @@ static void clo_scan_blelloch_destroy(CloScan* scan) {
 	g_free(scan);
 }
 
+/**
+ * Creates a new blelloch scan object.
+ *
+ * @param[in] options Algorithm options.
+ * @param[in] ctx Context wrapper object.
+ * @param[in] elem_type Type of elements to scan.
+ * @param[in] sum_type Type of scanned elements.
+ * @param[in] compiler_opts Compiler options.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
+ * @return A new blelloch scan object.
+ * */
 CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
 	CloType elem_type, CloType sum_type, const char* compiler_opts,
 	GError** err) {
@@ -260,6 +309,7 @@ CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
 	/* Internal error management object. */
 	GError *err_internal = NULL;
 
+	/* Final compiler options. */
 	gchar* compiler_opts_final;
 
 	/* Allocate memory for scan object. */
@@ -268,9 +318,6 @@ CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
 	/* Allocate data for private scan data. */
 	struct clo_scan_blelloch_data* data =
 		g_new0(struct clo_scan_blelloch_data, 1);
-
-	/* Avoid compiler warnings. */
-	options = options;
 
 	/* Keep data in scan private data. */
 	ccl_context_ref(ctx);
@@ -285,7 +332,7 @@ CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
 	scan->_data = data;
 
 	/* For now ignore specific blelloch scan options. */
-	/* ... */
+	options = options;
 
 	/* Determine final compiler options. */
 	compiler_opts_final = g_strconcat(compiler_opts,
