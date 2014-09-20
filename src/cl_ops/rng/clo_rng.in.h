@@ -15,3 +15,16 @@
  * License along with CL-Ops. If not, see
  * <http://www.gnu.org/licenses/>.
  * */
+
+#include "common/clo_common.h"
+
+typedef struct clo_rng CloRng;
+
+CloRng* clo_rng_new(const char* type, clo_rng_seed_type seed_type,
+	void* seeds, size_t size, GError** err);
+
+void clo_rng_destroy(CloRng* rng);
+
+const char* clo_rng_get_source(CloRng* rng);
+
+CCLBuffer* clo_rng_get_seeds(CloRng* rng);

@@ -286,8 +286,8 @@ static void clo_scan_blelloch_destroy(CloScan* scan) {
 		(struct clo_scan_blelloch_data*) scan->_data;
 	ccl_context_unref(data->ctx);
 	if (data->prg) ccl_program_destroy(data->prg);
-	g_free(scan->_data);
-	g_free(scan);
+	g_slice_free(struct clo_scan_blelloch_data, scan->_data);
+	g_slice_free(CloScan, scan);
 }
 
 /**
@@ -313,11 +313,11 @@ CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
 	gchar* compiler_opts_final = NULL;
 
 	/* Allocate memory for scan object. */
-	CloScan* scan = g_new0(CloScan, 1);
+	CloScan* scan = g_slice_new0(CloScan);
 
 	/* Allocate data for private scan data. */
 	struct clo_scan_blelloch_data* data =
-		g_new0(struct clo_scan_blelloch_data, 1);
+		g_slice_new0(struct clo_scan_blelloch_data);
 
 	/* Keep data in scan private data. */
 	ccl_context_ref(ctx);
