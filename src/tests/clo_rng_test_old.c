@@ -21,7 +21,7 @@
  * @brief Test RNGs.
  */
 
-#include "clo_rng_test.h"
+#include "clo_rng_test_old.h"
 
 #define CLO_RNG_FILE_PREFIX "out"
 #define CLO_RNG_OUTPUT "file-tsv"
@@ -35,7 +35,7 @@
 #define CLO_RNG_DESCRIPTION "Test RNGs"
 
 /** The kernels source file. */
-#define CLO_RNG_KERNEL_SRC "clo_rng_test.cl"
+#define CLO_RNG_KERNEL_SRC "clo_rng_test_old.cl"
 
 /* Command line arguments and respective default values. */
 static gchar *rng = NULL;

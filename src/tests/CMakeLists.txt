@@ -1,5 +1,5 @@
 # List of tests
-set(TESTS clo_rng_test clo_scan_test)
+set(TESTS clo_rng_test_old clo_scan_test)
 
 # Common libs for tests
 set(TEST_LIBS cl_ops ${OPENCL_LIBRARIES} ${GLIB_LIBRARIES})

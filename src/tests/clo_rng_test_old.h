@@ -24,6 +24,6 @@
 #ifndef CLO_RNGTEST_H
 #define CLO_RNGTEST_H
 
-#include "rng/clo_rng.h"
+#include "rng/clo_rng_old.h"
 
 #endif
