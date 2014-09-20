@@ -15,32 +15,3 @@
  * License along with CL-Ops. If not, see
  * <http://www.gnu.org/licenses/>.
  * */
-
-
-/**
- * @file
- * @brief Ocl-Ops RNG algorithms header file.
- */
-
-#ifndef CLO_RNG_H
-#define CLO_RNG_H
-
-#include "common/clo_common.h"
-
-#define CLO_RNGS "lcg, xorshift64, xorshift128, mwc64x"
-
-#define CLO_DEFAULT_RNG "lcg"
-
-/**
- * @brief Information about a RNG.
- * */
-typedef struct clo_rng_info {
-	char* tag;            /**< Tag identifying the RNG. */
-	char* compiler_const; /**< RNG OpenCL compiler constant. */
-	size_t bytes;         /**< Bytes required per RNG seed. */
-} CloRngInfo;
-
-/** @brief Information about the random number generation algorithms. */
-extern CloRngInfo rng_infos[];
-
-#endif
