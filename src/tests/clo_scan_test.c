@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
 			/* Initialize host buffer. */
 			for (unsigned int i = 0;  i < num_elems; i++) {
 				/* Get a random 64-bit value by default, but keep it small... */
-				gulong value = (gulong) (g_rand_double(rng_host) * 256);
+				gulong value = (gulong) (g_rand_double(rng_host) * 128);
 				/* But just use the specified bits. */
 				memcpy(host_data + bytes * i, &value, bytes);
 			}

@@ -28,15 +28,12 @@
  * the first kernel serializing the scan operation when the array size
  * is larger than the squared local worksize.
  *
+ * These kernels expect two constants to be set in the compiler options:
+ *
+ * * `CLO_SCAN_ELEM_TYPE` - Type of elements to sum (uint, ulong, etc.)
+ * * `CLO_SCAN_SUM_TYPE` - Type of summed elements (uint, ulong, etc.)
+ *
  */
-
-//~ #ifndef CLO_SCAN_ELEM_TYPE
-	//~ #define CLO_SCAN_ELEM_TYPE uint
-//~ #endif
-//~
-//~ #ifndef CLO_SCAN_SUM_TYPE
-	//~ #define CLO_SCAN_SUM_TYPE ulong
-//~ #endif
 
 /**
  * @brief Performs a workgroup-wise scan.
