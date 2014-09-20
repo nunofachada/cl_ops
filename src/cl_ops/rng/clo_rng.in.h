@@ -20,11 +20,20 @@
 
 typedef struct clo_rng CloRng;
 
-CloRng* clo_rng_new(const char* type, clo_rng_seed_type seed_type,
-	void* seeds, size_t size, GError** err);
+typedef enum clo_rng_seed_type {
+
+	CLO_RNG_SEED_DEV_GID,
+	CLO_RNG_SEED_HOST_MT,
+	CLO_RNG_EXT_DEV,
+	CLO_RNG_EXT_HOST
+
+} CloRngSeedType;
+
+CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
+	void* seeds, const char* hash, size_t size, GError** err);
 
 void clo_rng_destroy(CloRng* rng);
 
 const char* clo_rng_get_source(CloRng* rng);
 
-CCLBuffer* clo_rng_get_seeds(CloRng* rng);
+CCLBuffer* clo_rng_get_device_seeds(CloRng* rng);

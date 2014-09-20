@@ -19,25 +19,35 @@
 struct clo_rng {
 
 	char* source;
-	void* seeds;
+	void* seeds_host;
+	CCLBuffer* seeds_device;
 	size_t size;
 
 };
 
-CloRng* clo_rng_new(const char* type, clo_rng_seed_type seed_type,
-	void* seeds, size_t size, GError** err) {
+CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
+	void* seeds, const char* hash, size_t size, GError** err) {
+
+	CloRng* rng;
+
+	rng = g_slice_new0(CloRng);
 
 }
 
 void clo_rng_destroy(CloRng* rng) {
 
+	g_slice_free(CloRng, rng);
+
 }
 
 const char* clo_rng_get_source(CloRng* rng) {
 
+	return (const char*) rng->source;
+
 }
 
-CCLBuffer* clo_rng_get_seeds(CloRng* rng) {
+/// Only for non-ext seed type
+CCLBuffer* clo_rng_get_device_seeds(CloRng* rng) {
 
 }
 
