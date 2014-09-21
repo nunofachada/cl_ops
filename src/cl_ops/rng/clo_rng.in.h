@@ -18,6 +18,17 @@
 
 #include "common/clo_common.h"
 
+/* Kernels source code. */
+#define CLO_RNG_SRC_WORKITEM "@RNG_SRC_WORKITEM@"
+#define CLO_RNG_SRC_LCG "@RNG_SRC_LCG@"
+#define CLO_RNG_SRC_XORSHIFT64 "@RNG_SRC_XORSHIFT64@"
+#define CLO_RNG_SRC_XORSHIFT128 "@RNG_SRC_XORSHIFT128@"
+#define CLO_RNG_SRC_MWC64X "@RNG_SRC_MWC64X@"
+#define CLO_RNG_SRC "@RNG_SRC@"
+
+/* Device seed initialization kernel. */
+#define CLO_RNG_SRC_INIT "@RNG_SRC_INIT@"
+
 typedef struct clo_rng CloRng;
 
 typedef enum clo_rng_seed_type {
@@ -30,7 +41,8 @@ typedef enum clo_rng_seed_type {
 } CloRngSeedType;
 
 CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
-	void* seeds, const char* hash, size_t size, GError** err);
+	void* seeds, const char* hash, size_t size,
+	CCLContext* ctx, CCLDevice* dev, CCLQueue* cq, GError** err);
 
 void clo_rng_destroy(CloRng* rng);
 
