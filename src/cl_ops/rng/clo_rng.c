@@ -48,27 +48,119 @@ struct ocl_rng_info {
  * @brief Information about the random number generation algorithms.
  * */
 static struct ocl_rng_info rng_infos[] = {
-	{"lcg", CLO_RNG_LCG, 8},
-	{"xorshift64", CLO_RNG_XORSHIFT64, 8},
-	{"xorshift128", CLO_RNG_XORSHIFT128, 16},
-	{"mwc64x", CLO_RNG_MWC64X, 8},
+	{"lcg", CLO_RNG_SRC_LCG, 8},
+	{"xorshift64", CLO_RNG_SRC_XORSHIFT64, 8},
+	{"xorshift128", CLO_RNG_SRC_XORSHIFT128, 16},
+	{"mwc64x", CLO_RNG_SRC_MWC64X, 8},
 	{NULL, NULL, 0}
 };
 
 static CCLBuffer* clo_rng_device_seed_init(CCLContext* ctx,
-	CCLDevice* dev, CCLQueue* cq, const char* hash, size_t size,
-	GError** err) {
+	CCLQueue* cq, const char* hash, size_t seeds_count,
+	cl_ulong main_seed, GError** err) {
+
+	CCLProgram* prg;
+	CCLBuffer* seeds = NULL;
+
+	GError* err_internal = NULL;
+
+	const char* hash_eff;
+	gchar* init_src = NULL;
+
+	if ((hash) && (*hash))
+		hash_eff = hash;
+	else
+		hash_eff = "";
+
+	/* Construct seeds init source code. */
+	init_src = g_strconcat("#define CLO_RNG_HASH(x) ", hash_eff, "\n"
+		CLO_RNG_SRC_INIT, NULL);
+
+	seeds = ccl_buffer_new(
+		ctx, CL_MEM_READ_WRITE, seeds_count * sizeof(cl_ulong), NULL, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	prg = ccl_program_new_from_source(ctx, init_src, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	ccl_program_build(prg, NULL, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	ccl_program_enqueue_kernel(prg, "clo_rng_init", cq, 1, 0, &seeds_count,
+		NULL, NULL, &err_internal,
+		ccl_arg_priv(main_seed, cl_ulong), seeds, NULL);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+
+	if (seeds) ccl_buffer_destroy(seeds);
+	seeds = NULL;
+
+finish:
+
+	if (prg) ccl_program_destroy(prg);
+	if (init_src) g_free(init_src);
+
+	/* Return seeds buffer. */
+	return seeds;
 
 }
 
-static CCLBuffer* clo_rng_host_seed_init(CCLContext* ctx,
-	CCLDevice* dev, CCLQueue* cq, size_t size, GError** err) {
+static CCLBuffer* clo_rng_host_seed_init(CCLContext* ctx, CCLQueue* cq,
+	size_t seeds_count, cl_ulong main_seed, GError** err) {
+
+	CCLBuffer* seeds_dev;
+	GRand* rng_host;
+	cl_ulong seeds_host[seeds_count];
+	GError* err_internal = NULL;
+
+	seeds_dev = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
+		seeds_count * sizeof(cl_ulong), NULL, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Initialize generator. */
+	rng_host = g_rand_new_with_seed(main_seed);
+
+	/* Generate seeds. */
+	for (unsigned int i = 0; i < seeds_count; i++) {
+		seeds_host[i] =
+			(cl_ulong) (g_rand_double(rng_host) * CL_ULONG_MAX);
+	}
+
+	/* Copy seeds to device. */
+	ccl_buffer_enqueue_write(seeds_dev, cq, CL_FALSE, 0,
+		seeds_count * sizeof(cl_ulong), seeds_host, NULL, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+
+	if (seeds_dev) ccl_buffer_destroy(seeds_dev);
+	seeds_dev = NULL;
+
+finish:
+
+	/* Return seeds buffer. */
+	return seeds_dev;
 
 }
 
 CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
-	void* seeds, const char* hash, size_t size,
-	CCLContext* ctx, CCLDevice* dev, CCLQueue* cq, GError** err) {
+	void* seeds, size_t seeds_count, cl_ulong main_seed,
+	const char* hash, CCLContext* ctx, CCLQueue* cq, GError** err) {
 
 	/* The new RNG object. */
 	CloRng* rng;
@@ -93,8 +185,8 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 						"The DEV_GID seed type expects a NULL seeds "\
 						"parameter.");
 					/* Initialize seeds in device using GID. */
-					dev_seeds = clo_rng_device_seed_init(ctx, dev, cq,
-						hash, size, &err_internal);
+					dev_seeds = clo_rng_device_seed_init(ctx, cq, hash,
+						seeds_count, main_seed, &err_internal);
 					ccl_if_err_propagate_goto(err, err_internal,
 						error_handler);
 					/* Get out of switch. */
@@ -107,8 +199,8 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 						"parameter.");
 					/* Initialize seeds in host and copy them to
 					 * device. */
-					dev_seeds = clo_rng_host_seed_init(ctx, dev, cq,
-						size, &err_internal);
+					dev_seeds = clo_rng_host_seed_init(ctx, cq,
+						seeds_count, main_seed, &err_internal);
 					ccl_if_err_propagate_goto(err, err_internal, error_handler);
 					/* Get out of switch. */
 					break;
@@ -127,9 +219,9 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 						"The EXT_HOST seed type expects a non-NULL "\
 						"seeds parameter.");
 					/* Create device buffer and copy seeds to device. */
-					dev_seeds = ccl_buffer_new(ctx, CL_MEM_READ_WRITE, size, NULL, &err_internal);
+					dev_seeds = ccl_buffer_new(ctx, CL_MEM_READ_WRITE, seeds_count * sizeof(cl_ulong), NULL, &err_internal);
 					ccl_if_err_propagate_goto(err, err_internal, error_handler);
-					ccl_buffer_enqueue_write(dev_seeds , cq, CL_TRUE, 0, size, seeds, NULL, &err_internal);
+					ccl_buffer_enqueue_write(dev_seeds , cq, CL_TRUE, 0, seeds_count * sizeof(cl_ulong), seeds, NULL, &err_internal);
 					ccl_if_err_propagate_goto(err, err_internal, error_handler);
 					/* Get out of switch. */
 					break;
@@ -189,7 +281,7 @@ void clo_rng_destroy(CloRng* rng) {
 
 const char* clo_rng_get_source(CloRng* rng) {
 
-	return (const char*) rng->source;
+	return (const char*) rng->src;
 
 }
 

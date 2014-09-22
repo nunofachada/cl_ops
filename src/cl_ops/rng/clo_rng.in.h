@@ -41,8 +41,8 @@ typedef enum clo_rng_seed_type {
 } CloRngSeedType;
 
 CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
-	void* seeds, const char* hash, size_t size,
-	CCLContext* ctx, CCLDevice* dev, CCLQueue* cq, GError** err);
+	void* seeds, size_t seeds_count, cl_ulong main_seed,
+	const char* hash, CCLContext* ctx, CCLQueue* cq, GError** err);
 
 void clo_rng_destroy(CloRng* rng);
 
