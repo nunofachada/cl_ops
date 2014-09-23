@@ -36,7 +36,7 @@ typedef ulong rng_state;
  * @return The next pseudorandom value using a LCG random number
  * generator.
  */
-uint clo_rng_next( __global rng_state *states, uint index) {
+uint clo_rng_next(__global rng_state *states, uint index) {
 
 	// Assume 32 bits
 	uint bits = 32;

@@ -20,7 +20,7 @@
  * @brief Kernel for testing RNGs
  */
 
-__kernel void testRng(
+__kernel void clo_rng_test(
 		__global rng_state *seeds,
 		__global uint *result,
 		const uint bits) {
@@ -29,9 +29,9 @@ __kernel void testRng(
 	uint gid = get_global_id(0);
 
 #ifdef CLO_RNCLO_RNG_TEST_MAXINT
-	result[gid] = randomNextInt(seeds, bits);
+	result[gid] = clo_rng_next_int(seeds, bits);
 #else
-	result[gid] = randomNext(seeds, gid) >> (32 - bits);
+	result[gid] = clo_rng_next(seeds, gid) >> (32 - bits);
 #endif
 
 }

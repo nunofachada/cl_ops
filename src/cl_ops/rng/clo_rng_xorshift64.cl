@@ -34,7 +34,7 @@ typedef ulong rng_state;
  * @return The next pseudorandom value using a xorshift random number
  * generator with 64 bit state.
  */
-uint clo_rng_next( __global rng_state *states, uint index) {
+uint clo_rng_next(__global rng_state *states, uint index) {
 
 	// Get current state
 	rng_state state = states[index];

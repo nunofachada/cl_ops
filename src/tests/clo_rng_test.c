@@ -115,14 +115,13 @@ int main(int argc, char **argv)
 
 	/* Test data structures. */
 	cl_uint *result_host = NULL;
-	cl_ulong *seeds_host = NULL;
 	FILE *output_pointer = NULL;
 	char *output_buffer = NULL;
 	gboolean output_raw;
 	const char *output_sep_field, *output_sep_line;
 	gchar *output_filename = NULL;
 	gchar* compiler_opts = NULL;
-	const char* src;
+	gchar* src = NULL;
 
 	/* cf4ocl wrappers. */
 	CCLContext* ctx = NULL;
@@ -197,17 +196,22 @@ int main(int argc, char **argv)
 	seeds_dev = clo_rng_get_device_seeds(rng_ocl);
 
 	/* Get RNG kernels source. */
-	src = clo_rng_get_source(rng_ocl);
+	src = g_strconcat(clo_rng_get_source(rng_ocl), CLO_RNG_TEST_SRC, NULL);
 
 	/* Create and build program. */
-	ccl_program_new_from_source(ctx, src, &err);
+	prg = ccl_program_new_from_source(ctx, src, &err);
 	ccl_if_err_goto(err, error_handler);
 
 	ccl_program_build(prg, compiler_opts, &err);
 	ccl_if_err_goto(err, error_handler);
 
-	/* Create host buffer */
-	result_host = (cl_uint*) malloc(sizeof(cl_uint) * gws);
+	/* Create host results buffer */
+	result_host = g_slice_alloc(sizeof(cl_uint) * gws);
+
+	/* Create device results buffer. */
+	result_dev = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
+		gws * sizeof(cl_int), NULL, &err);
+	ccl_if_err_goto(err, error_handler);
 
 	/* Setup options depending whether the generated random numbers are
 	 * to be output to stdout or to a file. */
@@ -310,7 +314,6 @@ int main(int argc, char **argv)
 	cl_uint value = maxint ? maxint : bits;
 	ccl_kernel_set_args(test_rng, seeds_dev, result_dev,
 		ccl_arg_priv(value, cl_uint), NULL);
-	ccl_if_err_goto(err, error_handler);
 
 	/* Test! */
 	for (guint i = 0; (i != runs) || (runs == 0); i++) {
@@ -367,6 +370,8 @@ cleanup:
 
 	if (rng_ocl) clo_rng_destroy(rng_ocl);
 
+	if (src) g_free(src);
+
 	/* Free timer. */
 	if (timer) g_timer_destroy(timer);
 
@@ -388,8 +393,7 @@ cleanup:
 	if (ctx) ccl_context_destroy(ctx);
 
 	/* Free host resources */
-	if (result_host) free(result_host);
-	if (seeds_host) free(seeds_host);
+	if (result_host) g_slice_free1(sizeof(cl_uint) * gws, result_host);
 
 	/* Bye bye. */
 	return status;
