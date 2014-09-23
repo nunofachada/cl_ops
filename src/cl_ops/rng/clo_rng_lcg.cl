@@ -25,9 +25,6 @@
  * implementation to Java Random class.
  */
 
-#ifndef CLO_RNG_IMPL
-#define CLO_RNG_IMPL
-
 typedef ulong rng_state;
 
 /**
@@ -39,7 +36,7 @@ typedef ulong rng_state;
  * @return The next pseudorandom value using a LCG random number
  * generator.
  */
-uint randomNext( __global rng_state *states, uint index) {
+uint clo_rng_next( __global rng_state *states, uint index) {
 
 	// Assume 32 bits
 	uint bits = 32;
@@ -52,5 +49,3 @@ uint randomNext( __global rng_state *states, uint index) {
 	// Return value
 	return (uint) (state >> (48 - bits));
 }
-
-#endif

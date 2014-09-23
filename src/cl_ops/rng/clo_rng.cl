@@ -16,18 +16,6 @@
  * <http://www.gnu.org/licenses/>.
  * */
 
-#include "clo_rng_workitem.cl"
-
-#ifdef CLO_RNG_LCG
-#include "clo_rng_lcg.cl"
-#elif defined CLO_RNG_MWC64X
-#include "clo_rng_mwc64x.cl"
-#elif defined CLO_RNG_XORSHIFT64
-#include "clo_rng_xorshift64.cl"
-#elif defined CLO_RNG_XORSHIFT128
-#include "clo_rng_xorshift128.cl"
-#endif
-
 /**
  * @brief Returns next integer from 0 (including) to n (not including).
  *
@@ -35,9 +23,8 @@
  * @param n Returned integer is less than this value.
  * @return Returns next integer from 0 (including) to n (not including).
  */
-uint randomNextInt( __global rng_state *states,
-			uint n)
-{
+uint clo_rng_next_int(__global rng_state *states, uint n) {
+
 	// Get state index
 	uint index = GID1();
 
@@ -45,7 +32,7 @@ uint randomNextInt( __global rng_state *states,
 	return randomNext(states, index) % n;
 }
 
-uint2 randomNextInt2( __global rng_state *states,
+uint2 clo_rng_next_int2( __global rng_state *states,
 			uint n)
 {
 
@@ -57,7 +44,7 @@ uint2 randomNextInt2( __global rng_state *states,
 					randomNext(states, index.s1) % n);
 }
 
-uint4 randomNextInt4( __global rng_state *states,
+uint4 clo_rng_next_int4( __global rng_state *states,
 			uint n)
 {
 	// Get state index
@@ -70,7 +57,7 @@ uint4 randomNextInt4( __global rng_state *states,
 					randomNext(states, index.s3) % n);
 }
 
-uint8 randomNextInt8( __global rng_state *states,
+uint8 clo_rng_next_int8( __global rng_state *states,
 			uint n)
 {
 	// Get state index

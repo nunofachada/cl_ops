@@ -16,6 +16,9 @@
  * <http://www.gnu.org/licenses/>.
  * */
 
+#ifndef _CLO_RNG_H_
+#define _CLO_RNG_H_
+
 #include "common/clo_common.h"
 
 /* Kernels source code. */
@@ -29,14 +32,17 @@
 /* Device seed initialization kernel. */
 #define CLO_RNG_SRC_INIT "@RNG_SRC_INIT@"
 
+/* Available RNGs */
+#define CLO_RNG_IMPLS "lcg, xorshift64, xorshift128, mwc64x"
+
 typedef struct clo_rng CloRng;
 
 typedef enum clo_rng_seed_type {
 
-	CLO_RNG_SEED_DEV_GID,
-	CLO_RNG_SEED_HOST_MT,
-	CLO_RNG_EXT_DEV,
-	CLO_RNG_EXT_HOST
+	CLO_RNG_SEED_DEV_GID = 0,
+	CLO_RNG_SEED_HOST_MT = 1,
+	CLO_RNG_EXT_DEV      = 2,
+	CLO_RNG_EXT_HOST     = 3
 
 } CloRngSeedType;
 
@@ -49,3 +55,5 @@ void clo_rng_destroy(CloRng* rng);
 const char* clo_rng_get_source(CloRng* rng);
 
 CCLBuffer* clo_rng_get_device_seeds(CloRng* rng);
+
+#endif

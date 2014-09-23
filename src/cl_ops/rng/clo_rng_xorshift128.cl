@@ -24,9 +24,6 @@
  * Based on code available [here](http://en.wikipedia.org/wiki/Xorshift).
  */
 
-#ifndef CLO_RNG_IMPL
-#define CLO_RNG_IMPL
-
 typedef uint4 rng_state;
 
 /**
@@ -38,7 +35,7 @@ typedef uint4 rng_state;
  * @return The next pseudorandom value using a xorshift random number
  * generator with 128 bit state.
  */
-uint randomNext( __global rng_state *states, uint index) {
+uint clo_rng_next( __global rng_state *states, uint index) {
 
 	// Get current state
 	rng_state state = states[index];
@@ -58,4 +55,3 @@ uint randomNext( __global rng_state *states, uint index) {
 
 }
 
-#endif

@@ -23,51 +23,51 @@
 #include "clo_rng_test.h"
 
 
-#define CLO_RNG_FILE_PREFIX "out"
-#define CLO_RNG_OUTPUT "file-tsv"
-#define CLO_RNG_GWS 262144
-#define CLO_RNG_LWS 256
-#define CLO_RNG_RUNS 10
-#define CLO_RNG_BITS 32
-#define CLO_FILE_BUFF_SIZE 1073741824 /* One gigabyte.*/
+#define CLO_RNG_TEST_FILE_PREFIX "out"
+#define CLO_RNG_TEST_OUTPUT "file-tsv"
+#define CLO_RNG_TEST_GWS 262144
+#define CLO_RNG_TEST_LWS 256
+#define CLO_RNG_TEST_RUNS 10
+#define CLO_RNG_TEST_BITS 32
+#define CLO_RNG_TEST_BUFF_SIZE 1073741824 /* One gigabyte.*/
+#define CLO_RNG_TEST_DEFAULT "lcg"
 
 /** A description of the program. */
-#define CLO_RNG_DESCRIPTION "Test RNGs"
+#define CLO_RNG_TEST_DESCRIPTION "Test RNGs"
 
 /* Command line arguments and respective default values. */
 static gchar *rng = NULL;
 static gchar *output = NULL;
-static size_t gws = CLO_RNG_GWS;
-static size_t lws = CLO_RNG_LWS;
-static unsigned int runs = CLO_RNG_RUNS;
+static size_t gws = CLO_RNG_TEST_GWS;
+static size_t lws = CLO_RNG_TEST_LWS;
+static unsigned int runs = CLO_RNG_TEST_RUNS;
 static int dev_idx = -1;
 static guint32 rng_seed = CLO_DEFAULT_SEED;
 static gchar *gid_hash = NULL;
-static unsigned int bits = CLO_RNG_BITS;
+static unsigned int bits = CLO_RNG_TEST_BITS;
 static unsigned int maxint = 0;
-static gchar *path = NULL;
 
 /* Valid command line options. */
 static GOptionEntry entries[] = {
 	{"rng",          'r', 0,
 		G_OPTION_ARG_STRING, &rng,
-		"Random number generator: " CLO_RNGS " (default is " CLO_DEFAULT_RNG ")",
+		"Random number generator: " CLO_RNG_IMPLS " (default is " CLO_RNG_TEST_DEFAULT ")",
 		"RNG"},
 	{"output",       'o', 0,
 		G_OPTION_ARG_STRING, &output,
-		"Output: file-tsv, file-dh, stdout-bin, stdout-uint (default: " CLO_RNG_OUTPUT ")",
+		"Output: file-tsv, file-dh, stdout-bin, stdout-uint (default: " CLO_RNG_TEST_OUTPUT ")",
 		"OUTPUT"},
 	{"globalsize",   'g', 0,
 		G_OPTION_ARG_INT,    &gws,
-		"Global work size (default is " STR(CLO_RNG_GWS) ")",
+		"Global work size (default is " STR(CLO_RNG_TEST_GWS) ")",
 		"SIZE"},
 	{"localsize",    'l', 0,
 		G_OPTION_ARG_INT,    &lws,
-		"Local work size (default is " STR(CLO_RNG_LWS) ")",
+		"Local work size (default is " STR(CLO_RNG_TEST_LWS) ")",
 		"SIZE"},
 	{"runs",         'n', 0,
 		G_OPTION_ARG_INT,    &runs,
-		"Random numbers per workitem (default is " STR(CLO_RNG_RUNS) ", 0 means continuous generation)",
+		"Random numbers per workitem (default is " STR(CLO_RNG_TEST_RUNS) ", 0 means continuous generation)",
 		"SIZE"},
 	{"device",       'd', 0,
 		G_OPTION_ARG_INT,    &dev_idx,
@@ -83,16 +83,12 @@ static GOptionEntry entries[] = {
 		"HASH"},
 	{"bits",         'b', 0,
 		G_OPTION_ARG_INT,    &bits,
-		"Number of bits in unsigned integers to produce (default " STR(CLO_RNG_BITS) ")",
+		"Number of bits in unsigned integers to produce (default " STR(CLO_RNG_TEST_BITS) ")",
 		NULL},
 	{"max",          'm', 0,
 		G_OPTION_ARG_INT,    &maxint,
 		"Maximum integer to produce, overrides --bits option",
 		NULL},
-	{"path",         'p', 0,
-		G_OPTION_ARG_STRING, &path,
-		"Path of OpenCL source files (default is " CLO_DEFAULT_PATH,
-		"PATH"},
 	{ NULL, 0, 0, 0, NULL, NULL, NULL }
 };
 
@@ -125,8 +121,8 @@ int main(int argc, char **argv)
 	gboolean output_raw;
 	const char *output_sep_field, *output_sep_line;
 	gchar *output_filename = NULL;
-	gchar* compilerOpts = NULL;
-	size_t seeds_count;
+	gchar* compiler_opts = NULL;
+	const char* src;
 
 	/* cf4ocl wrappers. */
 	CCLContext* ctx = NULL;
@@ -137,33 +133,32 @@ int main(int argc, char **argv)
 	CCLBuffer* seeds_dev = NULL;
 	CCLBuffer* result_dev = NULL;
 
-	/* Host-based random number generator (mersenne twister) */
-	GRand* rng_host = NULL;
-
 	/* Error management object. */
 	GError *err = NULL;
 
 	/* How long will it take? */
 	GTimer* timer = NULL;
 
+	CloRng* rng_ocl;
+
+	CloRngSeedType seed_type;
+
 	/* Parse command line options. */
-	context = g_option_context_new (" - " CLO_RNG_DESCRIPTION);
+	context = g_option_context_new (" - " CLO_RNG_TEST_DESCRIPTION);
 	g_option_context_add_main_entries(context, entries, NULL);
 	g_option_context_parse(context, &argc, &argv, &err);
 	ccl_if_err_goto(err, error_handler);
 
-	if (output == NULL) output = g_strdup(CLO_RNG_OUTPUT);
-	if (rng == NULL) rng = g_strdup(CLO_DEFAULT_RNG);
-	if (path == NULL) {
-		kernelFile = clo_kernelpath_get(CLO_DEFAULT_PATH G_DIR_SEPARATOR_S CLO_RNG_KERNEL_SRC, argv[0]);
-		path = g_path_get_dirname(kernelFile);
+	if (output == NULL) output = g_strdup(CLO_RNG_TEST_OUTPUT);
+	if (rng == NULL) rng = g_strdup(CLO_RNG_TEST_DEFAULT);
+
+	/* Determine seed type. */
+	if (gid_hash == NULL) {
+		seed_type = CLO_RNG_SEED_HOST_MT;
 	} else {
-		kernelFile = g_build_filename(path, CLO_RNG_KERNEL_SRC, NULL);
+		seed_type = CLO_RNG_SEED_DEV_GID;
 	}
-	CLO_ALG_GET(rng_info, rng_infos, rng);
-	ccl_if_err_create_goto(err, CLO_ERROR, !rng_info.tag,
-		CLO_ERROR_ARGS, error_handler,
-		"Unknown random number generator '%s'.", rng);
+
 	ccl_if_err_create_goto(err, CLO_ERROR,
 		g_strcmp0(output, "file-tsv") && g_strcmp0(output, "file-dh") && g_strcmp0(output, "stdout-bin") && g_strcmp0(output, "stdout-uint"),
 		CLO_ERROR_ARGS, error_handler,
@@ -185,37 +180,34 @@ int main(int argc, char **argv)
 	ccl_if_err_goto(err, error_handler);
 
 	/* Build compiler options. */
-	compilerOpts = g_strconcat(
-		"-I ", path,
-		" -D ", rng_info.compiler_const,
-		gid_hash ? " -D CLO_RNG_HASH_" : "",
-		gid_hash ? gid_hash : "",
-		maxint ? " -D CLO_RNG_MAXINT" : "",
+	compiler_opts = g_strconcat(
+		maxint ? " -D CLO_RNCLO_RNG_TEST_MAXINT" : "",
 		NULL);
 
 	/* Create command queue. */
 	queue = ccl_queue_new(ctx, dev, 0, &err);
 	ccl_if_err_goto(err, error_handler);
 
-	/* Create and build program. */
-	prg = ccl_program_new_from_source_file(ctx, kernelFile, &err);
+	/* Create scan object. */
+	rng_ocl = clo_rng_new(rng, seed_type, NULL, gws, rng_seed, gid_hash,
+		ctx, queue, &err);
 	ccl_if_err_goto(err, error_handler);
 
-	ccl_program_build(prg, compilerOpts, &err);
+	/* Get RNG seeds device buffer. */
+	seeds_dev = clo_rng_get_device_seeds(rng_ocl);
+
+	/* Get RNG kernels source. */
+	src = clo_rng_get_source(rng_ocl);
+
+	/* Create and build program. */
+	ccl_program_new_from_source(ctx, src, &err);
+	ccl_if_err_goto(err, error_handler);
+
+	ccl_program_build(prg, compiler_opts, &err);
 	ccl_if_err_goto(err, error_handler);
 
 	/* Create host buffer */
 	result_host = (cl_uint*) malloc(sizeof(cl_uint) * gws);
-
-	/* Create device buffer */
-	seeds_count = gws * rng_info.bytes / sizeof(cl_ulong);
-	seeds_dev = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
-		seeds_count * sizeof(cl_ulong), NULL, &err);
-	ccl_if_err_goto(err, error_handler);
-
-	result_dev = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
-		gws * sizeof(cl_int), NULL, &err);
-	ccl_if_err_goto(err, error_handler);
 
 	/* Setup options depending whether the generated random numbers are
 	 * to be output to stdout or to a file. */
@@ -243,7 +235,7 @@ int main(int argc, char **argv)
 		/* Generated random numbers are to be output to file. */
 		if (!g_strcmp0(output, "file-dh")) {
 			output_filename = g_strconcat(
-				CLO_RNG_FILE_PREFIX, "_", rng, "_",
+				CLO_RNG_TEST_FILE_PREFIX, "_", rng, "_",
 				gid_hash ? "gid_" : "host_",
 				gid_hash ? gid_hash : "mt",
 				".dh.txt", NULL);
@@ -251,7 +243,7 @@ int main(int argc, char **argv)
 			output_sep_line = "";
 		} else if (!g_strcmp0(output, "file-tsv")) {
 			output_filename = g_strconcat(
-				CLO_RNG_FILE_PREFIX, "_", rng, "_",
+				CLO_RNG_TEST_FILE_PREFIX, "_", rng, "_",
 				gid_hash ? "gid_" : "host_",
 				gid_hash ? gid_hash : "mt",
 				".tsv", NULL);
@@ -268,14 +260,14 @@ int main(int argc, char **argv)
 			"Unable to create output file '%s'.", output_filename);
 
 		/* Create large file buffer to avoid trashing disk. */
-		output_buffer = (char*) malloc(CLO_FILE_BUFF_SIZE * sizeof(char));
+		output_buffer = (char*) malloc(CLO_RNG_TEST_BUFF_SIZE * sizeof(char));
 		ccl_if_err_create_goto(err, CLO_ERROR, output_buffer == NULL,
 			CLO_ERROR_NOALLOC, error_handler,
 			"Unable to allocate memory for output file buffer.");
 
 		/* Set file buffer. */
 		status = setvbuf(
-			output_pointer, output_buffer, _IOFBF, CLO_FILE_BUFF_SIZE);
+			output_pointer, output_buffer, _IOFBF, CLO_RNG_TEST_BUFF_SIZE);
 		ccl_if_err_create_goto(err, CLO_ERROR, status != 0,
 			CLO_ERROR_STREAM_WRITE, error_handler,
 			"Unable to set output file buffer.");
@@ -301,7 +293,7 @@ int main(int argc, char **argv)
 	g_print("     Global/local worksizes: %d/%d\n", (int) gws, (int) lws);
 	g_print("     Number of runs: %d\n", runs);
 	g_print("     Number of bits / Maximum integer: %d / %u\n", bits, (unsigned int) ((1ul << bits) - 1));
-	g_print("     Compiler Options: %s\n", compilerOpts);
+	g_print("     Compiler Options: %s\n", compiler_opts);
 
 	/* Inform about execution. */
 	g_print("\n   =========================== Execution status ============================\n\n");
@@ -310,40 +302,8 @@ int main(int argc, char **argv)
 	/* Start timming. */
 	timer = g_timer_new();
 
-	/* If gid_seed is set, then initialize seeds in device with a kernel
-	 * otherwise, initialize seeds in host and send them to device. */
-	if (gid_hash) {
-		/* *** Device initalization of seeds, GID-based. *** */
-
-		ccl_program_enqueue_kernel(prg, "initRng", queue, 1, NULL,
-			&seeds_count, &lws, NULL, &err,
-			ccl_arg_priv(rng_seed, cl_ulong), seeds_dev, NULL);
-		ccl_if_err_goto(err, error_handler);
-
-	} else {
-		/* *** Host initialization of seeds with Mersenne Twister. *** */
-
-		/* Initialize generator. */
-		rng_host = g_rand_new_with_seed(rng_seed);
-
-		/* Allocate host memory for seeds. */
-		seeds_host = (cl_ulong*) malloc(seeds_count * sizeof(cl_ulong));
-
-		/* Generate seeds. */
-		for (unsigned int i = 0; i < seeds_count; i++) {
-			seeds_host[i] = (cl_ulong) (g_rand_double(rng_host) * CL_ULONG_MAX);
-		}
-
-		/* Copy seeds to device. */
-		ccl_buffer_enqueue_write(seeds_dev, queue, CL_FALSE, 0,
-			seeds_count * sizeof(cl_ulong), seeds_host, NULL, &err);
-		ccl_if_err_goto(err, error_handler);
-
-	}
-
-
 	/* Get test kernel. */
-	test_rng = ccl_program_get_kernel(prg, "testRng", &err);
+	test_rng = ccl_program_get_kernel(prg, "clo_rng_test", &err);
 	ccl_if_err_goto(err, error_handler);
 
 	/*  Set test kernel arguments. */
@@ -401,10 +361,11 @@ cleanup:
 	if (context) g_option_context_free(context);
 	if (rng) g_free(rng);
 	if (output) g_free(output);
-	if (compilerOpts) g_free(compilerOpts);
-	if (path) g_free(path);
+	if (compiler_opts) g_free(compiler_opts);
 	if (kernelFile) g_free(kernelFile);
 	if (gid_hash) g_free(gid_hash);
+
+	if (rng_ocl) clo_rng_destroy(rng_ocl);
 
 	/* Free timer. */
 	if (timer) g_timer_destroy(timer);
@@ -415,8 +376,6 @@ cleanup:
 	/* Free file output buffer. */
 	if (output_buffer) free(output_buffer);
 
-	/* Free host-based random number generator. */
-	if (rng_host) g_rand_free(rng_host);
 
 	/* Free filename strings. */
 	if (output_filename) g_free(output_filename);

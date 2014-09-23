@@ -117,7 +117,7 @@ static CCLBuffer* clo_rng_host_seed_init(CCLContext* ctx, CCLQueue* cq,
 	size_t seeds_count, cl_ulong main_seed, GError** err) {
 
 	CCLBuffer* seeds_dev;
-	GRand* rng_host;
+	GRand* rng_host = NULL;
 	cl_ulong seeds_host[seeds_count];
 	GError* err_internal = NULL;
 
@@ -152,6 +152,9 @@ error_handler:
 	seeds_dev = NULL;
 
 finish:
+
+	/* Free host-based random number generator. */
+	if (rng_host) g_rand_free(rng_host);
 
 	/* Return seeds buffer. */
 	return seeds_dev;

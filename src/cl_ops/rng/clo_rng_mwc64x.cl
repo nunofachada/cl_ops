@@ -25,9 +25,6 @@
  * http://cas.ee.ic.ac.uk/people/dt10/research/rngs-gpu-mwc64x.html.
  */
 
-#ifndef CLO_RNG_IMPL
-#define CLO_RNG_IMPL
-
 typedef uint2 rng_state;
 
 /**
@@ -39,7 +36,7 @@ typedef uint2 rng_state;
  * @return The next pseudorandom value using a MWC random number
  * generator.
  */
-uint randomNext(__global rng_state *states, uint index) {
+uint clo_rng_next(__global rng_state *states, uint index) {
 
     enum { A=4294883355U};
 
@@ -57,5 +54,3 @@ uint randomNext(__global rng_state *states, uint index) {
 	return res;
 }
 
-
-#endif

@@ -17,12 +17,22 @@
 
 /**
  * @file
- * @brief Header for RNG test.
+ * @brief Kernel for testing RNGs
  */
 
-#ifndef _CLO_RNG_TEST_H_
-#define _CLO_RNG_TEST_H_
+__kernel void testRng(
+		__global rng_state *seeds,
+		__global uint *result,
+		const uint bits) {
 
-#include "clo_rng.h"
+	/* Grid position for this work-item. */
+	uint gid = get_global_id(0);
 
+#ifdef CLO_RNCLO_RNG_TEST_MAXINT
+	result[gid] = randomNextInt(seeds, bits);
+#else
+	result[gid] = randomNext(seeds, gid) >> (32 - bits);
 #endif
+
+}
+
