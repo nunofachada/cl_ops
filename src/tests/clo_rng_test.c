@@ -79,7 +79,7 @@ static GOptionEntry entries[] = {
 		"SEED"},
 	{"gid-hash",     'h', 0,
 		G_OPTION_ARG_STRING, &gid_hash,
-		"Use GID-based workitem seeds instead of MT derived seeds from host. The option value is the hash to apply to seeds (NONE, KNUTH or XS1).",
+		"Use workitem GID-based seeds instead of MT derived seeds from host. The option value is the hash to apply to seeds (KNUTH, XS1 or source code modifying variable x, e.g. x = x << 2).",
 		"HASH"},
 	{"bits",         'b', 0,
 		G_OPTION_ARG_INT,    &bits,

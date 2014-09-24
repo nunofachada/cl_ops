@@ -21,9 +21,20 @@
  * @brief Device seed initialization kernel.
  */
 
+/* Pre-defined hashes. */
+
+/* Knuth multiplicative coefficient. */
+#define KNUTH(x)  x = ((x*2654435761) % 0x100000000)
+
+/* Xor shift hash. */
+#define XS1(x) \
+	x = ((x >> 16) ^ x) * 0x45d9f3b; \
+	x = ((x >> 16) ^ x) * 0x45d9f3b; \
+	x = ((x >> 16) ^ x);
+
 #ifndef CLO_RNG_HASH
 	/* Default is no hash. */
-	#define CLO_RNG_HASH(x) (x)
+	#define CLO_RNG_HASH(x) x=x
 #endif
 
 __kernel void clo_rng_init(

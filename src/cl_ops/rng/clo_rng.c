@@ -57,7 +57,7 @@ static struct ocl_rng_info rng_infos[] = {
 
 static CCLBuffer* clo_rng_device_seed_init(CCLContext* ctx,
 	CCLQueue* cq, const char* hash, size_t seeds_count,
-	cl_ulong main_seed, GError** err) {
+	size_t seed_size, cl_ulong main_seed, GError** err) {
 
 	CCLProgram* prg;
 	CCLBuffer* seeds = NULL;
@@ -67,17 +67,19 @@ static CCLBuffer* clo_rng_device_seed_init(CCLContext* ctx,
 	const char* hash_eff;
 	gchar* init_src = NULL;
 
+	size_t seeds_vec_size = seed_size * seeds_count / sizeof(cl_ulong);
+
 	if ((hash) && (*hash))
 		hash_eff = hash;
 	else
-		hash_eff = "";
+		hash_eff = "x";
 
 	/* Construct seeds init source code. */
 	init_src = g_strconcat("#define CLO_RNG_HASH(x) ", hash_eff, "\n"
 		CLO_RNG_SRC_INIT, NULL);
 
-	seeds = ccl_buffer_new(
-		ctx, CL_MEM_READ_WRITE, seeds_count * sizeof(cl_ulong), NULL, &err_internal);
+	seeds = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
+		seeds_vec_size * sizeof(cl_ulong), NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	prg = ccl_program_new_from_source(ctx, init_src, &err_internal);
@@ -86,8 +88,8 @@ static CCLBuffer* clo_rng_device_seed_init(CCLContext* ctx,
 	ccl_program_build(prg, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-	ccl_program_enqueue_kernel(prg, "clo_rng_init", cq, 1, 0, &seeds_count,
-		NULL, NULL, &err_internal,
+	ccl_program_enqueue_kernel(prg, "clo_rng_init", cq, 1, 0,
+		&seeds_vec_size, NULL, NULL, &err_internal,
 		ccl_arg_priv(main_seed, cl_ulong), seeds, NULL);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
@@ -114,29 +116,33 @@ finish:
 }
 
 static CCLBuffer* clo_rng_host_seed_init(CCLContext* ctx, CCLQueue* cq,
-	size_t seeds_count, cl_ulong main_seed, GError** err) {
+	size_t seeds_count, size_t seed_size, cl_ulong main_seed,
+	GError** err) {
 
 	CCLBuffer* seeds_dev;
 	GRand* rng_host = NULL;
-	cl_ulong seeds_host[seeds_count];
+	size_t seeds_vec_size = seed_size * seeds_count / sizeof(cl_ulong);
+	cl_ulong seeds_host[seeds_vec_size];
 	GError* err_internal = NULL;
 
+
 	seeds_dev = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
-		seeds_count * sizeof(cl_ulong), NULL, &err_internal);
+		seeds_vec_size * sizeof(cl_ulong), NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Initialize generator. */
 	rng_host = g_rand_new_with_seed(main_seed);
 
 	/* Generate seeds. */
-	for (unsigned int i = 0; i < seeds_count; i++) {
+	for (unsigned int i = 0; i < seeds_vec_size; i++) {
 		seeds_host[i] =
 			(cl_ulong) (g_rand_double(rng_host) * CL_ULONG_MAX);
 	}
 
 	/* Copy seeds to device. */
-	ccl_buffer_enqueue_write(seeds_dev, cq, CL_FALSE, 0,
-		seeds_count * sizeof(cl_ulong), seeds_host, NULL, &err_internal);
+	ccl_buffer_enqueue_write(seeds_dev, cq, CL_TRUE, 0,
+		seeds_vec_size * sizeof(cl_ulong), seeds_host, NULL,
+		&err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* If we got here, everything is OK. */
@@ -166,7 +172,7 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 	const char* hash, CCLContext* ctx, CCLQueue* cq, GError** err) {
 
 	/* The new RNG object. */
-	CloRng* rng;
+	CloRng* rng = NULL;
 
 	/* Device seeds. */
 	CCLBuffer* dev_seeds = NULL;
@@ -189,7 +195,8 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 						"parameter.");
 					/* Initialize seeds in device using GID. */
 					dev_seeds = clo_rng_device_seed_init(ctx, cq, hash,
-						seeds_count, main_seed, &err_internal);
+						seeds_count, rng_infos[i].seed_size, main_seed,
+						&err_internal);
 					ccl_if_err_propagate_goto(err, err_internal,
 						error_handler);
 					/* Get out of switch. */
@@ -203,8 +210,10 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 					/* Initialize seeds in host and copy them to
 					 * device. */
 					dev_seeds = clo_rng_host_seed_init(ctx, cq,
-						seeds_count, main_seed, &err_internal);
-					ccl_if_err_propagate_goto(err, err_internal, error_handler);
+						seeds_count, rng_infos[i].seed_size, main_seed,
+						&err_internal);
+					ccl_if_err_propagate_goto(err, err_internal,
+						error_handler);
 					/* Get out of switch. */
 					break;
 				case CLO_RNG_EXT_DEV:
