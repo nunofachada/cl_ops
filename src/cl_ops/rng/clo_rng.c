@@ -16,11 +16,28 @@
  * <http://www.gnu.org/licenses/>.
  * */
 
+/**
+ * @file
+ * @brief CL-Ops RNG class definitions.
+ * */
+
 #include "clo_rng.h"
 
+/**
+ * RNG class definition.
+ * */
 struct clo_rng {
 
+	/**
+	 * Kernels source code.
+	 * @private
+	 * */
 	char* src;
+
+	/**
+	 * Device seeds state.
+	 * @private
+	 * */
 	CCLBuffer* seeds_device;
 
 };
@@ -167,6 +184,25 @@ finish:
 
 }
 
+/**
+ *  Create a new RNG object.
+ *
+ * @param[in] type Type of RNG: lcg, xorshift64, xorshift128, mwc64x.
+ * @param[in] seed_type Type of seed.
+ * @param[in] seeds Array of seeds (only for ::CLO_RNG_SEED_EXT_HOST
+ * seed type, assumed to be an array of `cl_ulong` seeds with length
+ * equal to `seeds_count`).
+ * @param[in] seeds_count Number of seeds.
+ * @param[in] main_seed Base seed (ignored for external seed types).
+ * @param[in] hash Hash for ::CLO_RNG_SEED_DEV_GID seed type.
+ * @param[in] ctx Context wrapper (not required for
+ * ::CLO_RNG_SEED_EXT_DEV seed type).
+ * @param[in] cq Command queue wrapper (not required for
+ * ::CLO_RNG_SEED_EXT_DEV seed type).
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
+ * @return A new RNG object.
+ * */
 CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 	void* seeds, size_t seeds_count, cl_ulong main_seed,
 	const char* hash, CCLContext* ctx, CCLQueue* cq, GError** err) {
@@ -216,7 +252,7 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 						error_handler);
 					/* Get out of switch. */
 					break;
-				case CLO_RNG_EXT_DEV:
+				case CLO_RNG_SEED_EXT_DEV:
 					/* Check that seeds parameter is NULL. */
 					ccl_if_err_create_goto(*err, CLO_ERROR,
 						seeds != NULL, CLO_ERROR_ARGS, error_handler,
@@ -224,17 +260,23 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 						"parameter.");
 					/* Get out of switch. */
 					break;
-				case CLO_RNG_EXT_HOST:
+				case CLO_RNG_SEED_EXT_HOST:
 					/* Check that seeds is not NULL. */
 					ccl_if_err_create_goto(*err, CLO_ERROR,
-						seeds != NULL, CLO_ERROR_ARGS, error_handler,
+						seeds == NULL, CLO_ERROR_ARGS, error_handler,
 						"The EXT_HOST seed type expects a non-NULL "\
 						"seeds parameter.");
 					/* Create device buffer and copy seeds to device. */
-					dev_seeds = ccl_buffer_new(ctx, CL_MEM_READ_WRITE, seeds_count * sizeof(cl_ulong), NULL, &err_internal);
-					ccl_if_err_propagate_goto(err, err_internal, error_handler);
-					ccl_buffer_enqueue_write(dev_seeds , cq, CL_TRUE, 0, seeds_count * sizeof(cl_ulong), seeds, NULL, &err_internal);
-					ccl_if_err_propagate_goto(err, err_internal, error_handler);
+					dev_seeds = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
+						seeds_count * sizeof(cl_ulong), NULL,
+						&err_internal);
+					ccl_if_err_propagate_goto(err, err_internal,
+						error_handler);
+					ccl_buffer_enqueue_write(dev_seeds , cq, CL_TRUE, 0,
+						seeds_count * sizeof(cl_ulong), seeds, NULL,
+						&err_internal);
+					ccl_if_err_propagate_goto(err, err_internal,
+						error_handler);
 					/* Get out of switch. */
 					break;
 				default:
@@ -280,28 +322,59 @@ finish:
 	return rng;
 }
 
+/**
+ * Destroy a RNG object.
+ *
+ * @param[in] rng RNG object to destroy.
+ * */
 void clo_rng_destroy(CloRng* rng) {
 
+	/* Make sure rng object is not NULL. */
+	g_return_if_fail(rng != NULL);
+
+	/* Destroy in-device seeds buffer. */
 	if (rng->seeds_device != NULL)
 		ccl_buffer_destroy(rng->seeds_device);
 
+	/* Destroy source code string. */
 	g_free(rng->src);
 
+	/* Destroy rng object. */
 	g_slice_free(CloRng, rng);
 
 }
 
+/**
+ * Get the OpenCL source code for the RNG object.
+ *
+ * @param[in] rng RNG object.
+ * @return The OpenCL source code associated with the given RNG object.
+ * */
 const char* clo_rng_get_source(CloRng* rng) {
 
+	/* Make sure rng object is not NULL. */
+	g_return_val_if_fail(rng != NULL, NULL);
+
+	/* Return source. */
 	return (const char*) rng->src;
 
 }
 
-/// Only for non-ext seed type
+/**
+ * Get in-device seeds. Only for non-external seed types.
+ *
+ * @param[in] rng RNG object.
+ * @return Buffer representing in-device seeds.
+ * */
 CCLBuffer* clo_rng_get_device_seeds(CloRng* rng) {
 
-	g_return_val_if_fail(rng->seeds_device, NULL);
+	/* Make sure rng object is not NULL. */
+	g_return_val_if_fail(rng != NULL, NULL);
 
+	/* Make sure in-device seeds are not NULL. */
+	g_return_val_if_fail(rng->seeds_device != NULL, NULL);
+
+	/* Return in-device seeds. */
 	return rng->seeds_device;
 }
 

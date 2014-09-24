@@ -25,15 +25,20 @@
 #include "clo_scan_blelloch.h"
 
 /**
- * @internal
- * A scan algorithm name and the respective constructor.
+ * Abstract scan class definition.
  * */
 struct ocl_scan_impl {
 
-	/** Scan algorithm name. */
+	/**
+	 * Scan algorithm name.
+	 * @private
+	 * */
 	const char* name;
 
-	/** Scan algorithm constructor. */
+	/**
+	 * Scan algorithm constructor.
+	 * @private
+	 * */
 	CloScan* (*new)(const char* options, CCLContext* ctx,
 		CloType elem_type, CloType sum_type, const char* compiler_opts,
 		GError** err);

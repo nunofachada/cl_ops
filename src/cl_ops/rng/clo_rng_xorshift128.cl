@@ -24,33 +24,34 @@
  * Based on code available [here](http://en.wikipedia.org/wiki/Xorshift).
  */
 
+/* For the Xor-Shift128 RNG, the size of each seed is four integers. */
 typedef uint4 rng_state;
 
 /**
  * @brief Returns the next pseudorandom value using a xorshift random
  * number generator with 128 bit state.
  *
- * @param states Array of RNG states.
- * @param index Index of relevant state to use and update.
+ * @param[in,out] states Array of RNG states.
+ * @param[in] index Index of relevant state to use and update.
  * @return The next pseudorandom value using a xorshift random number
  * generator with 128 bit state.
  */
 uint clo_rng_next(__global rng_state *states, uint index) {
 
-	// Get current state
+	/* Get current state */
 	rng_state state = states[index];
 
-	// Update state
+	/* Update state */
 	uint t = state.x ^ (state.x << 11);
 	state.x = state.y;
 	state.y = state.z;
 	state.z = state.w;
 	state.w = state.w ^ (state.w >> 19) ^ (t ^ (t >> 8));
 
-	// Keep state
+	/* Keep state */
 	states[index] = state;
 
-	// Return value
+	/* Return value */
 	return state.w;
 
 }

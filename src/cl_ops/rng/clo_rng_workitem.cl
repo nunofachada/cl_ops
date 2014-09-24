@@ -16,10 +16,9 @@
  * <http://www.gnu.org/licenses/>.
  * */
 
-
 /**
  * @file
- * @brief Utility functions for OpenCL workitems.
+ * @brief Utility macros for OpenCL workitems.
  */
 
 #define GLOBAL_SIZE() get_global_size(0)

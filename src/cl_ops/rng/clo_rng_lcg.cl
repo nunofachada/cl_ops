@@ -25,27 +25,32 @@
  * implementation to Java Random class.
  */
 
+/* For the LCG RNG, the size of each seed is ulong. */
 typedef ulong rng_state;
 
 /**
  * @brief Returns the next pseudorandom value using a LCG random number
  * generator.
  *
- * @param states Array of RNG states.
- * @param index Index of relevant state to use and update.
+ * @param[in,out] states Array of RNG states.
+ * @param[in] index Index of relevant state to use and update.
  * @return The next pseudorandom value using a LCG random number
  * generator.
  */
 uint clo_rng_next(__global rng_state *states, uint index) {
 
-	// Assume 32 bits
+	/* Assume 32 bits */
 	uint bits = 32;
-	// Get current state
+
+	/* Get current state */
 	rng_state state = states[index];
-	// Update state
+
+	/* Update state */
 	state = (state * 0x5DEECE66DL + 0xBL) & ((1L << 48) - 1);
-	// Keep state
+
+	/* Keep state */
 	states[index] = state;
-	// Return value
+
+	/* Return value */
 	return (uint) (state >> (48 - bits));
 }

@@ -37,12 +37,24 @@
 	#define CLO_RNG_HASH(x) x=x
 #endif
 
+/**
+ * Initialize RNG seeds using each workitem's global ID and possibly
+ * an externally specified hash.
+ *
+ * @param[in] main_seed Base seed.
+ * @param[in,out] seeds Array of seeds.
+ * */
 __kernel void clo_rng_init(
 		const ulong main_seed,
 		__global ulong *seeds) {
 
+	/* Get initial seed for this workitem. */
 	ulong seed = get_global_id(0) + main_seed;
+
+	/* Apply hash, if any was specified. */
 	CLO_RNG_HASH(seed);
+
+	/* Update seeds array. */
 	seeds[get_global_id(0)] = seed;
 
 }
