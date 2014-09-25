@@ -1,6 +1,6 @@
 # Subdirectories to process
 #set(CLO_SUBDIRS common rng sort scan)
-set(CLO_SUBDIRS common rng scan)
+set(CLO_SUBDIRS common rng scan sort)
 
 # Sources for the aggregated cl-ops shared library, initially empty
 set(CLO_LIB_SRCS "")
