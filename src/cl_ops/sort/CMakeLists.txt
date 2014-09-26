@@ -9,6 +9,9 @@ string(REGEX REPLACE "(..)" "\\\\x\\1" SBITONIC_SRC ${SBITONIC_SRC_RAW})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/clo_sort_abstract.in.h
 	${CMAKE_BINARY_DIR}/cl_ops/clo_sort_abstract.h @ONLY)
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/clo_sort_sbitonic.in.h
+	${CMAKE_BINARY_DIR}/cl_ops/clo_sort_sbitonic.h @ONLY)
+
 
 
 

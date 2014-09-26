@@ -49,7 +49,7 @@ static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
 	cl_uint tot_stages;
 
 	/* OpenCL object wrappers. */
-	CCLContext* ctx;
+	//~ CCLContext* ctx;
 	CCLDevice* dev;
 	CCLKernel* krnl;
 
@@ -59,7 +59,7 @@ static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
 	/* Internal error reporting object. */
 	GError* err_internal = NULL;
 
-	/* Scan data. */
+	/* Simple bitonic sort data. */
 	struct clo_sort_sbitonic_data* data = sorter->_data;
 
 	/* Get device where sort will occurr. */
@@ -67,8 +67,8 @@ static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get the context wrapper. */
-	ctx = ccl_queue_get_context(queue, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	//~ ctx = ccl_queue_get_context(queue, &err_internal);
+	//~ ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get the kernel wrapper. */
 	krnl = ccl_program_get_kernel(
@@ -97,7 +97,7 @@ static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
 		/* Copy data_in to data_out first, and then sort on copied
 		 * data. */
 		ccl_buffer_enqueue_copy(data_in, data_out, queue, 0, 0,
-			clo_type_sizeof(elem_type, NULL) * numel, NULL,
+			clo_type_sizeof(data->elem_type, NULL) * numel, NULL,
 			&err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	}
@@ -176,7 +176,7 @@ static cl_bool clo_sort_sbitonic_sort_with_host_data(CloSort* sorter,
 
 	/* Simple bitonic sort internal data. */
 	struct clo_sort_sbitonic_data* data =
-		(struct clo_sort_sbitonic_data*) scanner->_data;
+		(struct clo_sort_sbitonic_data*) sorter->_data;
 
 	/* Determine data size. */
 	size_t data_size = numel * clo_type_sizeof(data->elem_type, NULL);
@@ -245,7 +245,7 @@ finish:
 static void clo_sort_sbitonic_destroy(CloSort* sorter) {
 	struct clo_sort_sbitonic_data* data =
 		(struct clo_sort_sbitonic_data*) sorter->_data;
-	ccl_context_unref(sorter->ctx);
+	ccl_context_unref(data->ctx);
 	if (data->prg) ccl_program_destroy(data->prg);
 	g_slice_free(struct clo_sort_sbitonic_data, sorter->_data);
 	g_slice_free(CloSort, sorter);
@@ -262,7 +262,7 @@ static void clo_sort_sbitonic_destroy(CloSort* sorter) {
  * reporting is to be ignored.
  * @return A new simple bitonic sorter object.
  * */
-CloScan* clo_sort_sbitonic_new(const char* options, CCLContext* ctx,
+CloSort* clo_sort_sbitonic_new(const char* options, CCLContext* ctx,
 	CloType elem_type, const char* compiler_opts, GError** err) {
 
 	/* Internal error management object. */
@@ -274,11 +274,11 @@ CloScan* clo_sort_sbitonic_new(const char* options, CCLContext* ctx,
 	/* Allocate memory for sorter object. */
 	CloSort* sorter = g_slice_new0(CloSort);
 
-	/* Allocate data for private scan data. */
+	/* Allocate data for private sort data. */
 	struct clo_sort_sbitonic_data* data =
 		g_slice_new0(struct clo_sort_sbitonic_data);
 
-	/* Keep data in scan private data. */
+	/* Keep data in sort private data. */
 	ccl_context_ref(ctx);
 	data->ctx = ctx;
 	data->elem_type = elem_type;
@@ -289,7 +289,7 @@ CloScan* clo_sort_sbitonic_new(const char* options, CCLContext* ctx,
 	sorter->sort_with_device_data = clo_sort_sbitonic_sort_with_device_data;
 	sorter->_data = data;
 
-	/* For now ignore specific sbitonic scan options. */
+	/* For now ignore specific sbitonic sort options. */
 	options = options;
 
 	/* Determine final compiler options. */
@@ -319,7 +319,7 @@ finish:
 	/* Free stuff. */
 	if (compiler_opts_final) g_free(compiler_opts_final);
 
-	/* Return scan object. */
+	/* Return sorter object. */
 	return sorter;
 
 }
