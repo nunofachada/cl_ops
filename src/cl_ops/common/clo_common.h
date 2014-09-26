@@ -87,14 +87,13 @@
  * */
 enum clo_error_codes {
 	CLO_SUCCESS = 0,        /**< Successful operation. */
-	CLO_ERROR_NOALLOC = 1,  /**< Error code thrown when no memory allocation is possible. */
-	CLO_ERROR_OPENFILE = 2, /**< Error code thrown when it's not possible to open file. */
-	CLO_ERROR_ARGS = 3,     /**< Error code thrown when passed arguments are invalid. */
-	CLO_ERROR_DEVICE_NOT_FOUND = 4, /**< Error code thrown when no OpenCL device is found. */
-	CLO_ERROR_STREAM_WRITE = 5,     /**< Error code thrown when an error occurs while writing to a stream. */
-	CLO_ERROR_IMPL_NOT_FOUND = 6,   /**< An algorithm implementation was not found. */
-	CLO_ERROR_UNKNOWN_TYPE = 7,   /**< Requested OpenCL type does not exist.  */
-	CLO_ERROR_LIBRARY = 10          /**< An error ocurred in a third party library. */
+	CLO_ERROR_OPENFILE = 1, /**< Error code thrown when it's not possible to open file. */
+	CLO_ERROR_ARGS = 2,     /**< Error code thrown when passed arguments are invalid. */
+	CLO_ERROR_DEVICE_NOT_FOUND = 3, /**< Error code thrown when no OpenCL device is found. */
+	CLO_ERROR_STREAM_WRITE = 4,     /**< Error code thrown when an error occurs while writing to a stream. */
+	CLO_ERROR_IMPL_NOT_FOUND = 5,   /**< An algorithm implementation was not found. */
+	CLO_ERROR_UNKNOWN_TYPE = 6,   /**< Requested OpenCL type does not exist.  */
+	CLO_ERROR_LIBRARY = 7          /**< An error ocurred in a third party library. */
 };
 
 /**

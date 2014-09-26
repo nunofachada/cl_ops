@@ -294,7 +294,7 @@ CloSort* clo_sort_sbitonic_new(const char* options, CCLContext* ctx,
 
 	/* Determine final compiler options. */
 	compiler_opts_final = g_strconcat(" -DCLO_SORT_ELEM_TYPE=",
-		clo_type_get_name(elem_type, NULL), compiler_opts, NULL);
+		clo_type_get_name(elem_type, NULL), " ", compiler_opts, NULL);
 
 	/* Create and build program. */
 	data->prg = ccl_program_new_from_source(

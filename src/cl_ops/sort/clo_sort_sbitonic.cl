@@ -20,6 +20,22 @@
  * @brief Simple bitonic sort implementation.
  */
 
+#ifndef CLO_SORT_ELEM_TYPE
+	#define CLO_SORT_ELEM_TYPE uint
+#endif
+
+#ifndef CLO_SORT_COMPARE
+	#define CLO_SORT_COMPARE(a, b) ((a) > (b))
+#endif
+
+#ifndef CLO_SORT_KEY_GET
+	#define CLO_SORT_KEY_GET(x) (x)
+#endif
+
+#ifndef CLO_SORT_KEY_TYPE
+	#define CLO_SORT_KEY_TYPE uint
+#endif
+
 /**
  * @brief A simple bitonic sort kernel.
  *

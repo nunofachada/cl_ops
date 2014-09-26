@@ -22,6 +22,7 @@
  * */
 
 #include "clo_sort_abstract.h"
+#include "clo_sort_sbitonic.h"
 
 /**
  * Abstract sort class definition.
@@ -47,7 +48,7 @@ struct ocl_sort_impl {
  * The list of known sort implementations.
  * */
 static const struct ocl_sort_impl const sort_impls[] = {
-	//~ { "sbitonic", clo_sort_sbitonic_new },
+	{ "sbitonic", clo_sort_sbitonic_new },
 	//~ { "abitonic", clo_sort_abitonic_new },
 	//~ { "gselect", clo_sort_gselect_new },
 	//~ { "satradix", clo_sort_satradix_new },

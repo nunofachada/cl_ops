@@ -22,7 +22,6 @@
 
 #include "clo_rng_test.h"
 
-
 #define CLO_RNG_TEST_FILE_PREFIX "out"
 #define CLO_RNG_TEST_OUTPUT "file-tsv"
 #define CLO_RNG_TEST_GWS 262144
@@ -264,10 +263,7 @@ int main(int argc, char **argv)
 			"Unable to create output file '%s'.", output_filename);
 
 		/* Create large file buffer to avoid trashing disk. */
-		output_buffer = (char*) malloc(CLO_RNG_TEST_BUFF_SIZE * sizeof(char));
-		ccl_if_err_create_goto(err, CLO_ERROR, output_buffer == NULL,
-			CLO_ERROR_NOALLOC, error_handler,
-			"Unable to allocate memory for output file buffer.");
+		output_buffer = g_slice_alloc(CLO_RNG_TEST_BUFF_SIZE * sizeof(char));
 
 		/* Set file buffer. */
 		status = setvbuf(
@@ -379,7 +375,7 @@ cleanup:
 	if (output_pointer) fclose(output_pointer);
 
 	/* Free file output buffer. */
-	if (output_buffer) free(output_buffer);
+	if (output_buffer) g_slice_free1(CLO_RNG_TEST_BUFF_SIZE * sizeof(char), output_buffer);
 
 
 	/* Free filename strings. */
