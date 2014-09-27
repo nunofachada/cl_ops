@@ -16,20 +16,17 @@
  * <http://www.gnu.org/licenses/>.
  * */
 
-#ifndef _CLO_SORT_SBITONIC_H_
-#define _CLO_SORT_SBITONIC_H_
+#ifndef _CLO_SORT_GSELECT_H_
+#define _CLO_SORT_GSELECT_H_
 
 #include "clo_sort_abstract.h"
 
-/** The simple bitonic sort kernels source. */
-#define CLO_SORT_SBITONIC_SRC "@SBITONIC_SRC@"
+/** The global selection sort kernels source. */
+#define CLO_SORT_GSELECT_SRC "@GSELECT_SRC@"
 
-/* Initializes a simple bitonic sorter object and returns the
- * respective source code. */
-const char* clo_sort_sbitonic_init(
-	CloSort* sorter, const char* options, GError** err);
-
-/* Finalizes a bitonic sorter object. */
-void clo_sort_sbitonic_finalize(CloSort* sorter);
+/* Creates a new gselect sorter object. */
+CloSort* clo_sort_gselect_new(const char* options, CCLContext* ctx,
+	CloType elem_type, const char* compiler_opts, GError** err);
 
 #endif
+

@@ -20,17 +20,6 @@
 
 /**
  * @internal
- * Simple bitonic sorter internal data.
- * */
-struct clo_sort_sbitonic_data {
-	CCLContext* ctx;
-	CCLProgram* prg;
-	CloType elem_type;
-};
-
-
-/**
- * @internal
  * Perform sort using device data.
  *
  * @copydetails ::CloSort::sort_with_device_data()
@@ -59,20 +48,13 @@ static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
 	/* Internal error reporting object. */
 	GError* err_internal = NULL;
 
-	/* Simple bitonic sort data. */
-	struct clo_sort_sbitonic_data* data = sorter->_data;
-
 	/* Get device where sort will occurr. */
 	dev = ccl_queue_get_device(queue, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-	/* Get the context wrapper. */
-	//~ ctx = ccl_queue_get_context(queue, &err_internal);
-	//~ ccl_if_err_propagate_goto(err, err_internal, error_handler);
-
 	/* Get the kernel wrapper. */
-	krnl = ccl_program_get_kernel(
-		data->prg, "clo_sort_sbitonic", &err_internal);
+	krnl = ccl_program_get_kernel(clo_sort_get_program(sorter),
+		"clo_sort_sbitonic", &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine worksizes. */
@@ -97,7 +79,7 @@ static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
 		/* Copy data_in to data_out first, and then sort on copied
 		 * data. */
 		ccl_buffer_enqueue_copy(data_in, data_out, queue, 0, 0,
-			clo_type_sizeof(data->elem_type, NULL) * numel, NULL,
+			clo_sort_get_element_size(sorter) * numel, NULL,
 			&err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	}
@@ -167,6 +149,7 @@ static cl_bool clo_sort_sbitonic_sort_with_host_data(CloSort* sorter,
 	cl_bool status;
 
 	/* OpenCL wrapper objects. */
+	CCLContext* ctx = NULL;
 	CCLBuffer* data_in_dev = NULL;
 	CCLQueue* intern_queue = NULL;
 	CCLDevice* dev = NULL;
@@ -174,28 +157,27 @@ static cl_bool clo_sort_sbitonic_sort_with_host_data(CloSort* sorter,
 	/* Internal error object. */
 	GError* err_internal = NULL;
 
-	/* Simple bitonic sort internal data. */
-	struct clo_sort_sbitonic_data* data =
-		(struct clo_sort_sbitonic_data*) sorter->_data;
-
 	/* Determine data size. */
-	size_t data_size = numel * clo_type_sizeof(data->elem_type, NULL);
+	size_t data_size = numel * clo_sort_get_element_size(sorter);
+
+	/* Get context wrapper. */
+	ctx = clo_sort_get_context(sorter);
 
 	/* If queue is NULL, create own queue using first device in
 	 * context. */
 	if (queue == NULL) {
 		/* Get first device in context. */
-		dev = ccl_context_get_device(data->ctx, 0, &err_internal);
+		dev = ccl_context_get_device(ctx, 0, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 		/* Create queue. */
-		intern_queue = ccl_queue_new(data->ctx, dev, 0, &err_internal);
+		intern_queue = ccl_queue_new(ctx, dev, 0, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 		queue = intern_queue;
 	}
 
 	/* Create device buffer. */
 	data_in_dev = ccl_buffer_new(
-		data->ctx, CL_MEM_READ_WRITE, data_size, NULL, &err_internal);
+		ctx, CL_MEM_READ_WRITE, data_size, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data to device. */
@@ -235,93 +217,40 @@ finish:
 
 }
 
-
 /**
- * @internal
- * Destroy sorter object.
+ * Initializes a simple bitonic sorter object and returns the
+ * respective source code.
  *
- * @copydetails ::CloSort::destroy()
- * */
-static void clo_sort_sbitonic_destroy(CloSort* sorter) {
-	struct clo_sort_sbitonic_data* data =
-		(struct clo_sort_sbitonic_data*) sorter->_data;
-	ccl_context_unref(data->ctx);
-	if (data->prg) ccl_program_destroy(data->prg);
-	g_slice_free(struct clo_sort_sbitonic_data, sorter->_data);
-	g_slice_free(CloSort, sorter);
-}
-
-/**
- * Creates a new simple bitonic sorter object.
- *
+ * @param[in] Sorter object to initialize.
  * @param[in] options Algorithm options.
- * @param[in] ctx Context wrapper object.
- * @param[in] elem_type Type of elements to sort.
- * @param[in] compiler_opts Compiler options.
  * @param[out] err Return location for a GError, or `NULL` if error
  * reporting is to be ignored.
- * @return A new simple bitonic sorter object.
+ * @return Simple bitonic sorter source code.
  * */
-CloSort* clo_sort_sbitonic_new(const char* options, CCLContext* ctx,
-	CloType elem_type, const char* compiler_opts, GError** err) {
-
-	/* Internal error management object. */
-	GError *err_internal = NULL;
-
-	/* Final compiler options. */
-	gchar* compiler_opts_final = NULL;
-
-	/* Allocate memory for sorter object. */
-	CloSort* sorter = g_slice_new0(CloSort);
-
-	/* Allocate data for private sort data. */
-	struct clo_sort_sbitonic_data* data =
-		g_slice_new0(struct clo_sort_sbitonic_data);
-
-	/* Keep data in sort private data. */
-	ccl_context_ref(ctx);
-	data->ctx = ctx;
-	data->elem_type = elem_type;
+const char* clo_sort_sbitonic_init(
+	CloSort* sorter, const char* options, GError** err) {
 
 	/* Set object methods. */
-	sorter->destroy = clo_sort_sbitonic_destroy;
 	sorter->sort_with_host_data = clo_sort_sbitonic_sort_with_host_data;
 	sorter->sort_with_device_data = clo_sort_sbitonic_sort_with_device_data;
-	sorter->_data = data;
 
-	/* For now ignore specific sbitonic sort options. */
+	/* Ignore specific sbitonic sort options and error handling. */
 	options = options;
+	err = err;
 
-	/* Determine final compiler options. */
-	compiler_opts_final = g_strconcat(" -DCLO_SORT_ELEM_TYPE=",
-		clo_type_get_name(elem_type, NULL), " ", compiler_opts, NULL);
-
-	/* Create and build program. */
-	data->prg = ccl_program_new_from_source(
-		ctx, CLO_SORT_SBITONIC_SRC, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
-
-	ccl_program_build(data->prg, compiler_opts_final, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
-
-	/* If we got here, everything is OK. */
-	g_assert(err == NULL || *err == NULL);
-	goto finish;
-
-error_handler:
-	/* If we got here there was an error, verify that it is so. */
-	g_assert(err == NULL || *err != NULL);
-	clo_sort_sbitonic_destroy(sorter);
-	sorter = NULL;
-
-finish:
-
-	/* Free stuff. */
-	if (compiler_opts_final) g_free(compiler_opts_final);
-
-	/* Return sorter object. */
-	return sorter;
+	/* Return source to be compiled. */
+	return CLO_SORT_SBITONIC_SRC;
 
 }
 
 
+/**
+ * Finalizes a bitonic sorter object.
+ *
+ * @param[in] sorter Sorter object to finalize.
+ * */
+void clo_sort_sbitonic_finalize(CloSort* sorter) {
+	/* Nothing to finalize. */
+	sorter = sorter;
+	return;
+}

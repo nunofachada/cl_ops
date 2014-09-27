@@ -26,6 +26,8 @@
 
 #include "common/clo_common.h"
 
+typedef struct clo_sort_data CloSortData;
+
 /**
  * Abstract sort class.
  * */
@@ -78,17 +80,10 @@ typedef struct clo_sort {
 		size_t lws_max, double* duration, GError** err);
 
 	/**
-	 * Destroy sorter object.
-	 *
-	 * @param[in] sorter Sorter object to destroy.
-	 * */
-	void (*destroy)(struct clo_sort* sorter);
-
-	/**
 	 * @internal
 	 * Private sorter data.
 	 * */
-	void* _data;
+	CloSortData* _data;
 
 } CloSort;
 
@@ -97,6 +92,21 @@ typedef struct clo_sort {
 CloSort* clo_sort_new(const char* type, const char* options,
 	CCLContext* ctx, CloType elem_type, const char* compiler_opts,
 	GError** err);
+
+/* Destroy a sorter object. */
+void clo_sort_destroy(CloSort* sorter);
+
+/* Get the context wrapper associated with the given sorter object. */
+CCLContext* clo_sort_get_context(CloSort* sorter);
+
+/* Get the program wrapper associated with the given sorter object. */
+CCLProgram* clo_sort_get_program(CloSort* sorter);
+
+/* Get the element type associated with the given sorter object. */
+CloType clo_sort_get_element_type(CloSort* sorter);
+
+/* Get the size in bytes of each element to be sorted. */
+size_t clo_sort_get_element_size(CloSort* sorter);
 
 #endif
 

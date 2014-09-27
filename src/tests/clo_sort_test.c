@@ -246,7 +246,7 @@ cleanup:
 	if (rng_host) g_rand_free(rng_host);
 
 	/* Free sorter object. */
-	if (sorter) sorter->destroy(sorter);
+	if (sorter) clo_sort_destroy(sorter);
 
 	/* Free host resources */
 	if (host_data) g_slice_free1(bytes * (1 << maxpo2), host_data);
