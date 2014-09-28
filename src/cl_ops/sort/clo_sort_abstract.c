@@ -23,6 +23,7 @@
 
 #include "clo_sort_abstract.h"
 #include "clo_sort_sbitonic.h"
+#include "clo_sort_gselect.h"
 
 /**
  * @internal
@@ -73,7 +74,7 @@ struct ocl_sort_impl {
 static const struct ocl_sort_impl const sort_impls[] = {
 	{ "sbitonic", clo_sort_sbitonic_init, clo_sort_sbitonic_finalize },
 	//~ { "abitonic", clo_sort_abitonic_new },
-	//~ { "gselect", clo_sort_gselect_new },
+	{ "gselect", clo_sort_gselect_init, clo_sort_gselect_finalize },
 	//~ { "satradix", clo_sort_satradix_new },
 	{ NULL, NULL, NULL }
 };

@@ -16,6 +16,11 @@
  * <http://www.gnu.org/licenses/>.
  * */
 
+/**
+ * @file
+ * @brief Simple bitonic sort host implementation.
+ */
+
 #include "clo_sort_sbitonic.h"
 
 /**
@@ -38,7 +43,6 @@ static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
 	cl_uint tot_stages;
 
 	/* OpenCL object wrappers. */
-	//~ CCLContext* ctx;
 	CCLDevice* dev;
 	CCLKernel* krnl;
 
@@ -108,9 +112,10 @@ static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
 		}
 	}
 
-
 	/* Stop timer and keep time, if required. */
 	if (duration) {
+		ccl_enqueue_barrier(queue, NULL, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 		g_timer_stop(timer);
 		*duration = g_timer_elapsed(timer, NULL);
 	}

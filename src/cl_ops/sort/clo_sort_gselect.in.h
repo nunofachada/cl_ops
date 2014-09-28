@@ -16,6 +16,11 @@
  * <http://www.gnu.org/licenses/>.
  * */
 
+/**
+ * @file
+ * @brief Global memory selection sort header file.
+ */
+
 #ifndef _CLO_SORT_GSELECT_H_
 #define _CLO_SORT_GSELECT_H_
 
@@ -24,9 +29,13 @@
 /** The global selection sort kernels source. */
 #define CLO_SORT_GSELECT_SRC "@GSELECT_SRC@"
 
-/* Creates a new gselect sorter object. */
-CloSort* clo_sort_gselect_new(const char* options, CCLContext* ctx,
-	CloType elem_type, const char* compiler_opts, GError** err);
+/* Initializes a gselect sorter object and returns the respective
+ * source code. */
+const char* clo_sort_gselect_init(
+	CloSort* sorter, const char* options, GError** err);
+
+/* Finalizes a gselect sorter object. */
+void clo_sort_gselect_finalize(CloSort* sorter);
 
 #endif
 

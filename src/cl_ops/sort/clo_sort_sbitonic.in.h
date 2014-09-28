@@ -16,6 +16,11 @@
  * <http://www.gnu.org/licenses/>.
  * */
 
+/**
+ * @file
+ * @brief Simple bitonic sort header file.
+ */
+
 #ifndef _CLO_SORT_SBITONIC_H_
 #define _CLO_SORT_SBITONIC_H_
 
