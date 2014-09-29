@@ -29,12 +29,10 @@
  *
  * @copydetails ::CloSort::sort_with_device_data()
  * */
-static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
-	CCLQueue* queue, CCLBuffer* data_in, CCLBuffer* data_out,
-	size_t numel, size_t lws_max, double* duration, GError** err) {
-
-	/* Function return status. */
-	cl_bool status;
+static CCLEventWaitList clo_sort_sbitonic_sort_with_device_data(
+	CloSort* sorter, CCLQueue* cq_exec, CCLQueue* cq_comm,
+	CCLBuffer* data_in, CCLBuffer* data_out, size_t numel,
+	size_t lws_max, GError** err) {
 
 	/* Worksizes. */
 	size_t lws, gws;
@@ -45,15 +43,20 @@ static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
 	/* OpenCL object wrappers. */
 	CCLDevice* dev;
 	CCLKernel* krnl;
+	CCLEvent* evt;
 
-	/* Timer object. */
-	GTimer* timer = NULL;
+	/* Event wait list. */
+	CCLEventWaitList ewl = NULL;
 
 	/* Internal error reporting object. */
 	GError* err_internal = NULL;
 
+	/* If data transfer queue is NULL, use exec queue for data
+	 * transfers. */
+	if (cq_comm == NULL) cq_comm = cq_exec;
+
 	/* Get device where sort will occurr. */
-	dev = ccl_queue_get_device(queue, &err_internal);
+	dev = ccl_queue_get_device(cq_exec, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get the kernel wrapper. */
@@ -82,17 +85,17 @@ static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
 	} else {
 		/* Copy data_in to data_out first, and then sort on copied
 		 * data. */
-		ccl_buffer_enqueue_copy(data_in, data_out, queue, 0, 0,
+		evt = ccl_buffer_enqueue_copy(data_in, data_out, cq_comm, 0, 0,
 			clo_sort_get_element_size(sorter) * numel, NULL,
 			&err_internal);
+
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		ccl_event_set_name(evt, "copy_sbitonic");
+		ccl_event_wait_list_add(&ewl, evt, NULL);
 	}
 
 	/* Set first kernel argument. */
 	ccl_kernel_set_arg(krnl, 0, data_out);
-
-	/* Create and start timer, if required. */
-	if (duration) { timer = g_timer_new(); g_timer_start(timer); }
 
 	/* Perform simple bitonic sort. */
 	for (cl_uint curr_stage = 1; curr_stage <= tot_stages; curr_stage++) {
@@ -105,38 +108,29 @@ static cl_bool clo_sort_sbitonic_sort_with_device_data(CloSort* sorter,
 
 			ccl_kernel_set_arg(krnl, 2, ccl_arg_priv(curr_step, cl_uint));
 
-			ccl_kernel_enqueue_ndrange(krnl, queue, 1, NULL, &gws, &lws,
-				NULL, &err_internal);
+			evt = ccl_kernel_enqueue_ndrange(krnl, cq_exec, 1, NULL,
+				&gws, &lws, &ewl, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			ccl_event_set_name(evt, "ndrange_sbitonic");
 
 		}
 	}
 
-	/* Stop timer and keep time, if required. */
-	if (duration) {
-		ccl_enqueue_barrier(queue, NULL, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-		g_timer_stop(timer);
-		*duration = g_timer_elapsed(timer, NULL);
-	}
+	/* Add last event to wait list to return. */
+	ccl_event_wait_list_add(&ewl, evt, NULL);
 
 	/* If we got here, everything is OK. */
-	status = CL_TRUE;
 	g_assert(err == NULL || *err == NULL);
 	goto finish;
 
 error_handler:
 	/* If we got here there was an error, verify that it is so. */
 	g_assert(err == NULL || *err != NULL);
-	status = CL_FALSE;
 
 finish:
 
-	/* Free timer, if required.. */
-	if (timer) g_timer_destroy(timer);
-
 	/* Return. */
-	return status;
+	return ewl;
 
 }
 
@@ -147,8 +141,8 @@ finish:
  * @copydetails ::CloSort::sort_with_host_data()
  * */
 static cl_bool clo_sort_sbitonic_sort_with_host_data(CloSort* sorter,
-	CCLQueue* queue, void* data_in, void* data_out, size_t numel,
-	size_t lws_max, double* duration, GError** err) {
+	CCLQueue* cq_exec, CCLQueue* cq_comm, void* data_in, void* data_out,
+	size_t numel, size_t lws_max, GError** err) {
 
 	/* Function return status. */
 	cl_bool status;
@@ -158,6 +152,10 @@ static cl_bool clo_sort_sbitonic_sort_with_host_data(CloSort* sorter,
 	CCLBuffer* data_in_dev = NULL;
 	CCLQueue* intern_queue = NULL;
 	CCLDevice* dev = NULL;
+	CCLEvent* evt;
+
+	/* Event wait list. */
+	CCLEventWaitList ewl = NULL;
 
 	/* Internal error object. */
 	GError* err_internal = NULL;
@@ -168,17 +166,21 @@ static cl_bool clo_sort_sbitonic_sort_with_host_data(CloSort* sorter,
 	/* Get context wrapper. */
 	ctx = clo_sort_get_context(sorter);
 
-	/* If queue is NULL, create own queue using first device in
-	 * context. */
-	if (queue == NULL) {
+	/* If execution queue is NULL, create own queue using first device
+	 * in context. */
+	if (cq_exec == NULL) {
 		/* Get first device in context. */
 		dev = ccl_context_get_device(ctx, 0, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 		/* Create queue. */
 		intern_queue = ccl_queue_new(ctx, dev, 0, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-		queue = intern_queue;
+		cq_exec = intern_queue;
 	}
+
+	/* If data transfer queue is NULL, use exec queue for data
+	 * transfers. */
+	if (cq_comm == NULL) cq_comm = cq_exec;
 
 	/* Create device buffer. */
 	data_in_dev = ccl_buffer_new(
@@ -186,18 +188,32 @@ static cl_bool clo_sort_sbitonic_sort_with_host_data(CloSort* sorter,
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data to device. */
-	ccl_buffer_enqueue_write(data_in_dev, queue, CL_TRUE, 0,
+	evt = ccl_buffer_enqueue_write(data_in_dev, cq_comm, CL_FALSE, 0,
 		data_size, data_in, NULL, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	ccl_event_set_name(evt, "write_sbitonic");
+
+	/* Explicitly wait for transfer (some OpenCL implementations don't
+	 * respect CL_TRUE in data transfers). */
+	ccl_event_wait_list_add(&ewl, evt, NULL);
+	ccl_event_wait(&ewl, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Perform sort with device data. */
-	clo_sort_sbitonic_sort_with_device_data(sorter, queue, data_in_dev,
-		NULL, numel, lws_max, duration, &err_internal);
+	ewl = clo_sort_sbitonic_sort_with_device_data(sorter, cq_exec,
+		cq_comm, data_in_dev, NULL, numel, lws_max, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data back to host. */
-	ccl_buffer_enqueue_read(data_in_dev, queue, CL_TRUE, 0,
-		data_size, data_out, NULL, &err_internal);
+	evt = ccl_buffer_enqueue_read(data_in_dev, cq_comm, CL_FALSE, 0,
+		data_size, data_out, &ewl, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	ccl_event_set_name(evt, "read_sbitonic");
+
+	/* Explicitly wait for transfer (some OpenCL implementations don't
+	 * respect CL_TRUE in data transfers). */
+	ccl_event_wait_list_add(&ewl, evt, NULL);
+	ccl_event_wait(&ewl, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* If we got here, everything is OK. */

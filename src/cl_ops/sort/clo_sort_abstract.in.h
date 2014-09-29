@@ -37,7 +37,10 @@ typedef struct clo_sort {
 	 * Perform sort using device data.
 	 *
 	 * @param[in] sorter Sorter object.
-	 * @param[in] queue A valid command queue wrapper, cannot be `NULL`.
+	 * @param[in] cq_exec A valid command queue wrapper for kernel
+	 * execution, cannot be `NULL`.
+	 * @param[in] cq_comm A command queue wrapper for data transfers.
+	 * If `NULL`, `cq_exec` will be used for data transfers.
 	 * @param[in] data_in Data to be sorted.
 	 * @param[out] data_out Location where to place sorted data. If
 	 * `NULL`, data will be sorted in-place or copied back from auxiliar
@@ -45,39 +48,37 @@ typedef struct clo_sort {
 	 * @param[in] numel Number of elements in `data_in`.
 	 * @param[in] lws_max Max. local worksize. If 0, the local worksize
 	 * will be automatically determined.
-	 * @param[out] duration Location where to place the duration in
-	 * seconds of the sort. If `NULL` it will be ignored.
 	 * @param[out] err Return location for a GError, or `NULL` if error
 	 * reporting is to be ignored.
-	 * @return `CL_TRUE` if sort was successfully performed, or
-	 * `CL_FALSE` otherwise.
+	 * @return An event wait list which contains events which must
+	 * terminate before sorting is considered complete.
 	 * */
-	cl_bool (*sort_with_device_data)(struct clo_sort* sorter,
-		CCLQueue* queue, CCLBuffer* data_in, CCLBuffer* data_out,
-		size_t numel, size_t lws_max, double* duration, GError** err);
+	CCLEventWaitList (*sort_with_device_data)(struct clo_sort* sorter,
+		CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
+		CCLBuffer* data_out, size_t numel, size_t lws_max, GError** err);
 
 	/**
 	 * Perform sort using host data. Device buffers will be created and
 	 * destroyed by sort implementation.
 	 *
 	 * @param[in] sorter Sorter object.
-	 * @param[in] queue Command queue wrapper. If `NULL` a queue will
-	 * be created for the sort.
+	 * @param[in] cq_exec Command queue wrapper for kernel execution. If
+	 * `NULL` a queue will be created.
+	 * @param[in] cq_comm A command queue wrapper for data transfers.
+	 * If `NULL`, `cq_exec` will be used for data transfers.
 	 * @param[in] data_in Data to be sorted.
 	 * @param[out] data_out Location where to place sorted data.
 	 * @param[in] numel Number of elements in `data_in`.
 	 * @param[in] lws_max Max. local worksize. If 0, the local worksize
 	 * will be automatically determined.
-	 * @param[out] duration Location where to place the duration in
-	 * seconds of the sort. If `NULL` it will be ignored.
 	 * @param[out] err Return location for a GError, or `NULL` if error
 	 * reporting is to be ignored.
 	 * @return `CL_TRUE` if sort was successfully performed, or
 	 * `CL_FALSE` otherwise.
 	 * */
 	cl_bool (*sort_with_host_data)(struct clo_sort* sorter,
-		CCLQueue* queue, void* data_in, void* data_out, size_t numel,
-		size_t lws_max, double* duration, GError** err);
+		CCLQueue* cq_exec, CCLQueue* cq_comm, void* data_in,
+		void* data_out, size_t numel, size_t lws_max, GError** err);
 
 	/**
 	 * @internal

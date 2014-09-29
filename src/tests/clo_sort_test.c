@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 	/* Test data structures. */
 	gchar* host_data = NULL;
 	size_t bytes;
-	double total_time, duration;
+	cl_ulong total_time;
 	FILE *outfile = NULL;
 	CloType clotype_elem;
 
@@ -88,9 +88,13 @@ int main(int argc, char **argv)
 	CloSort* sorter = NULL;
 
 	/* cf4ocl wrappers. */
-	CCLQueue* queue = NULL;
+	CCLQueue* cq_exec = NULL;
+	CCLQueue* cq_comm = NULL;
 	CCLContext* ctx = NULL;
 	CCLDevice* dev = NULL;
+
+	/* Profiler object. */
+	CCLProf* prof;
 
 	/* Host-based random number generator (mersenne twister) */
 	GRand* rng_host = NULL;
@@ -99,7 +103,7 @@ int main(int argc, char **argv)
 	GError *err = NULL;
 
 	/* Sorting benchmarks. */
-	gdouble** benchmarks = NULL;
+	cl_ulong** benchmarks;
 
 	/* Parse command line options. */
 	context = g_option_context_new (" - " CLO_SORT_DESCRIPTION);
@@ -131,9 +135,16 @@ int main(int argc, char **argv)
 		algorithm, alg_options, ctx, clotype_elem, compiler_opts, &err);
 	ccl_if_err_goto(err, error_handler);
 
-	/* Create command queue. */
-	queue = ccl_queue_new(ctx, dev, 0, &err);
+	/* Create command queues. */
+	cq_exec = ccl_queue_new(ctx, dev, CL_QUEUE_PROFILING_ENABLE, &err);
 	ccl_if_err_goto(err, error_handler);
+	cq_comm = ccl_queue_new(ctx, dev, 0, &err);
+	ccl_if_err_goto(err, error_handler);
+
+	/* Create benchmarks table. */
+	benchmarks = g_new(cl_ulong*, maxpo2);
+	for (unsigned int i = 0; i < maxpo2; i++)
+		benchmarks[i] = g_new0(cl_ulong, runs);
 
 	/* Print options. */
 	printf("\n   =========================== Selected options ============================\n\n");
@@ -142,12 +153,6 @@ int main(int argc, char **argv)
 	printf("     Type of elements to sort: %s\n", clo_type_get_name(clotype_elem, NULL));
 	printf("     Number of runs: %d\n", runs);
 	printf("     Compiler Options: %s\n", compiler_opts);
-
-
-	/* Create benchmarks table. */
-	benchmarks = g_new(gdouble*, maxpo2);
-	for (unsigned int i = 0; i < maxpo2; i++)
-		benchmarks[i] = g_new0(gdouble, runs);
 
 	/* Create host buffer. */
 	host_data = g_slice_alloc(bytes * (1 << maxpo2));
@@ -169,16 +174,27 @@ int main(int argc, char **argv)
 			}
 
 			/* Perform sort. */
-			sorter->sort_with_host_data(sorter, queue, host_data,
-				host_data, num_elems, lws, &duration, &err);
+			sorter->sort_with_host_data(sorter, cq_exec, cq_comm,
+				host_data, host_data, num_elems, lws, &err);
+			ccl_if_err_goto(err, error_handler);
+
+			/* Perform profiling. */
+			prof = ccl_prof_new();
+			ccl_prof_add_queue(prof, "q_exec", cq_exec);
+			ccl_prof_calc(prof, &err);
 			ccl_if_err_goto(err, error_handler);
 
 			/* Save duration to benchmarks. */
-			benchmarks[N - 1][r] = duration;
+			benchmarks[N - 1][r] = ccl_prof_get_duration(prof);
+			ccl_prof_destroy(prof);
 
 			/* Check if sorting was well performed. */
 			sorted_ok = TRUE;
 			gulong value1 = 0, value2 = 0;
+			/* Wait on host thread for data transfer queue to finish... */
+			ccl_queue_finish(cq_comm, &err);
+			ccl_if_err_goto(err, error_handler);
+			/* Start check. */
 			for (unsigned int i = 0;  i < num_elems - 1; i++) {
 				/* Compare value two by two... */
 				value1 = 0; value2 = 0;
@@ -199,7 +215,7 @@ int main(int argc, char **argv)
 		total_time = 0;
 		for (unsigned int i = 0;  i < runs; i++)
 			total_time += benchmarks[N - 1][i];
-		printf("       - 2^%d: %f Mkeys/s %s\n", N, 1e-6 * num_elems * runs / total_time, sorted_ok ? "" : "(sort did not work)");
+		printf("       - 2^%d: %lf Mkeys/s %s\n", N, (1e-6d * num_elems * runs) / (total_time * 1e-9d), sorted_ok ? "" : "(sort did not work)");
 	}
 
 	/* Save benchmarks to file, if filename was given as cli option. */
@@ -208,7 +224,7 @@ int main(int argc, char **argv)
 		for (unsigned int i = 0; i < maxpo2; i++) {
 			fprintf(outfile, "%d", i);
 			for (unsigned int j = 0; j < runs; j++) {
-				fprintf(outfile, "\t%lf", benchmarks[i][j]);
+				fprintf(outfile, "\t%lu", benchmarks[i][j]);
 			}
 			fprintf(outfile, "\n");
 		}
@@ -235,21 +251,26 @@ cleanup:
 	if (compiler_opts) g_free(compiler_opts);
 	if (out) g_free(out);
 
-	/* Free benchmarks. */
-	if (benchmarks) {
-		for (unsigned int i = 0; i < maxpo2; i++)
-			if (benchmarks[i]) g_free(benchmarks[i]);
-		g_free(benchmarks);
-	}
-
 	/* Free host-based random number generator. */
 	if (rng_host) g_rand_free(rng_host);
 
 	/* Free sorter object. */
 	if (sorter) clo_sort_destroy(sorter);
 
+	/* Free OpenCL wrappers. */
+	if (cq_exec) ccl_queue_destroy(cq_exec);
+	if (cq_comm) ccl_queue_destroy(cq_comm);
+	if (ctx) ccl_context_destroy(ctx);
+
 	/* Free host resources */
 	if (host_data) g_slice_free1(bytes * (1 << maxpo2), host_data);
+
+	/* Free benchmarks. */
+	if (benchmarks) {
+		for (unsigned int i = 0; i < maxpo2; i++)
+			if (benchmarks[i]) g_free(benchmarks[i]);
+		g_free(benchmarks);
+	}
 
 	/* Bye. */
 	return status;
