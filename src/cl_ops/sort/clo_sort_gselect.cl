@@ -53,11 +53,12 @@ __kernel void clo_sort_gselect(__global CLO_SORT_ELEM_TYPE *data_in,
 	size_t pos = 0;
 	uint count = 0;
 	CLO_SORT_ELEM_TYPE data_gid = data_in[gid];
+	CLO_SORT_KEY_TYPE key_gid = CLO_SORT_KEY_GET(data_gid);
 
 	if (gid < size) {
 		for (uint i = 0; i < size; i++) {
-			CLO_SORT_ELEM_TYPE data_i = data_in[i];
-			if (CLO_SORT_COMPARE(data_gid, data_i) || ((data_i == data_gid) && (i < gid))) {
+			CLO_SORT_KEY_TYPE key_i = CLO_SORT_KEY_GET(data_in[i]);
+			if (CLO_SORT_COMPARE(key_gid, key_i) || ((key_i == key_gid) && (i < gid))) {
 				pos++;
 			}
 		}

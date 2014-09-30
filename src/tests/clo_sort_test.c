@@ -103,7 +103,7 @@ int main(int argc, char **argv)
 	GError *err = NULL;
 
 	/* Sorting benchmarks. */
-	cl_ulong** benchmarks;
+	cl_ulong** benchmarks = NULL;
 
 	/* Parse command line options. */
 	context = g_option_context_new (" - " CLO_SORT_DESCRIPTION);

@@ -101,8 +101,6 @@ CloSort* clo_sort_new(const char* type, const char* options,
 
 	/* Sorter object to create. */
 	CloSort* sorter = NULL;
-	/* Program wrapper. */
-	CCLProgram* prg;
 	/* Sort algorithm source code. */
 	const char* src;
 	/* Final compiler options. */
@@ -133,14 +131,15 @@ CloSort* clo_sort_new(const char* type, const char* options,
 				NULL);
 
 			/* Create and build program. */
-			prg = ccl_program_new_from_source(ctx, src, &err_internal);
+			sorter->_data->prg = ccl_program_new_from_source(
+				ctx, src, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-			ccl_program_build(prg, compiler_opts_final, &err_internal);
+			ccl_program_build(
+				sorter->_data->prg, compiler_opts_final, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 			/* Keep context, program and element type. */
-			sorter->_data->prg = prg;
 			ccl_context_ref(ctx);
 			sorter->_data->ctx  = ctx;
 			sorter->_data->elem_type = elem_type;
@@ -160,6 +159,9 @@ CloSort* clo_sort_new(const char* type, const char* options,
 error_handler:
 	/* If we got here there was an error, verify that it is so. */
 	g_assert(err == NULL || *err != NULL);
+
+	if (sorter) clo_sort_destroy(sorter);
+	sorter = NULL;
 
 finish:
 
@@ -186,10 +188,10 @@ void clo_sort_destroy(CloSort* sorter) {
 	sorter->_data->finalize(sorter);
 
 	/* Unreference context wrapper. */
-	ccl_context_unref(sorter->_data->ctx);
+	if (sorter->_data->ctx) ccl_context_unref(sorter->_data->ctx);
 
 	/* Destroy program wrapper. */
-	ccl_program_destroy(sorter->_data->prg);
+	if (sorter->_data->prg) ccl_program_destroy(sorter->_data->prg);
 
 	/* Free sorter object data. */
 	g_slice_free(struct clo_sort_data, sorter->_data);

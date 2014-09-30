@@ -40,15 +40,13 @@
 /**
  * @brief A simple bitonic sort kernel.
  *
- * @param data Array of elements to sort.
- * @param stage Current bitonic sort step.
- * @param step Current bitonic sort stage.
+ * @param[in,out] data Array of elements to sort.
+ * @param[in] stage Current bitonic sort step.
+ * @param[in] step Current bitonic sort stage.
  */
-__kernel void clo_sort_sbitonic(
-			__global CLO_SORT_ELEM_TYPE *data,
-			const uint stage,
-			const uint step)
-{
+__kernel void clo_sort_sbitonic(__global CLO_SORT_ELEM_TYPE *data,
+	const uint stage, const uint step) {
+
 	/* Global id for this work-item. */
 	uint gid = get_global_id(0);
 
@@ -57,15 +55,19 @@ __kernel void clo_sort_sbitonic(
 	uint index1 = gid + (gid / pair_stride) * pair_stride;
 	uint index2 = index1 + pair_stride;
 
-	/* Get hashes from global memory. */
+	/* Get values from global memory. */
 	CLO_SORT_ELEM_TYPE data1 = data[index1];
 	CLO_SORT_ELEM_TYPE data2 = data[index2];
+
+	/* Determine keys. */
+	CLO_SORT_KEY_TYPE key1 = CLO_SORT_KEY_GET(data1);
+	CLO_SORT_KEY_TYPE key2 = CLO_SORT_KEY_GET(data2);
 
 	/* Determine if ascending or descending */
 	bool desc = (bool) (0x1 & (gid >> (stage - 1)));
 
 	/* Determine it is required to swap the agents. */
-	bool swap = CLO_SORT_COMPARE(data1, data2) ^ desc;
+	bool swap = CLO_SORT_COMPARE(key1, key2) ^ desc;
 
 	/* Perform swap if needed */
 	if (swap) {
