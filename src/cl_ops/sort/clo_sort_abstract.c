@@ -40,6 +40,8 @@ struct clo_sort_data {
 	CCLProgram* prg;
 	/** Element type. */
 	CloType elem_type;
+	/** Sort-specific internal data. */
+	void* other_data;
 };
 
 /**
