@@ -38,6 +38,173 @@ struct clo_sort_abitonic_data {
 
 /**
  * @internal
+ * Determine abitonic sort strategy for the given parameters.
+ *
+ * */
+static void clo_sort_abitonic_strategy_get(clo_sort_abitonic_step *steps, size_t lws_max,
+	unsigned int totalStages, unsigned int numel, unsigned int min_inkrnl_stps,
+	unsigned int max_inkrnl_stps, unsigned int max_inkrnl_sfs) {
+
+	/* Kernels applicable to each step. */
+	static const int lookup[11][4] = {
+		/* Step 2 */
+		{
+			CLO_SORT_ABITONIC_KNAME_LOCAL_S2,
+			NULL, NULL, NULL
+		},
+		/* Step 3 */
+		{
+			CLO_SORT_ABITONIC_KNAME_HYB_S3_3S8V,
+			CLO_SORT_ABITONIC_KNAME_LOCAL_S3,
+			NULL, NULL
+		},
+		/* Step 4 */
+		{
+			CLO_SORT_ABITONIC_KNAME_HYB_S4_4S16V,
+			CLO_SORT_ABITONIC_KNAME_HYB_S4_2S4V,
+			CLO_SORT_ABITONIC_KNAME_LOCAL_S4,
+			NULL
+		},
+		/* Step 5 */
+		{
+			CLO_SORT_ABITONIC_KNAME_LOCAL_S5,
+			NULL, NULL, NULL
+		},
+		/* Step 6 */
+		{
+			CLO_SORT_ABITONIC_KNAME_HYB_S6_3S8V,
+			CLO_SORT_ABITONIC_KNAME_HYB_S6_2S4V,
+			CLO_SORT_ABITONIC_KNAME_LOCAL_S6,
+			NULL
+		},
+		/* Step 7 */
+		{
+			CLO_SORT_ABITONIC_KNAME_LOCAL_S7,
+			NULL, NULL, NULL
+		},
+		/* Step 8 */
+		{
+			CLO_SORT_ABITONIC_KNAME_HYB_S8_4S16V,
+			CLO_SORT_ABITONIC_KNAME_HYB_S8_2S4V,
+			CLO_SORT_ABITONIC_KNAME_LOCAL_S8,
+			NULL
+		},
+		/* Step 9 */
+		{
+			CLO_SORT_ABITONIC_KNAME_HYB_S9_3S8V,
+			CLO_SORT_ABITONIC_KNAME_LOCAL_S9,
+			NULL, NULL
+		},
+		/* Step 10 */
+		{
+			CLO_SORT_ABITONIC_KNAME_HYB_S10_2S4V,
+			CLO_SORT_ABITONIC_KNAME_LOCAL_S10,
+			NULL, NULL
+		},
+		/* Step 11 */
+		{
+			CLO_SORT_ABITONIC_KNAME_LOCAL_S11,
+			NULL, NULL, NULL
+		},
+		/* Step 12 */
+		{
+			CLO_SORT_ABITONIC_KNAME_HYB_S12_4S16V,
+			CLO_SORT_ABITONIC_KNAME_HYB_S12_3S8V,
+			CLO_SORT_ABITONIC_KNAME_HYB_S12_2S4V,
+			NULL
+		},
+	};
+
+	/* Build strategy. */
+	for (guint step = 1; step <= tot_stages; step++) {
+		if (step == 1) {
+			/* Step 1 requires the "any" kernel. */
+			steps[step - 1].krnl_name = CLO_SORT_ABITONIC_KNAME_ANY;
+			steps[step - 1].gws = clo_nlpo2(numel) / 2;
+			steps[step - 1].lws = MIN(lws_max, steps[step - 1].gws);
+			steps[step - 1].set_step = TRUE;
+			steps[step - 1].num_steps = 1;
+		} else if (step > max_inkrnl_sfs) {
+			/* For steps higher than the maximum in-kernel "stage finish"
+			 * step, e.g., max_inkrnl_sfs. */
+
+			/* This may be required when max_inkrnl_sfs < 4 in order to
+			 * avoid overshooting the target step 0. */
+			unsigned int step_margin = MIN(step, max_inkrnl_stps);
+
+			/* Chose proper kernel. */
+			switch (step_margin) {
+				case 4:
+					steps[step - 1].krnl_name = CLO_SORT_ABITONIC_KNAME_PRIV_4S16V;
+					break;
+				case 3:
+					steps[step - 1].krnl_name = CLO_SORT_ABITONIC_KNAME_PRIV_3S8V;
+					break;
+				case 2:
+					steps[step - 1].krnl_name = CLO_SORT_ABITONIC_KNAME_PRIV_2S4V;
+					break;
+				case 1:
+					steps[step - 1].krnl_name = CLO_SORT_ABITONIC_KNAME_ANY;
+					break;
+				default:
+					g_assert_not_reached();
+			}
+			steps[step - 1].gws = clo_nlpo2(numel) / (1 << step_margin);
+			steps[step - 1].lws = MIN(lws_max, steps[step - 1].gws);
+			steps[step - 1].set_step = TRUE;
+			steps[step - 1].num_steps = step_margin;
+		} else {
+			/* For steps equal or smaller than the maximum in-kernel
+			 * "stage finish" step. */
+			const int *possible_krnls = lookup[step - 2];
+			unsigned int priv_steps;
+			gboolean found = FALSE;
+			/* Find proper kernel for current step by looking at
+			 * kernel lookup table. */
+			for (unsigned int i = 0; possible_krnls[i] != CLO_SORT_ABITONIC_NUMKERNELS; i++) {
+				/* Get current possible kernel name. */
+				const char* krnl_name = clo_sort_abitonic_kernelname_get(possible_krnls[i]);
+				/* Check if it's a hybrid or local kernel. */
+				if (g_strrstr(krnl_name, CLO_SORT_ABITONIC_KNAME_HYB_MARK)) {
+					/* It's a hybrid kernel, determine how many steps
+					 * does it perform on private memory each time. */
+					priv_steps = CLO_SORT_ABITONIC_KPARSE_S(krnl_name);
+				} else {
+					/* It's a local kernel, thus only one step is performed in
+					 * private memory. */
+					priv_steps = 1;
+				}
+				/* IF within interval of acceptable in-kernel private
+				 * memory steps AND IF required LWS within limits of
+				 * maximum LWS, THEN chose this kernel. */
+				if ((priv_steps <= max_inkrnl_stps) && (priv_steps >= min_inkrnl_stps) &&
+					(((int) lws_max) >= (1 << (step - priv_steps)))) {
+					steps[step - 1].krnl_name = krnl_name;
+					steps[step - 1].krnl_idx = possible_krnls[i];
+					steps[step - 1].gws = clo_nlpo2(numel) / (1 << priv_steps);
+					steps[step - 1].lws = MIN(lws_max, steps[step - 1].gws);
+					steps[step - 1].set_step = FALSE;
+					steps[step - 1].num_steps = step;
+					found = TRUE;
+					break;
+				}
+			}
+			/* If no kernel was selected, use the "any" kernel to advance one step. */
+			if (!found) {
+				steps[step - 1].krnl_name = CLO_SORT_ABITONIC_KNAME_ANY;
+				steps[step - 1].krnl_idx = CLO_SORT_ABITONIC_KIDX_ANY;
+				steps[step - 1].gws = clo_nlpo2(numel) / 2;
+				steps[step - 1].lws = MIN(lws_max, steps[step - 1].gws);
+				steps[step - 1].set_step = TRUE;
+				steps[step - 1].num_steps = 1;
+			}
+		}
+	}
+
+}
+
+/**
+ * @internal
  * Perform sort using device data.
  *
  * @copydetails ::CloSort::sort_with_device_data()
@@ -269,7 +436,7 @@ const char* clo_sort_abitonic_init(
 	CloSort* sorter, const char* options, GError** err) {
 
 	const char* abitonic_src;
-	
+
 	struct clo_sort_abitonic_data* data;
 
 	data = g_slice_new0(struct clo_sort_abitonic_data);
@@ -341,7 +508,7 @@ const char* clo_sort_abitonic_init(
 
 		}
 		ccl_if_err_create_goto(*err, CLO_ERROR,
-			data->max_inkrnl_stps < data->min_inkrnl_stps, 
+			data->max_inkrnl_stps < data->min_inkrnl_stps,
 			CLO_ERROR_ARGS, error_handler,
 			"'minps' (%d) must be less or equal than 'maxps' (%d).",
 			data->min_inkrnl_stps, data->max_inkrnl_stps);
