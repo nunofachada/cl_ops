@@ -14,31 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
-
-/**
+ 
+ /**
  * @file
- * @brief Header for scan test.
+ * @brief Header for common test functions test.
  */
 
-#ifndef _CLO_SCAN_TEST_H
-#define _CLO_SCAN_TEST_H
+#ifndef _CLO_TEST_H_
+#define _CLO_TEST_H_
 
-#include "clo_scan_abstract.h"
-#include "clo_test.h"
+#include "common/clo_common.h"
 
-#define CLO_SCAN_HOST_GET(host_data, i, bytes) \
-	((unsigned long) \
-	(bytes == 1) ? ((unsigned char*) host_data)[i] : \
-	((bytes == 2) ? ((unsigned short*) host_data)[i] : \
-	((bytes == 4) ? ((unsigned int*) host_data)[i] : \
-	((unsigned long*) host_data)[i])))
+cl_int clo_test_compare(CloType type, cl_uchar* a, cl_uchar* b);
 
-#define CLO_SCAN_MAXU(bytes) \
-	((unsigned long) \
-	(bytes == 1) ? 0xFF : \
-	((bytes == 2) ? G_MAXUSHORT : \
-	((bytes == 4) ? G_MAXUINT : \
-	(G_MAXULONG))))
+void clo_test_rand(GRand* rng, CloType type, void* location);
 
 #endif
 

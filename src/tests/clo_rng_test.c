@@ -21,6 +21,7 @@
  */
 
 #include "clo_rng_test.h"
+#include "clo_test.h"
 
 #define CLO_RNG_TEST_FILE_PREFIX "out"
 #define CLO_RNG_TEST_OUTPUT "file-tsv"

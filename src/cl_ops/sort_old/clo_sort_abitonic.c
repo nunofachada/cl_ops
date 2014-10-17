@@ -57,7 +57,7 @@ int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls,
 	clo_sort_abitonic_step *steps = NULL;
 	
 	/* Avoid compiler warnings. */
-	len = len;	
+	len = len;
 
 	/* Parse options. */
 	status = clo_sort_abitonic_options_parse(options, &max_inkrnl_stps, &min_inkrnl_stps, &max_inkrnl_sfs, err);

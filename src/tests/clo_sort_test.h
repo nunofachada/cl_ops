@@ -25,6 +25,7 @@
 #define _CLO_SORT_TEST_H_
 
 #include "clo_sort_abstract.h"
+#include "clo_test.h"
 
 #endif
 

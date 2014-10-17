@@ -177,44 +177,6 @@ CloType clo_type_by_name(const char* name, GError** err) {
 	return -1;
 }
 
-#define CLO_TYPE_CMP(type, a, b) \
-	((*((type*) a) > *((type*) b)) \
-		? 1 \
-		: ((*((type*) a) == *((type*) b)) ? 0 : -1))
-
-cl_int clo_type_compare(CloType type, cl_uchar* a, cl_uchar* b) {
-
-	/* Compare depending on type. */
-	switch (type) {
-		case CLO_CHAR:
-			return CLO_TYPE_CMP(cl_char, a, b);
-		case CLO_UCHAR:
-			return CLO_TYPE_CMP(cl_uchar, a, b);
-		case CLO_SHORT:
-			return CLO_TYPE_CMP(cl_short, a, b);
-		case CLO_USHORT:
-			return CLO_TYPE_CMP(cl_ushort, a, b);
-		case CLO_INT:
-			return CLO_TYPE_CMP(cl_int, a, b);
-		case CLO_UINT:
-			return CLO_TYPE_CMP(cl_uint, a, b);
-		case CLO_LONG:
-			return CLO_TYPE_CMP(cl_long, a, b);
-		case CLO_ULONG:
-			return CLO_TYPE_CMP(cl_ulong, a, b);
-		case CLO_HALF:
-			return CLO_TYPE_CMP(cl_half, a, b);
-		case CLO_FLOAT:
-			return CLO_TYPE_CMP(cl_float, a, b);
-		case CLO_DOUBLE:
-			return CLO_TYPE_CMP(cl_double, a, b);
-		default:
-			g_assert_not_reached();
-
-	}
-
-}
-
 /**
  * @brief Resolves to error category identifying string, in this case an
  * error related to ocl-ops.

@@ -168,22 +168,8 @@ int main(int argc, char **argv)
 
 			/* Initialize host buffer. */
 			for (unsigned int i = 0;  i < num_elems; i++) {
-				if (clotype_elem < CLO_HALF) {
-					/* Integer type. */
-					gulong value = (gulong) (g_rand_double(rng_host) * G_MAXULONG);
-					/* But just use the specified bits. */
-					memcpy(host_data + bytes*i, &value, bytes);
-				//~ } else if (clotype_elem == CLO_HALF) {
-					//~ /* Half type. */
-					//~ cl_half value = (cl_half) (g_rand_double(rng_host) * CL_MAXHALF);
-					//~ /* But just use the specified bits. */
-					//~ memcpy(host_data + bytes*i, &value, bytes);
-				} else if (clotype_elem == CLO_FLOAT) {
-					/* Double type. */
-					cl_float value = (cl_float) (g_rand_double(rng_host) * CL_MAXFLOAT);
-					/* But just use the specified bits. */
-					memcpy(host_data + bytes*i, &value, bytes);
-				}
+				clo_test_rand(
+					rng_host, clotype_elem, host_data + bytes * i);
 			}
 
 			/* Perform sort. */
@@ -210,7 +196,7 @@ int main(int argc, char **argv)
 			for (unsigned int i = 0;  i < num_elems - 1; i++) {
 
 				/* Perform comparison. */
-				if (clo_type_compare(clotype_elem, host_data + bytes*i,
+				if (clo_test_compare(clotype_elem, host_data + bytes*i,
 						host_data + bytes*(i + 1)) > 0) {
 
 					//~ printf("\nFailed on the %ith iter\n", i);

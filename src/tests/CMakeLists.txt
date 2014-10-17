@@ -6,7 +6,7 @@ set(TEST_LIBS cl_ops ${OPENCL_LIBRARIES} ${GLIB_LIBRARIES})
 
 # Add a target for each utility
 foreach(TEST ${TESTS})
-	add_executable(${TEST} ${TEST}.c)
+	add_executable(${TEST} ${TEST}.c clo_test.c)
 	target_link_libraries(${TEST} ${TEST_LIBS})
 endforeach()
 

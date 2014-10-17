@@ -126,8 +126,6 @@ int clo_type_sizeof(CloType type, GError** err);
 
 CloType clo_type_by_name(const char* name, GError** err);
 
-cl_int clo_type_compare(CloType type, cl_uchar* a, cl_uchar* b);
-
 /** @brief Returns the next larger power of 2 of the given value. */
 unsigned int clo_nlpo2(register unsigned int x);
 
