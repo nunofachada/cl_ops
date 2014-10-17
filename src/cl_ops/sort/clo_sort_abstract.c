@@ -90,7 +90,20 @@ static const struct ocl_sort_impl const sort_impls[] = {
  * @param[in] type Name of sort algorithm class to create.
  * @param[in] options Algorithm options.
  * @param[in] ctx OpenCL context wrapper.
- * @param[in] elem_type Type of elements to sort.
+ * @param[in] elem_type Type of elements from which to get the keys to
+ * sort.
+ * @param[in] key_type Type of keys to sort (if NULL, defaults to the
+ * element type).
+ * @param[in] compare One-liner OpenCL C code string which compares two
+ * keys, a and b, yielding a boolean; e.g. `"((a) < (b))"` will sort
+ * element in descendent order. If NULL, this defaults to
+ * `"((a) > (b))"`, i.e. sort in ascendent order.
+ * @param[in] get_key One-liner OpenCL C code string which obtains a
+ * value of type `key_type` from the element (of type `elem_type`)
+ * defined in the `x` variable; e.g. `"((x) & 0xF)"` will obtain a key
+ * which consists of four LSBs of the corresponding element. If NULL,
+ * this defaults to `"(type_of_key) (x)"`, which is simply the element
+ * cast to the key type.
  * @param[in] compiler_opts OpenCL Compiler options.
  * @param[out] err Return location for a GError, or `NULL` if error
  * reporting is to be ignored.
@@ -98,15 +111,18 @@ static const struct ocl_sort_impl const sort_impls[] = {
  * error occurs.
  * */
 CloSort* clo_sort_new(const char* type, const char* options,
-	CCLContext* ctx, CloType elem_type, const char* compiler_opts,
+	CCLContext* ctx, CloType* elem_type, CloType* key_type,
+	const char* compare, const char* get_key, const char* compiler_opts,
 	GError** err) {
 
 	/* Sorter object to create. */
 	CloSort* sorter = NULL;
 	/* Sort algorithm source code. */
 	const char* src;
-	/* Final compiler options. */
-	gchar* compiler_opts_final = NULL;
+	/* Sort macros builder. */
+	GString* ocl_macros = NULL;
+	/* Complete source (macros + algorithm source). */
+	const char* src_full[2];
 	/* Internal error handling object. */
 	GError* err_internal = NULL;
 
@@ -127,24 +143,52 @@ CloSort* clo_sort_new(const char* type, const char* options,
 			 * code. */
 			src = sort_impls[i].init(sorter, options, err);
 
-			/* Determine final compiler options. */
-			compiler_opts_final = g_strconcat(" -DCLO_SORT_ELEM_TYPE=",
-				clo_type_get_name(elem_type, NULL), " ", compiler_opts,
-				NULL);
+			/* Build sort macros which define element and key types,
+			 * comparison type and how to obtain a key from the
+			 * corresponding element. */
+			ocl_macros = g_string_new("");
+
+			/* Element type. */
+			g_string_append_printf(ocl_macros,
+				"#define CLO_SORT_ELEM_TYPE %s\n",
+				clo_type_get_name(*elem_type, NULL));
+
+			/* Key type. */
+			g_string_append_printf(ocl_macros,
+				"#define CLO_SORT_KEY_TYPE %s\n",
+				key_type != NULL
+					? clo_type_get_name(*key_type, NULL)
+					: clo_type_get_name(*elem_type, NULL));
+
+			/* Comparison type. */
+			g_string_append_printf(ocl_macros,
+				"#define CLO_SORT_COMPARE(a, b) %s\n",
+				compare != NULL
+					? compare
+					: "((a) > (b))");
+
+			/* Getting a key from the element. */
+			g_string_append_printf(ocl_macros,
+				"#define CLO_SORT_KEY_GET(x) %s\n",
+				get_key != NULL
+					? get_key
+					: "(x)");
 
 			/* Create and build program. */
-			sorter->_data->prg = ccl_program_new_from_source(
-				ctx, src, &err_internal);
+			src_full[0] = (const char*) ocl_macros->str;
+			src_full[1] = src;
+			sorter->_data->prg = ccl_program_new_from_sources(
+				ctx, 2, src_full, NULL, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 			ccl_program_build(
-				sorter->_data->prg, compiler_opts_final, &err_internal);
+				sorter->_data->prg, compiler_opts, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 			/* Keep context, program and element type. */
 			ccl_context_ref(ctx);
 			sorter->_data->ctx  = ctx;
-			sorter->_data->elem_type = elem_type;
+			sorter->_data->elem_type = *elem_type;
 
 		}
 	}
@@ -168,7 +212,7 @@ error_handler:
 finish:
 
 	/* Free stuff. */
-	if (compiler_opts_final) g_free(compiler_opts_final);
+	if (ocl_macros) g_string_free(ocl_macros, TRUE);
 
 	/* Return new sorter instance. */
 	return sorter;

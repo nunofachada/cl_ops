@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 	GOptionContext *context = NULL;
 
 	/* Test data structures. */
-	gchar* host_data = NULL;
+	cl_uchar* host_data = NULL;
 	size_t bytes;
 	cl_ulong total_time;
 	FILE *outfile = NULL;
@@ -132,7 +132,8 @@ int main(int argc, char **argv)
 
 	/* Get sorter object. */
 	sorter = clo_sort_new(
-		algorithm, alg_options, ctx, clotype_elem, compiler_opts, &err);
+		algorithm, alg_options, ctx, &clotype_elem, NULL, NULL, NULL,
+		compiler_opts, &err);
 	ccl_if_err_goto(err, error_handler);
 
 	/* Create command queues. */
@@ -190,25 +191,20 @@ int main(int argc, char **argv)
 
 			/* Check if sorting was well performed. */
 			sorted_ok = TRUE;
-			gulong value1 = 0, value2 = 0;
 			/* Wait on host thread for data transfer queue to finish... */
 			ccl_queue_finish(cq_comm, &err);
 			ccl_if_err_goto(err, error_handler);
 			/* Start check. */
 			for (unsigned int i = 0;  i < num_elems - 1; i++) {
-				/* Compare value two by two... */
-				value1 = 0; value2 = 0;
-				/* Get values. */
-				memcpy(&value1, host_data + bytes*i, bytes);
-				memcpy(&value2, host_data + bytes*(i + 1), bytes);
-				/* Compare. */
-				if (value1 > value2) {
+
+				/* Perform comparison. */
+				if (clo_type_compare(clotype_elem, host_data + bytes*i,
+						host_data + bytes*(i + 1)) > 0) {
 					sorted_ok = FALSE;
 					break;
 				}
 
 			}
-
 		}
 
 		/* Print info. */

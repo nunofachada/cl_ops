@@ -126,6 +126,8 @@ int clo_type_sizeof(CloType type, GError** err);
 
 CloType clo_type_by_name(const char* name, GError** err);
 
+cl_int clo_type_compare(CloType type, cl_uchar* a, cl_uchar* b);
+
 /** @brief Returns the next larger power of 2 of the given value. */
 unsigned int clo_nlpo2(register unsigned int x);
 
@@ -141,11 +143,6 @@ unsigned int clo_sum(unsigned int x);
 /** @brief Implementation of GLib's GPrintFunc which does not print the
  * string given as a parameter. */
 void clo_print_to_null(const gchar *string);
-
-/** @brief Get full kernel path name.
- * @todo REMOVE
- * */
-gchar* clo_kernelpath_get(gchar* kernel_filename, char* exec_name);
 
 /** @brief Resolves to error category identifying string, in this case
  *  an error related to ocl-ops. */

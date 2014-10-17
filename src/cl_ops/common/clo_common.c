@@ -139,48 +139,6 @@ void clo_print_to_null(const gchar *string) {
 }
 
 /**
- * @brief Get full kernel path name.
- *
- * Assumes the following:
- * * kernel_filename is given relative to exec_name.
- * * exec_name corresponds to the invocation of the executable, i.e.
- * argv[0].
- *
- * @param kernel_filename Name of file containing kernels.
- * @param exec_name Name of executable (argv[0]).
- * @return The full path of the kernel file, should be freed with g_free().
- * */
-gchar* clo_kernelpath_get(gchar* kernel_filename, char* exec_name) {
-
-	/* Required variables. */
-	gchar *execPath = NULL, *kernelDir = NULL, *kernelPath = NULL;
-
-	/* Get path of the executable. */
-	execPath = g_find_program_in_path(exec_name);
-
-	/* Get directory component of the path of the executable. */
-	kernelDir = g_path_get_dirname(execPath);
-
-	/* Check if it's indeed a directory. */
-	if (!g_file_test(kernelDir, G_FILE_TEST_IS_DIR)) {
-		/* If it's not a directory, assume current directory. */
-		g_free(kernelDir);
-		kernelDir = g_strdup(".");
-	}
-
-	/* Build full kernel file path. */
-	kernelPath = g_build_filename(kernelDir, kernel_filename, NULL);
-
-	/* Free stuff. */
-	g_free(execPath);
-	g_free(kernelDir);
-
-	/* Return full kernel file path. */
-	return kernelPath;
-
-}
-
-/**
  * Return OpenCL type name.
  *
  * @param[in] type Type constant.
@@ -217,6 +175,44 @@ CloType clo_type_by_name(const char* name, GError** err) {
 	g_set_error(err, CLO_ERROR, CLO_ERROR_UNKNOWN_TYPE,
 		"Unknown type '%s'", name);
 	return -1;
+}
+
+#define CLO_TYPE_CMP(type, a, b) \
+	((*((type*) a) > *((type*) b)) \
+		? 1 \
+		: ((*((type*) a) == *((type*) b)) ? 0 : -1))
+
+cl_int clo_type_compare(CloType type, cl_uchar* a, cl_uchar* b) {
+
+	/* Compare depending on type. */
+	switch (type) {
+		case CLO_CHAR:
+			return CLO_TYPE_CMP(cl_char, a, b);
+		case CLO_UCHAR:
+			return CLO_TYPE_CMP(cl_uchar, a, b);
+		case CLO_SHORT:
+			return CLO_TYPE_CMP(cl_short, a, b);
+		case CLO_USHORT:
+			return CLO_TYPE_CMP(cl_ushort, a, b);
+		case CLO_INT:
+			return CLO_TYPE_CMP(cl_int, a, b);
+		case CLO_UINT:
+			return CLO_TYPE_CMP(cl_uint, a, b);
+		case CLO_LONG:
+			return CLO_TYPE_CMP(cl_long, a, b);
+		case CLO_ULONG:
+			return CLO_TYPE_CMP(cl_ulong, a, b);
+		case CLO_HALF:
+			return CLO_TYPE_CMP(cl_half, a, b);
+		case CLO_FLOAT:
+			return CLO_TYPE_CMP(cl_float, a, b);
+		case CLO_DOUBLE:
+			return CLO_TYPE_CMP(cl_double, a, b);
+		default:
+			g_assert_not_reached();
+
+	}
+
 }
 
 /**

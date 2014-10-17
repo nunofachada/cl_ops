@@ -36,17 +36,26 @@ struct clo_sort_abitonic_data {
 
 };
 
+struct clo_sort_abitonic_step {
+	const char* krnl_name;
+	size_t gws;
+	size_t lws;
+	gboolean set_step;
+	guint num_steps;
+};
+
 /**
  * @internal
  * Determine abitonic sort strategy for the given parameters.
  *
  * */
-static void clo_sort_abitonic_strategy_get(clo_sort_abitonic_step *steps, size_t lws_max,
-	unsigned int totalStages, unsigned int numel, unsigned int min_inkrnl_stps,
-	unsigned int max_inkrnl_stps, unsigned int max_inkrnl_sfs) {
+static void clo_sort_abitonic_set_strategy(
+	struct clo_sort_abitonic_step* steps,
+	struct clo_sort_abitonic_data data,
+	size_t lws_max, guint tot_stages, guint numel) {
 
 	/* Kernels applicable to each step. */
-	static const int lookup[11][4] = {
+	static const char lookup[11][4] = {
 		/* Step 2 */
 		{
 			CLO_SORT_ABITONIC_KNAME_LOCAL_S2,

@@ -91,7 +91,8 @@ typedef struct clo_sort {
 /* Generic sorter object constructor. The exact type is given in the
  * first parameter. */
 CloSort* clo_sort_new(const char* type, const char* options,
-	CCLContext* ctx, CloType elem_type, const char* compiler_opts,
+	CCLContext* ctx, CloType* elem_type, CloType* key_type,
+	const char* compare, const char* get_key, const char* compiler_opts,
 	GError** err);
 
 /* Destroy a sorter object. */
