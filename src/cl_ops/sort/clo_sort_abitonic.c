@@ -23,7 +23,7 @@
 
 #include "clo_sort_abitonic.h"
 
-struct clo_sort_abitonic_data {
+typedef struct {
 
 	/** Maximum number of in-kernel steps for private memory kernels. */
 	cl_uint max_inkrnl_stps;
@@ -34,27 +34,27 @@ struct clo_sort_abitonic_data {
 	/** Maximum in-kernel "stage finish" step. */
 	cl_uint max_inkrnl_sfs;
 
-};
+} clo_sort_abitonic_data;
 
-struct clo_sort_abitonic_step {
+typedef struct {
 	const char* krnl_name;
 	size_t gws;
 	size_t lws;
 	gboolean set_step;
 	guint num_steps;
-};
+} clo_sort_abitonic_step;
 
 /**
  * @internal
  * Determine abitonic sort strategy for the given parameters.
  *
  * */
-static struct clo_sort_abitonic_step* clo_sort_abitonic_set_strategy(
-	CCLKernel* krnl, CCLDevice* dev, struct clo_sort_abitonic_data data,
+static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
+	CCLKernel* krnl, CCLDevice* dev, clo_sort_abitonic_data data,
 	size_t lws_max, cl_uint numel, GError** err) {
 
 	/* Kernels applicable to each step. */
-	static const char lookup[11][4] = {
+	static const char* lookup[11][4] = {
 		/* Step 2 */
 		{
 			CLO_SORT_ABITONIC_KNAME_LOCAL_S2,
@@ -123,11 +123,15 @@ static struct clo_sort_abitonic_step* clo_sort_abitonic_set_strategy(
 		},
 	};
 
-	/* Total stages. */
+	/* Next power of two of the number of elements. */
 	cl_uint numel_nlpo2 = (cl_uint) clo_nlpo2(numel);
+	/* Total stages. */
 	cl_uint tot_stages = (cl_uint) clo_tzc(numel_nlpo2);
-	struct clo_sort_abitonic_step* steps =
-		g_new(struct clo_sort_abitonic_step, tot_stages);
+	/* Array of steps. */
+	clo_sort_abitonic_step* steps = 
+		g_new(clo_sort_abitonic_step, tot_stages);
+	/* Internal error handling object. */
+	GError* err_internal = NULL;
 
 	/* Build strategy. */
 	for (guint step = 1; step <= tot_stages; step++) {
@@ -140,7 +144,7 @@ static struct clo_sort_abitonic_step* clo_sort_abitonic_set_strategy(
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].set_step = TRUE;
 			steps[step - 1].num_steps = 1;
-		} else if (step > max_inkrnl_sfs) {
+		} else if (step > data.max_inkrnl_sfs) {
 			/* For steps higher than the maximum in-kernel "stage
 			 * finish" step, e.g., max_inkrnl_sfs. */
 
@@ -178,13 +182,13 @@ static struct clo_sort_abitonic_step* clo_sort_abitonic_set_strategy(
 		} else {
 			/* For steps equal or smaller than the maximum in-kernel
 			 * "stage finish" step. */
-			const char* possible_krnls = lookup[step - 2];
+			const char** possible_krnls = lookup[step - 2];
 			cl_uint priv_steps;
 			gboolean found = FALSE;
 			/* Find proper kernel for current step by looking at
 			 * kernel lookup table. */
 			for (cl_uint i = 0;
-				possible_krnls[i] != CLO_SORT_ABITONIC_NUMKERNELS; i++) {
+				possible_krnls[i] != NULL; i++) {
 
 				/* Get current possible kernel name. */
 				const char* krnl_name = possible_krnls[i];
@@ -208,7 +212,7 @@ static struct clo_sort_abitonic_step* clo_sort_abitonic_set_strategy(
 				ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 				if ((priv_steps <= data.max_inkrnl_stps)
-					&& (priv_steps >= min_inkrnl_stps)
+					&& (priv_steps >= data.min_inkrnl_stps)
 					&& (((int) steps[step - 1].lws) >= (1 << (step - priv_steps))))
 				{
 					steps[step - 1].krnl_name = krnl_name;
@@ -230,6 +234,18 @@ static struct clo_sort_abitonic_step* clo_sort_abitonic_set_strategy(
 			}
 		}
 	}
+	
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+
+finish:
+
+	return steps;
 }
 
 /**
@@ -249,7 +265,8 @@ static CCLEventWaitList clo_sort_abitonic_sort_with_device_data(
 	/* Implementation of the strategy to follow on each step. */
 	clo_sort_abitonic_step* steps = NULL;
 
-	clo_sort_abitonic_data data = (clo_sort_abitonic_data) sorter->_data;
+	clo_sort_abitonic_data data = 
+		*((clo_sort_abitonic_data*) clo_sort_get_data(sorter));
 
 	/* OpenCL object wrappers. */
 	CCLDevice* dev;
@@ -290,9 +307,11 @@ static CCLEventWaitList clo_sort_abitonic_sort_with_device_data(
 	tot_stages = (cl_uint) clo_tzc(clo_nlpo2(numel));
 
 	/* Obtain sorting strategy, e.g., which kernels to use in each step. */
-	steps = clo_sort_abitonic_strategy_get(krnl, dev, lws_max, numel, data);
+	steps = clo_sort_abitonic_get_strategy(
+		krnl, dev, data, lws_max, numel, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-	g_debug("********* NUMEL = %d *******", numel);
+	g_debug("********* NUMEL = %d *******", (int) numel);
 
 	/* Perform sorting. */
 	for (cl_uint curr_stage = 1; curr_stage <= tot_stages; curr_stage++) {
@@ -301,9 +320,11 @@ static CCLEventWaitList clo_sort_abitonic_sort_with_device_data(
 			/* Get strategy for current step. */
 			clo_sort_abitonic_step stp_strat = steps[curr_step - 1];
 
+
 			/* Get kernel for current step. */
 			CCLKernel* krnl = ccl_program_get_kernel(
-				prg, stp_strat.krnl_name, &err_internal);
+				clo_sort_get_program(sorter), stp_strat.krnl_name, 
+				&err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 			g_debug("Stage %d, Step %d | %s [GWS=%d, LWS=%d, NSTEPS=%d]",
@@ -473,9 +494,9 @@ const char* clo_sort_abitonic_init(
 
 	const char* abitonic_src;
 
-	struct clo_sort_abitonic_data* data;
+	clo_sort_abitonic_data* data;
 
-	data = g_slice_new0(struct clo_sort_abitonic_data);
+	data = g_slice_new0(clo_sort_abitonic_data);
 
 	/* Set internal data default values. */
 	data->max_inkrnl_stps = 4;
@@ -586,7 +607,7 @@ finish:
 void clo_sort_abitonic_finalize(CloSort* sorter) {
 
 	/* Release internal data. */
-	g_slice_free(struct clo_sort_abitonic_data, sorter->_data);
+	g_slice_free(clo_sort_abitonic_data, sorter->_data);
 
 	return;
 }

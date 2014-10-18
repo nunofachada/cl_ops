@@ -316,3 +316,20 @@ size_t clo_sort_get_element_size(CloSort* sorter) {
 	return clo_type_sizeof(sorter->_data->elem_type, NULL);
 
 }
+
+
+/**
+ * Get sort specific data. 
+ * 
+ * @param[in] sorter Sorter object.
+ * @return Sort specific data.
+ * */
+void* clo_sort_get_data(CloSort* sorter) {
+
+	/* Make sure sorter object is not NULL. */
+	g_return_val_if_fail(sorter != NULL, NULL);
+
+	/* Return sort specific data. */
+	return sorter->_data->other_data;
+
+}
