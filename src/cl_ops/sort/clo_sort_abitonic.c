@@ -37,7 +37,7 @@ typedef struct {
 } clo_sort_abitonic_data;
 
 typedef struct {
-	const char* krnl_name;
+	CCLKernel* krnl;
 	size_t gws;
 	size_t lws;
 	gboolean set_step;
@@ -50,8 +50,11 @@ typedef struct {
  *
  * */
 static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
-	CCLKernel* krnl, CCLDevice* dev, clo_sort_abitonic_data data,
+	CCLProgram* prg, CCLDevice* dev, clo_sort_abitonic_data data,
 	size_t lws_max, cl_uint numel, GError** err) {
+		
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
 	/* Kernels applicable to each step. */
 	static const char* lookup[11][4] = {
@@ -137,9 +140,11 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 	for (guint step = 1; step <= tot_stages; step++) {
 		if (step == 1) {
 			/* Step 1 requires the "any" kernel. */
-			steps[step - 1].krnl_name = CLO_SORT_ABITONIC_KNAME_ANY;
+			steps[step - 1].krnl = ccl_program_get_kernel(
+				prg, CLO_SORT_ABITONIC_KNAME_ANY, &err_internal);
+			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].gws = numel_nlpo2 / 2;
-			steps[step - 1].lws = clo_get_lws(krnl, dev,
+			steps[step - 1].lws = clo_get_lws(steps[step - 1].krnl, dev,
 				steps[step - 1].gws, lws_max, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].set_step = TRUE;
@@ -155,26 +160,35 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 			/* Chose proper kernel. */
 			switch (step_margin) {
 				case 4:
-					steps[step - 1].krnl_name =
-						CLO_SORT_ABITONIC_KNAME_PRIV_4S16V;
+					steps[step - 1].krnl = 
+						ccl_program_get_kernel(
+							prg, CLO_SORT_ABITONIC_KNAME_PRIV_4S16V, 
+							&err_internal);
 					break;
 				case 3:
-					steps[step - 1].krnl_name =
-						CLO_SORT_ABITONIC_KNAME_PRIV_3S8V;
+					steps[step - 1].krnl = 
+						ccl_program_get_kernel(
+							prg, CLO_SORT_ABITONIC_KNAME_PRIV_3S8V, 
+							&err_internal);
 					break;
 				case 2:
-					steps[step - 1].krnl_name =
-						CLO_SORT_ABITONIC_KNAME_PRIV_2S4V;
+					steps[step - 1].krnl = 
+						ccl_program_get_kernel(
+							prg, CLO_SORT_ABITONIC_KNAME_PRIV_2S4V, 
+							&err_internal);
 					break;
 				case 1:
-					steps[step - 1].krnl_name =
-						CLO_SORT_ABITONIC_KNAME_ANY;
+					steps[step - 1].krnl = 
+						ccl_program_get_kernel(
+							prg, CLO_SORT_ABITONIC_KNAME_ANY, 
+							&err_internal);
 					break;
 				default:
 					g_assert_not_reached();
 			}
+			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].gws = numel_nlpo2 / (1 << step_margin);
-			steps[step - 1].lws = clo_get_lws(krnl, dev,
+			steps[step - 1].lws = clo_get_lws(steps[step - 1].krnl, dev,
 				steps[step - 1].gws, lws_max, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].set_step = TRUE;
@@ -206,16 +220,22 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 				/* IF within interval of acceptable in-kernel private
 				 * memory steps AND IF required LWS within limits of
 				 * maximum LWS, THEN chose this kernel. */
-				steps[step - 1].gws = clo_nlpo2(numel) / (1 << priv_steps);
-				steps[step - 1].lws = clo_get_lws(krnl, dev,
+				steps[step - 1].gws = 
+					clo_nlpo2(numel) / (1 << priv_steps);
+				steps[step - 1].lws = clo_get_lws(NULL, dev,
 					steps[step - 1].gws, lws_max, &err_internal);
-				ccl_if_err_propagate_goto(err, err_internal, error_handler);
+				ccl_if_err_propagate_goto(
+					err, err_internal, error_handler);
 
 				if ((priv_steps <= data.max_inkrnl_stps)
 					&& (priv_steps >= data.min_inkrnl_stps)
-					&& (((int) steps[step - 1].lws) >= (1 << (step - priv_steps))))
+					&& (((int) steps[step - 1].lws) 
+						>= (1 << (step - priv_steps))))
 				{
-					steps[step - 1].krnl_name = krnl_name;
+					steps[step - 1].krnl = ccl_program_get_kernel(
+						prg, krnl_name, &err_internal);
+					ccl_if_err_propagate_goto(
+						err, err_internal, error_handler);
 					steps[step - 1].set_step = FALSE;
 					steps[step - 1].num_steps = step;
 					found = TRUE;
@@ -224,10 +244,13 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 			}
 			/* If no kernel was selected, use the "any" kernel to advance one step. */
 			if (!found) {
-				steps[step - 1].krnl_name = CLO_SORT_ABITONIC_KNAME_ANY;
+				steps[step - 1].krnl = ccl_program_get_kernel(
+					prg, CLO_SORT_ABITONIC_KNAME_ANY, &err_internal);
+				ccl_if_err_propagate_goto(
+					err, err_internal, error_handler);
 				steps[step - 1].gws = clo_nlpo2(numel) / 2;
-				steps[step - 1].lws = clo_get_lws(krnl, dev,
-					steps[step - 1].gws, lws_max, &err_internal);
+				steps[step - 1].lws = clo_get_lws(steps[step - 1].krnl, 
+					dev, steps[step - 1].gws, lws_max, &err_internal);
 				ccl_if_err_propagate_goto(err, err_internal, error_handler);
 				steps[step - 1].set_step = TRUE;
 				steps[step - 1].num_steps = 1;
@@ -258,6 +281,9 @@ static CCLEventWaitList clo_sort_abitonic_sort_with_device_data(
 	CloSort* sorter, CCLQueue* cq_exec, CCLQueue* cq_comm,
 	CCLBuffer* data_in, CCLBuffer* data_out, size_t numel,
 	size_t lws_max, GError** err) {
+		
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
 	/* Number of bitonic sort stages. */
 	cl_uint tot_stages;
@@ -270,15 +296,18 @@ static CCLEventWaitList clo_sort_abitonic_sort_with_device_data(
 
 	/* OpenCL object wrappers. */
 	CCLDevice* dev;
-	CCLKernel* krnl;
 	CCLEvent* evt;
+	CCLProgram* prg;
 
 	/* Event wait list. */
 	CCLEventWaitList ewl = NULL;
 
 	/* Internal error reporting object. */
 	GError* err_internal = NULL;
-
+	
+	/* Get the program. */
+	prg = clo_sort_get_program(sorter);
+	
 	/* If data transfer queue is NULL, use exec queue for data
 	 * transfers. */
 	if (cq_comm == NULL) cq_comm = cq_exec;
@@ -297,8 +326,8 @@ static CCLEventWaitList clo_sort_abitonic_sort_with_device_data(
 		evt = ccl_buffer_enqueue_copy(data_in, data_out, cq_comm, 0, 0,
 			clo_sort_get_element_size(sorter) * numel, NULL,
 			&err_internal);
-
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
 		ccl_event_set_name(evt, "copy_abitonic");
 		ccl_event_wait_list_add(&ewl, evt, NULL);
 	}
@@ -308,7 +337,7 @@ static CCLEventWaitList clo_sort_abitonic_sort_with_device_data(
 
 	/* Obtain sorting strategy, e.g., which kernels to use in each step. */
 	steps = clo_sort_abitonic_get_strategy(
-		krnl, dev, data, lws_max, numel, &err_internal);
+		prg, dev, data, lws_max, numel, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	g_debug("********* NUMEL = %d *******", (int) numel);
@@ -320,31 +349,24 @@ static CCLEventWaitList clo_sort_abitonic_sort_with_device_data(
 			/* Get strategy for current step. */
 			clo_sort_abitonic_step stp_strat = steps[curr_step - 1];
 
-
-			/* Get kernel for current step. */
-			CCLKernel* krnl = ccl_program_get_kernel(
-				clo_sort_get_program(sorter), stp_strat.krnl_name, 
-				&err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
-
-			g_debug("Stage %d, Step %d | %s [GWS=%d, LWS=%d, NSTEPS=%d]",
-				curr_stage, curr_step, stp_strat.krnl_name,
-				(int) stp_strat.gws, (int) stp_strat.lws, stp_strat.num_steps);
+			//~ g_debug("Stage %d, Step %d | %s [GWS=%d, LWS=%d, NSTEPS=%d]",
+				//~ curr_stage, curr_step, stp_strat.krnl,
+				//~ (int) stp_strat.gws, (int) stp_strat.lws, stp_strat.num_steps);
 
 			/* Set kernel arguments. */
 			/* Current stage. */
-			ccl_kernel_set_arg(krnl, 1, ccl_arg_priv(curr_stage, cl_uint));
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			ccl_kernel_set_arg(
+				stp_strat.krnl, 1, ccl_arg_priv(curr_stage, cl_uint));
 
 			/* Current step (for some kernels only). */
-			if (stp_strat.set_step) {
-				ccl_kernel_set_arg(krnl, 2, ccl_arg_priv(curr_step, cl_uint));
-				ccl_if_err_propagate_goto(err, err_internal, error_handler);
-			}
+			if (stp_strat.set_step)
+				ccl_kernel_set_arg(stp_strat.krnl, 2, 
+					ccl_arg_priv(curr_step, cl_uint));
 
 			/* Execute kernel. */
-			evt = ccl_kernel_enqueue_ndrange(krnl, cq_exec, 1, NULL,
-				&stp_strat.gws, &stp_strat.lws, NULL, &err_internal);
+			evt = ccl_kernel_enqueue_ndrange(stp_strat.krnl, cq_exec, 1,
+				NULL, &stp_strat.gws, &stp_strat.lws, NULL, 
+				&err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 			/* Update step. */
@@ -383,6 +405,9 @@ finish:
 static cl_bool clo_sort_abitonic_sort_with_host_data(CloSort* sorter,
 	CCLQueue* cq_exec, CCLQueue* cq_comm, void* data_in, void* data_out,
 	size_t numel, size_t lws_max, GError** err) {
+		
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, CL_FALSE);
 
 	/* Function return status. */
 	cl_bool status;
@@ -491,6 +516,9 @@ finish:
  * */
 const char* clo_sort_abitonic_init(
 	CloSort* sorter, const char* options, GError** err) {
+		
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
 	const char* abitonic_src;
 

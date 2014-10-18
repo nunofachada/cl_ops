@@ -23,6 +23,7 @@
 
 #include "clo_sort_abstract.h"
 #include "clo_sort_sbitonic.h"
+#include "clo_sort_abitonic.h"
 #include "clo_sort_gselect.h"
 
 /**
@@ -75,7 +76,7 @@ struct ocl_sort_impl {
  * */
 static const struct ocl_sort_impl const sort_impls[] = {
 	{ "sbitonic", clo_sort_sbitonic_init, clo_sort_sbitonic_finalize },
-	//~ { "abitonic", clo_sort_abitonic_new },
+	{ "abitonic", clo_sort_abitonic_init, clo_sort_abitonic_finalize },
 	{ "gselect", clo_sort_gselect_init, clo_sort_gselect_finalize },
 	//~ { "satradix", clo_sort_satradix_new },
 	{ NULL, NULL, NULL }
@@ -114,6 +115,9 @@ CloSort* clo_sort_new(const char* type, const char* options,
 	CCLContext* ctx, CloType* elem_type, CloType* key_type,
 	const char* compare, const char* get_key, const char* compiler_opts,
 	GError** err) {
+		
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
 	/* Sorter object to create. */
 	CloSort* sorter = NULL;

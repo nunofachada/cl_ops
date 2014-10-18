@@ -180,6 +180,9 @@ CloType clo_type_by_name(const char* name, GError** err) {
 
 size_t clo_get_lws(CCLKernel* krnl, CCLDevice* dev, size_t gws,
 	size_t lws_max, GError** err) {
+		
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
 	size_t lws;
 	GError* err_internal = NULL;

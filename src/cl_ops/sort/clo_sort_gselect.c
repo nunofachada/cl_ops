@@ -33,6 +33,9 @@ static CCLEventWaitList clo_sort_gselect_sort_with_device_data(
 	CloSort* sorter, CCLQueue* cq_exec, CCLQueue* cq_comm,
 	CCLBuffer* data_in, CCLBuffer* data_out, size_t numel,
 	size_t lws_max, GError** err) {
+		
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
 	/* Worksizes. */
 	size_t lws, gws;
@@ -146,6 +149,9 @@ finish:
 static cl_bool clo_sort_gselect_sort_with_host_data(CloSort* sorter,
 	CCLQueue* cq_exec, CCLQueue* cq_comm, void* data_in, void* data_out,
 	size_t numel, size_t lws_max, GError** err) {
+		
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, CL_FALSE);
 
 	/* Function return status. */
 	cl_bool status;
@@ -261,6 +267,9 @@ finish:
  * */
 const char* clo_sort_gselect_init(
 	CloSort* sorter, const char* options, GError** err) {
+		
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
 	/* Set object methods. */
 	sorter->sort_with_host_data = clo_sort_gselect_sort_with_host_data;
