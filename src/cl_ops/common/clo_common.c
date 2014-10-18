@@ -177,6 +177,36 @@ CloType clo_type_by_name(const char* name, GError** err) {
 	return -1;
 }
 
+
+size_t clo_get_lws(CCLKernel* krnl, CCLDevice* dev, size_t gws,
+	size_t lws_max, GError** err) {
+
+	size_t lws;
+	GError* err_internal = NULL;
+
+	if (lws_max != 0) {
+		lws = MIN(lws_max, gws);
+	} else {
+		ccl_kernel_suggest_worksizes(
+			krnl, dev, 1, &gws, NULL, &lws, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	}
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+	lws = 0;
+
+finish:
+
+	return lws;
+
+}
+
 /**
  * @brief Resolves to error category identifying string, in this case an
  * error related to ocl-ops.

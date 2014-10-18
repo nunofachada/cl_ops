@@ -52,7 +52,7 @@ struct clo_sort_abitonic_step {
 static void clo_sort_abitonic_set_strategy(
 	struct clo_sort_abitonic_step* steps,
 	struct clo_sort_abitonic_data data,
-	size_t lws_max, guint tot_stages, guint numel) {
+	size_t lws_max, cl_uint numel) {
 
 	/* Kernels applicable to each step. */
 	static const char lookup[11][4] = {
@@ -124,12 +124,16 @@ static void clo_sort_abitonic_set_strategy(
 		},
 	};
 
+	/* Total stages. */
+	cl_uint numel_nlpo2 = (cl_uint) clo_nlpo2(numel);
+	cl_uint tot_stages = (cl_uint) clo_tzc(numel_nlpo2);
+
 	/* Build strategy. */
 	for (guint step = 1; step <= tot_stages; step++) {
 		if (step == 1) {
 			/* Step 1 requires the "any" kernel. */
 			steps[step - 1].krnl_name = CLO_SORT_ABITONIC_KNAME_ANY;
-			steps[step - 1].gws = clo_nlpo2(numel) / 2;
+			steps[step - 1].gws = numel_nlpo2 / 2;
 			steps[step - 1].lws = MIN(lws_max, steps[step - 1].gws);
 			steps[step - 1].set_step = TRUE;
 			steps[step - 1].num_steps = 1;

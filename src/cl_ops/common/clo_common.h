@@ -142,6 +142,9 @@ unsigned int clo_sum(unsigned int x);
  * string given as a parameter. */
 void clo_print_to_null(const gchar *string);
 
+size_t clo_get_lws(CCLKernel* krnl, CCLDevice* dev, size_t gws,
+	size_t lws_max, GError** err);
+
 /** @brief Resolves to error category identifying string, in this case
  *  an error related to ocl-ops. */
 GQuark clo_error_quark(void);

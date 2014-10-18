@@ -67,14 +67,9 @@ static CCLEventWaitList clo_sort_gselect_sort_with_device_data(
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine worksizes. */
-	if (lws_max != 0) {
-		lws = MIN(lws_max, clo_nlpo2(numel));
-		gws = CLO_GWS_MULT(numel, lws);
-	} else {
-		ccl_kernel_suggest_worksizes(
-			krnl, dev, 1, &numel, &gws, &lws, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-	}
+	gws = numel;
+	lws = clo_get_lws(krnl, dev, gws, lws_max, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Check if data_out is set. */
 	if (data_out == NULL) {

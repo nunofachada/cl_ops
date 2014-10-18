@@ -66,13 +66,8 @@ static CCLEventWaitList clo_sort_sbitonic_sort_with_device_data(
 
 	/* Determine worksizes. */
 	gws = clo_nlpo2(numel) / 2;
-	if (lws_max != 0) {
-		lws = MIN(lws_max, gws);
-	} else {
-		ccl_kernel_suggest_worksizes(
-			krnl, dev, 1, &gws, &gws, &lws, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-	}
+	lws = clo_get_lws(krnl, dev, gws, lws_max, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine number of bitonic sort stages. */
 	tot_stages = (cl_uint) clo_tzc(gws * 2);
