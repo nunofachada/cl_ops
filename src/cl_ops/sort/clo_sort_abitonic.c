@@ -619,7 +619,7 @@ finish:
 	/* Set object methods and internal data. */
 	sorter->sort_with_host_data = clo_sort_abitonic_sort_with_host_data;
 	sorter->sort_with_device_data = clo_sort_abitonic_sort_with_device_data;
-	sorter->_data = (void*) data;
+	clo_sort_set_data(sorter, data);
 
 	/* Return source to be compiled. */
 	return abitonic_src;

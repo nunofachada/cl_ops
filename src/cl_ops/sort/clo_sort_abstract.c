@@ -337,3 +337,19 @@ void* clo_sort_get_data(CloSort* sorter) {
 	return sorter->_data->other_data;
 
 }
+
+/**
+ * Set sort specific data. 
+ * 
+ * @param[in] sorter Sorter object.
+ * @param[in] data Sort specific data.
+ * */
+void clo_sort_set_data(CloSort* sorter, void* data) {
+	
+	/* Make sure sorter object is not NULL. */
+	g_return_val_if_fail(sorter != NULL, NULL);
+	
+	/* Set sort specific data. */
+	sorter->_data->other_data = data;
+
+}

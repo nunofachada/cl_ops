@@ -242,6 +242,9 @@ error_handler:
 
 cleanup:
 
+	/* Free sorter object. */
+	if (sorter) clo_sort_destroy(sorter);
+
 	/* Free command line options. */
 	if (context) g_option_context_free(context);
 	if (algorithm) g_free(algorithm);
@@ -251,9 +254,6 @@ cleanup:
 
 	/* Free host-based random number generator. */
 	if (rng_host) g_rand_free(rng_host);
-
-	/* Free sorter object. */
-	if (sorter) clo_sort_destroy(sorter);
 
 	/* Free OpenCL wrappers. */
 	if (cq_exec) ccl_queue_destroy(cq_exec);

@@ -113,6 +113,9 @@ size_t clo_sort_get_element_size(CloSort* sorter);
 /* Get sort specific data. */
 void* clo_sort_get_data(CloSort* sorter);
 
+/* Set sort specific data. */
+void clo_sort_set_data(CloSort* sorter, void* data);
+
 #endif
 
 
