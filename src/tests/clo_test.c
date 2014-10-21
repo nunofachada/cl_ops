@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
- 
+
 #include "clo_test.h"
 
 #define CLO_TYPE_CMP(type, a, b) \
@@ -59,11 +59,11 @@ cl_int clo_test_compare(CloType type, cl_uchar* a, cl_uchar* b) {
 }
 
 void clo_test_rand(GRand* rng, CloType type, void* location) {
-	
+
 	g_return_if_fail(location != NULL);
-	
-	int bytes = clo_type_sizeof(type, NULL);
-	
+
+	int bytes = clo_type_sizeof(type);
+
 	if (type == CLO_CHAR) {
 		/* char type. */
 		cl_char value = (cl_char) g_rand_int_range(
@@ -101,36 +101,36 @@ void clo_test_rand(GRand* rng, CloType type, void* location) {
 		memcpy(location, &value, bytes);
 	} else if (type == CLO_LONG) {
 		/* long type. */
-		cl_long value = (cl_long) (g_rand_double(rng) * 
+		cl_long value = (cl_long) (g_rand_double(rng) *
 			(g_rand_boolean(rng) ? CL_LONG_MIN : CL_LONG_MAX));
 		/* But just use the specified bits. */
 		memcpy(location, &value, bytes);
 	} else if (type == CLO_ULONG) {
 		/* ulong type. */
-		cl_ulong value = 
+		cl_ulong value =
 			(cl_ulong) (g_rand_double(rng) * CL_ULONG_MAX);
 		/* But just use the specified bits. */
 		memcpy(location, &value, bytes);
 	} else if (type == CLO_FLOAT) {
 		/* Float type. */
-		cl_float value = (cl_float) 
+		cl_float value = (cl_float)
 			g_rand_double_range(rng, CL_FLT_MIN, CL_FLT_MAX);
 		/* But just use the specified bits. */
 		memcpy(location, &value, bytes);
 	} else if (type == CLO_DOUBLE) {
 		/* Double type. */
-		cl_double value = (cl_double) 
+		cl_double value = (cl_double)
 			g_rand_double_range(rng, CL_DBL_MIN, CL_DBL_MAX);
 		/* But just use the specified bits. */
 		memcpy(location, &value, bytes);
 	} else if (type == CLO_HALF) {
 		/* Half type. */
-		cl_half value = 
+		cl_half value =
 			(cl_half) g_rand_double_range(rng, -1024.0, 1024.0);
 		/* But just use the specified bits. */
 		memcpy(location, &value, bytes);
 	} else {
 		g_assert_not_reached();
 	}
-	
+
 }

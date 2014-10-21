@@ -71,7 +71,7 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	struct clo_scan_blelloch_data* data = scanner->_data;
 
 	/* Size in bytes of sum scalars. */
-	size_t size_sum = clo_type_sizeof(data->sum_type, NULL);
+	size_t size_sum = clo_type_sizeof(data->sum_type);
 
 	/* Get device where scan will occurr. */
 	dev = ccl_queue_get_device(queue, &err_internal);
@@ -213,8 +213,8 @@ static cl_bool clo_scan_blelloch_scan_with_host_data(CloScan* scanner,
 		(struct clo_scan_blelloch_data*) scanner->_data;
 
 	/* Determine data sizes. */
-	size_t data_in_size = numel * clo_type_sizeof(data->elem_type, NULL);
-	size_t data_out_size = numel * clo_type_sizeof(data->sum_type, NULL);
+	size_t data_in_size = numel * clo_type_sizeof(data->elem_type);
+	size_t data_out_size = numel * clo_type_sizeof(data->sum_type);
 
 	/* If queue is NULL, create own queue using first device in
 	 * context. */
@@ -336,8 +336,8 @@ CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
 
 	/* Determine final compiler options. */
 	compiler_opts_final = g_strconcat(
-		" -DCLO_SCAN_ELEM_TYPE=", clo_type_get_name(elem_type, NULL),
-		" -DCLO_SCAN_SUM_TYPE=", clo_type_get_name(sum_type, NULL),
+		" -DCLO_SCAN_ELEM_TYPE=", clo_type_get_name(elem_type),
+		" -DCLO_SCAN_SUM_TYPE=", clo_type_get_name(sum_type),
 		compiler_opts, NULL);
 
 	/* Create and build program. */

@@ -115,7 +115,7 @@ CloSort* clo_sort_new(const char* type, const char* options,
 	CCLContext* ctx, CloType* elem_type, CloType* key_type,
 	const char* compare, const char* get_key, const char* compiler_opts,
 	GError** err) {
-		
+
 	/* Make sure err is NULL or it is not set. */
 	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
@@ -155,14 +155,14 @@ CloSort* clo_sort_new(const char* type, const char* options,
 			/* Element type. */
 			g_string_append_printf(ocl_macros,
 				"#define CLO_SORT_ELEM_TYPE %s\n",
-				clo_type_get_name(*elem_type, NULL));
+					clo_type_get_name(*elem_type));
 
 			/* Key type. */
 			g_string_append_printf(ocl_macros,
 				"#define CLO_SORT_KEY_TYPE %s\n",
 				key_type != NULL
-					? clo_type_get_name(*key_type, NULL)
-					: clo_type_get_name(*elem_type, NULL));
+					? clo_type_get_name(*key_type)
+					: clo_type_get_name(*elem_type));
 
 			/* Comparison type. */
 			g_string_append_printf(ocl_macros,
@@ -317,14 +317,14 @@ size_t clo_sort_get_element_size(CloSort* sorter) {
 	g_return_val_if_fail(sorter != NULL, NULL);
 
 	/* Return element size. */
-	return clo_type_sizeof(sorter->_data->elem_type, NULL);
+	return clo_type_sizeof(sorter->_data->elem_type);
 
 }
 
 
 /**
- * Get sort specific data. 
- * 
+ * Get sort specific data.
+ *
  * @param[in] sorter Sorter object.
  * @return Sort specific data.
  * */
@@ -339,16 +339,16 @@ void* clo_sort_get_data(CloSort* sorter) {
 }
 
 /**
- * Set sort specific data. 
- * 
+ * Set sort specific data.
+ *
  * @param[in] sorter Sorter object.
  * @param[in] data Sort specific data.
  * */
 void clo_sort_set_data(CloSort* sorter, void* data) {
-	
+
 	/* Make sure sorter object is not NULL. */
 	g_return_val_if_fail(sorter != NULL, NULL);
-	
+
 	/* Set sort specific data. */
 	sorter->_data->other_data = data;
 

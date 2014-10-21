@@ -48,12 +48,12 @@ static gchar* compiler_opts = NULL;
 static GOptionEntry entries[] = {
 	{"algorithm",    'a', 0, G_OPTION_ARG_STRING,   &algorithm,     "Sorting algorithm to use (default is " CLO_SORT_TEST_ALGORITHM ")",                                            "ALGORITHM"},
 	{"alg-opts",     'g', 0, G_OPTION_ARG_STRING,   &alg_options,   "Algorithm options",                 "STRING"},
-	{"runs",         'r', 0, G_OPTION_ARG_INT,      &runs,          "Number of runs (default is " STR(CLO_SORT_TEST_RUNS) ")",                           "RUNS"},
+	{"runs",         'r', 0, G_OPTION_ARG_INT,      &runs,          "Number of runs (default is " G_STRINGIFY(CLO_SORT_TEST_RUNS) ")",                           "RUNS"},
 	{"localsize",    'l', 0, G_OPTION_ARG_INT,      &lws,           "Maximum local work size (default is auto-select)",                       "SIZE"},
 	{"device",       'd', 0, G_OPTION_ARG_INT,      &dev_idx,       "Device index",                                                                 "INDEX"},
-	{"rng-seed",     's', 0, G_OPTION_ARG_INT,      &rng_seed,      "Seed for random number generator (default is " STR(CLO_DEFAULT_SEED) ")",      "SEED"},
+	{"rng-seed",     's', 0, G_OPTION_ARG_INT,      &rng_seed,      "Seed for random number generator (default is " G_STRINGIFY(CLO_DEFAULT_SEED) ")",      "SEED"},
 	{"type",         't', 0, G_OPTION_ARG_STRING,   &type,          "Type of elements to sort (default " CLO_SORT_TEST_TYPE ")",     "TYPE"},
-	{"maxpo2",       'n', 0, G_OPTION_ARG_INT,      &maxpo2,        "Log2 of the maximum number of elements to sort, e.g. 2^N (default N=" STR(CLO_SORT_TEST_MAXPO2) ")", "N"},
+	{"maxpo2",       'n', 0, G_OPTION_ARG_INT,      &maxpo2,        "Log2 of the maximum number of elements to sort, e.g. 2^N (default N=" G_STRINGIFY(CLO_SORT_TEST_MAXPO2) ")", "N"},
 	{"out",          'o', 0, G_OPTION_ARG_STRING,   &out,           "File where to output sorting benchmarks (default is no file output)",          "FILENAME"},
 	{"compiler",     'c', 0, G_OPTION_ARG_STRING,   &compiler_opts, "Compiler options",                 "STRING"},
 	{ NULL, 0, 0, 0, NULL, NULL, NULL }
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 	if (alg_options == NULL) alg_options = g_strdup(CLO_SORT_TEST_ALG_OPTS);
 
 	/* Determine size in bytes of each element to sort. */
-	bytes = clo_type_sizeof(clotype_elem, NULL);
+	bytes = clo_type_sizeof(clotype_elem);
 
 	/* Initialize random number generator. */
 	rng_host = g_rand_new_with_seed(rng_seed);
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 	printf("\n   =========================== Selected options ============================\n\n");
 	printf("     Random number generator seed: %u\n", rng_seed);
 	printf("     Maximum local worksize (0 is auto-select): %d\n", (int) lws);
-	printf("     Type of elements to sort: %s\n", clo_type_get_name(clotype_elem, NULL));
+	printf("     Type of elements to sort: %s\n", clo_type_get_name(clotype_elem));
 	printf("     Number of runs: %d\n", runs);
 	printf("     Compiler Options: %s\n", compiler_opts);
 
@@ -199,9 +199,6 @@ int main(int argc, char **argv)
 				if (clo_test_compare(clotype_elem, host_data + bytes*i,
 						host_data + bytes*(i + 1)) > 0) {
 
-					//~ printf("\nFailed on the %ith iter\n", i);
-					//~ if (clotype_elem == CLO_FLOAT)
-						//~ printf("%e < %e (?)\n", *((cl_float*) host_data + bytes*i), *((cl_float*) host_data + bytes*(i+1)));
 					sorted_ok = FALSE;
 					break;
 				}

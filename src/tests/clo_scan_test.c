@@ -51,21 +51,21 @@ static gchar* alg_options = NULL;
 /* Valid command line options. */
 static GOptionEntry entries[] = {
 	{"runs",         'r', 0, G_OPTION_ARG_INT,    &runs,
-		"Number of runs (default is " STR(CLO_SCAN_RUNS) ")",                               "RUNS"},
+		"Number of runs (default is " G_STRINGIFY(CLO_SCAN_RUNS) ")",                               "RUNS"},
 	{"localsize",    'l', 0, G_OPTION_ARG_INT,    &lws,
 		"Maximum local work size (default is auto-select)",                       "SIZE"},
 	{"device",       'd', 0, G_OPTION_ARG_INT,    &dev_idx,
 		"Device index",                                                                     "INDEX"},
 	{"rng-seed",     's', 0, G_OPTION_ARG_INT,    &rng_seed,
-		"Seed for random number generator (default is " STR(CLO_DEFAULT_TEST_SEED) ")",          "SEED"},
+		"Seed for random number generator (default is " G_STRINGIFY(CLO_DEFAULT_TEST_SEED) ")",          "SEED"},
 	{"type",         't', 0, G_OPTION_ARG_STRING, &type,
 		"Type of elements to scan (default " CLO_SCAN_TEST_TYPE ")",     "TYPE"},
 	{"type-sum",     'y', 0, G_OPTION_ARG_STRING, &type_sum,
 		"Type of elements in scan result (default " CLO_SCAN_TEST_TYPE_SUM ")",  "TYPE"},
 	{"init-elems",   'i', 0, G_OPTION_ARG_INT,    &init_elems,
-		"The starting number of elements to scan (default is " STR(CLO_SCAN_TEST_INITELEMS) ")", "INIT"},
+		"The starting number of elements to scan (default is " G_STRINGIFY(CLO_SCAN_TEST_INITELEMS) ")", "INIT"},
 	{"num-doub",     'n', 0, G_OPTION_ARG_INT,    &num_doub,
-		"Number of times min-elems is doubled (default is " STR(CLO_SCAN_TEST_NUMDOUB) ")",      "DOUB"},
+		"Number of times min-elems is doubled (default is " G_STRINGIFY(CLO_SCAN_TEST_NUMDOUB) ")",      "DOUB"},
 	{"compiler",     'c', 0, G_OPTION_ARG_STRING, &compiler_opts,
 		"Compiler options",                 "STRING"},
 	{"algorithm",    'a', 0, G_OPTION_ARG_STRING, &algorithm,
@@ -144,8 +144,8 @@ int main(int argc, char **argv) {
 	if (alg_options == NULL) alg_options = g_strdup(CLO_SCAN_TEST_ALG_OPTS);
 
 	/* Determine size in bytes of each element to sort. */
-	bytes = clo_type_sizeof(clotype_elem, NULL);
-	bytes_sum = clo_type_sizeof(clotype_sum, NULL);
+	bytes = clo_type_sizeof(clotype_elem);
+	bytes_sum = clo_type_sizeof(clotype_sum);
 
 	/* Initialize random number generator. */
 	rng_host = g_rand_new_with_seed(rng_seed);
@@ -169,8 +169,8 @@ int main(int argc, char **argv) {
 	printf("\n   =========================== Selected options ============================\n\n");
 	printf("     Random number generator seed: %u\n", rng_seed);
 	printf("     Maximum local worksize (0 = auto): %d\n", (int) lws);
-	printf("     Type of elements to scan: %s\n", clo_type_get_name(clotype_elem, NULL));
-	printf("     Type of elements in scan result: %s\n", clo_type_get_name(clotype_sum, NULL));
+	printf("     Type of elements to scan: %s\n", clo_type_get_name(clotype_elem));
+	printf("     Type of elements in scan result: %s\n", clo_type_get_name(clotype_sum));
 	printf("     Starting number of elements: %d\n", init_elems);
 	printf("     Number of times number of elements will be doubled: %d\n", num_doub);
 	printf("     Number of runs: %d\n", runs);

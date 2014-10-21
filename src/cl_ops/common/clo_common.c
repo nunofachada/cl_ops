@@ -24,6 +24,8 @@
 
 #include "clo_common.h"
 
+#define CLO_IS_TYPE(type) (type >= CLO_CHAR) && (type <= CLO_DOUBLE)
+
 /**
  * Information about an OpenCL type.
  * */
@@ -39,7 +41,7 @@ struct clo_type_info {
 	 * Type size in bytes.
 	 * @private
 	 * */
-	const int size;
+	const size_t size;
 };
 
 /* Relation between OpenCL type names and sizes in bytes. */
@@ -58,6 +60,63 @@ static const CloTypeInfo clo_types[] = {
 	{"double", 8}, /* CCL_DOUBLE = 10 */
 	{NULL,     0}
 };
+
+
+/**
+ * Return OpenCL type name.
+ *
+ * @param[in] type Type constant.
+ * @return A string containing the OpenCL type name.
+ * */
+const char* clo_type_get_name(CloType type) {
+
+	/* Check if type is valid. */
+	g_return_val_if_fail(CLO_IS_TYPE(type), NULL);
+
+	/* Return type name. */
+	return clo_types[type].name;
+}
+
+/**
+ * Return OpenCL type size in bytes.
+ *
+ * @param[in] type Type constant.
+ * @return The size of the OpenCL type in bytes.
+ * */
+size_t clo_type_sizeof(CloType type) {
+
+	/* Check if type is valid. */
+	g_return_val_if_fail(CLO_IS_TYPE(type), 0);
+
+	/* Return type size in bytes. */
+	return clo_types[type].size;
+}
+
+/**
+ * Return an OpenCL type constant given a type name.
+ *
+ * @param[in] name An OpenCL type name.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
+ * @return An OpenCL type constant or -1 if an error occurs.
+ * */
+CloType clo_type_by_name(const char* name, GError** err) {
+
+	/* Cycle through known types. */
+	for (guint i = 0; clo_types[i].name != NULL; ++i)
+		/* Check if current type name is the same as given name. */
+		if (g_strcmp0(name, clo_types[i].name) == 0)
+			/* If so, return respective type constant. */
+			return i;
+
+	/* If we get here, it means that the type is unknown, and an error
+	 * should be thrown. */
+	g_set_error(err, CLO_ERROR, CLO_ERROR_UNKNOWN_TYPE,
+		"Unknown type '%s'", name);
+
+	/* Return error flag. */
+	return -1;
+}
 
 /**
  * @brief Returns the next larger power of 2 of the given value.
@@ -134,62 +193,43 @@ unsigned int clo_sum(unsigned int x)
  * @param string String to ignore.
  * */
 void clo_print_to_null(const gchar *string) {
-	string = string;
+	(void)string;
 	return;
 }
 
 /**
- * Return OpenCL type name.
+ * Get a local worksize based on what was requested by the user in
+ * `lws_max`, the global worksize and the kernel and device
+ * capabilities.
  *
- * @param[in] type Type constant.
- * @return A string containing the OpenCL type name.
+ * @param[in] krnl The kernel wrapper object, may be `NULL`.
+ * @param[in] dev The device wrapper object.
+ * @param[in] gws The global worksize.
+ * @param[in] lws_max The maximum local worksize; if not zero, the
+ * returned worksize is the minimum between this value and `gws`;
+ * otherwise, the kernel and device are queried for an adequate
+ * worksize.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
+ * @return A local worksize based on the given parameters.
  * */
-const char* clo_type_get_name(CloType type, GError** err) {
-	if ((type < CLO_CHAR) || (type > CLO_DOUBLE)) {
-		g_set_error(err, CLO_ERROR, CLO_ERROR_UNKNOWN_TYPE,
-			"Unknown type enum '%d'", type);
-		return NULL;
-	}
-	return clo_types[type].name;
-}
-
-/**
- * Return OpenCL type size in bytes.
- *
- * @param[in] type Type constant.
- * @return The size of the OpenCL type in bytes.
- * */
-int clo_type_sizeof(CloType type, GError** err) {
-	if ((type < CLO_CHAR) || (type > CLO_DOUBLE)) {
-		g_set_error(err, CLO_ERROR, CLO_ERROR_UNKNOWN_TYPE,
-			"Unknown type enum '%d'", type);
-		return 0;
-	}
-	return clo_types[type].size;
-}
-
-CloType clo_type_by_name(const char* name, GError** err) {
-	for (guint i = 0; clo_types[i].name != NULL; ++i)
-		if (g_strcmp0(name, clo_types[i].name) == 0)
-			return i;
-	g_set_error(err, CLO_ERROR, CLO_ERROR_UNKNOWN_TYPE,
-		"Unknown type '%s'", name);
-	return -1;
-}
-
-
 size_t clo_get_lws(CCLKernel* krnl, CCLDevice* dev, size_t gws,
 	size_t lws_max, GError** err) {
-		
+
 	/* Make sure err is NULL or it is not set. */
 	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
 	size_t lws;
 	GError* err_internal = NULL;
 
+	/* Check if a maximum local worksize was specified. */
 	if (lws_max != 0) {
+		/* lws_max was specified, as such, return the minimum between
+		 * this value and the global worksize. */
 		lws = MIN(lws_max, gws);
 	} else {
+		/* lws_max was not specified, as such, return an adequate
+		 * worksize for the given kernel, device and global worksize. */
 		ccl_kernel_suggest_worksizes(
 			krnl, dev, 1, &gws, NULL, &lws, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
@@ -206,6 +246,7 @@ error_handler:
 
 finish:
 
+	/* Return local worksize. */
 	return lws;
 
 }
