@@ -26,8 +26,6 @@
 #ifndef _CLO_COMMON_H
 #define _CLO_COMMON_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <cf4ocl2.h>
 
 /** Default RNG seed. */

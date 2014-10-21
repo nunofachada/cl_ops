@@ -62,7 +62,7 @@ struct ocl_rng_info {
 
 /**
  * @internal
- * @brief Information about the random number generation algorithms.
+ * Information about the random number generation algorithms.
  * */
 static struct ocl_rng_info rng_infos[] = {
 	{"lcg", CLO_RNG_SRC_LCG, 8},
@@ -72,20 +72,39 @@ static struct ocl_rng_info rng_infos[] = {
 	{NULL, NULL, 0}
 };
 
+/**
+ * @internal
+ * Perform seed initialization in device.
+ *
+ * @param[in] ctx Context wrapper object.
+ * @param[in] cq Command-queue wrapper object.
+ * @param[in] hash Seed hash macro code. If `NULL` defaults to no hash.
+ * @param[in] seeds_count Number of seeds.
+ * @param[in] seed_size Size of each seed.
+ * @param[in] main_seed Base seed.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
+ * @return Buffer of in-device seeds.
+ * */
 static CCLBuffer* clo_rng_device_seed_init(CCLContext* ctx,
 	CCLQueue* cq, const char* hash, size_t seeds_count,
 	size_t seed_size, cl_ulong main_seed, GError** err) {
 
+	/* Program wrapper object. */
 	CCLProgram* prg;
+	/* Buffer of in-device seeds. */
 	CCLBuffer* seeds = NULL;
-
+	/* Internal error handling object. */
 	GError* err_internal = NULL;
-
+	/* Effective seed hash macro code. */
 	const char* hash_eff;
+	/* Source code to prepend to init kernel. */
 	gchar* init_src = NULL;
 
+	/* Determine size of seed vector. */
 	size_t seeds_vec_size = seed_size * seeds_count / sizeof(cl_ulong);
 
+	/* Determine effective seed hash macro code. */
 	if ((hash) && (*hash))
 		hash_eff = hash;
 	else
@@ -95,16 +114,20 @@ static CCLBuffer* clo_rng_device_seed_init(CCLContext* ctx,
 	init_src = g_strconcat("#define CLO_RNG_HASH(x) ", hash_eff, "\n"
 		CLO_RNG_SRC_INIT, NULL);
 
+	/* Create in-device seeds buffer. */
 	seeds = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
 		seeds_vec_size * sizeof(cl_ulong), NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
+	/* Create seed initialization program. */
 	prg = ccl_program_new_from_source(ctx, init_src, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
+	/* Build seed initialization program. */
 	ccl_program_build(prg, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
+	/* Enqueue seed initialization kernel. */
 	ccl_program_enqueue_kernel(prg, "clo_rng_init", cq, 1, 0,
 		&seeds_vec_size, NULL, NULL, &err_internal,
 		ccl_arg_priv(main_seed, cl_ulong), seeds, NULL);
@@ -119,11 +142,14 @@ error_handler:
 	/* If we got here there was an error, verify that it is so. */
 	g_assert(err == NULL || *err != NULL);
 
+	/* If an error occurred make sure the seeds buffer is destroyed and
+	 * set to NULL. */
 	if (seeds) ccl_buffer_destroy(seeds);
 	seeds = NULL;
 
 finish:
 
+	/* Free stuff. */
 	if (prg) ccl_program_destroy(prg);
 	if (init_src) g_free(init_src);
 
@@ -132,34 +158,57 @@ finish:
 
 }
 
+/**
+ * @internal
+ * Perform seed initialization in host, then transfer to device.
+ *
+ * @param[in] ctx Context wrapper object.
+ * @param[in] cq Command-queue wrapper object.
+ * @param[in] seeds_count Number of seeds.
+ * @param[in] seed_size Size of each seed.
+ * @param[in] main_seed Base seed.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
+ * @return Buffer of in-device seeds.
+ * */
 static CCLBuffer* clo_rng_host_seed_init(CCLContext* ctx, CCLQueue* cq,
 	size_t seeds_count, size_t seed_size, cl_ulong main_seed,
 	GError** err) {
 
+	/* In-device seeds buffer. */
 	CCLBuffer* seeds_dev;
+	/* Random number generator. */
 	GRand* rng_host = NULL;
-	size_t seeds_vec_size = seed_size * seeds_count / sizeof(cl_ulong);
-	cl_ulong seeds_host[seeds_vec_size];
+	/* Size in bytes of seeds vector. */
+	size_t seeds_vec_size;
+	/* Host seeds vector. */
+	void* seeds_host = NULL;
+	/* Internal error handling object. */
 	GError* err_internal = NULL;
 
+	/* Determine size in bytes of seeds vector. */
+	seeds_vec_size = seed_size * seeds_count;
+	/* Allocate memory for host seeds vector. */
+	seeds_host = g_slice_alloc(seeds_vec_size);
 
-	seeds_dev = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
-		seeds_vec_size * sizeof(cl_ulong), NULL, &err_internal);
+	/* Create in-device seeds buffer. */
+	seeds_dev = ccl_buffer_new(ctx, CL_MEM_READ_WRITE, seeds_vec_size,
+		NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Initialize generator. */
 	rng_host = g_rand_new_with_seed(main_seed);
 
 	/* Generate seeds. */
-	for (unsigned int i = 0; i < seeds_vec_size; i++) {
-		seeds_host[i] =
-			(cl_ulong) (g_rand_double(rng_host) * CL_ULONG_MAX);
+	for (cl_uint i = 0; i < seeds_vec_size / sizeof(guint32); i++) {
+		guint32 rand_value = g_rand_int(rng_host);
+		void* dest = ((unsigned char*) seeds_host) + i * sizeof(guint32);
+		g_memmove(dest, &rand_value, sizeof(guint32));
 	}
 
 	/* Copy seeds to device. */
-	ccl_buffer_enqueue_write(seeds_dev, cq, CL_TRUE, 0,
-		seeds_vec_size * sizeof(cl_ulong), seeds_host, NULL,
-		&err_internal);
+	ccl_buffer_enqueue_write(seeds_dev, cq, CL_TRUE, 0, seeds_vec_size,
+		seeds_host, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* If we got here, everything is OK. */
@@ -171,12 +220,15 @@ error_handler:
 	/* If we got here there was an error, verify that it is so. */
 	g_assert(err == NULL || *err != NULL);
 
+	/* If an error occurred make sure the seeds buffer is destroyed and
+	 * set to NULL. */
 	if (seeds_dev) ccl_buffer_destroy(seeds_dev);
 	seeds_dev = NULL;
 
 finish:
 
-	/* Free host-based random number generator. */
+	/* Free stuff. */
+	if (seeds_host) g_slice_free1(seeds_vec_size, seeds_host);
 	if (rng_host) g_rand_free(rng_host);
 
 	/* Return seeds buffer. */

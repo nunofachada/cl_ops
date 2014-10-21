@@ -25,6 +25,7 @@
 #define _CLO_RNG_H_
 
 #include "common/clo_common.h"
+#include <string.h>
 
 /* Kernels source code. */
 #define CLO_RNG_SRC_WORKITEM "@RNG_SRC_WORKITEM@"
