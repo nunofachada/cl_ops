@@ -259,6 +259,9 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 	void* seeds, size_t seeds_count, cl_ulong main_seed,
 	const char* hash, CCLContext* ctx, CCLQueue* cq, GError** err) {
 
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
+
 	/* The new RNG object. */
 	CloRng* rng = NULL;
 

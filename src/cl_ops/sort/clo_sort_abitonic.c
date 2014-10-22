@@ -311,6 +311,9 @@ static CCLEventWaitList clo_sort_abitonic_sort_with_device_data(
 	/* Make sure err is NULL or it is not set. */
 	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
+	/* Make sure cq_exec is not NULL. */
+	g_return_val_if_fail(cq_exec != NULL, NULL);
+
 	/* Number of bitonic sort stages. */
 	cl_uint tot_stages;
 
