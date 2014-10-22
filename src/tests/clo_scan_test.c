@@ -111,18 +111,19 @@ int main(int argc, char **argv) {
 	CloScan* scanner = NULL;
 
 	/* cf4ocl wrappers. */
-	CCLQueue* queue = NULL;
+	CCLQueue* cq_exec = NULL;
+	CCLQueue* cq_comm = NULL;
 	CCLContext* ctx = NULL;
 	CCLDevice* dev = NULL;
+
+	/* Profiler object. */
+	CCLProf* prof;
 
 	/* Host-based random number generator (mersenne twister) */
 	GRand* rng_host = NULL;
 
 	/* Error management object. */
 	GError *err = NULL;
-
-	/* How long will it take? */
-	double duration = 0;
 
 	/* Scan benchmarks. */
 	gdouble** benchmarks = NULL;
@@ -161,8 +162,10 @@ int main(int argc, char **argv) {
 		clotype_sum, compiler_opts, &err);
 	ccl_if_err_goto(err, error_handler);
 
-	/* Create command queue. */
-	queue = ccl_queue_new(ctx, dev, 0, &err);
+	/* Create command queues. */
+	cq_exec = ccl_queue_new(ctx, dev, CL_QUEUE_PROFILING_ENABLE, &err);
+	ccl_if_err_goto(err, error_handler);
+	cq_comm = ccl_queue_new(ctx, dev, 0, &err);
 	ccl_if_err_goto(err, error_handler);
 
 	/* Print options. */
@@ -210,12 +213,23 @@ int main(int argc, char **argv) {
 			}
 
 			/* Perform scan. */
-			scanner->scan_with_host_data(scanner, queue, host_data,
-				host_data_scanned, num_elems, lws, &duration, &err);
+			scanner->scan_with_host_data(scanner, cq_exec, cq_comm,
+				host_data, host_data_scanned, num_elems, lws, &err);
+			ccl_if_err_goto(err, error_handler);
+
+			/* Perform profiling. */
+			prof = ccl_prof_new();
+			ccl_prof_add_queue(prof, "q_exec", cq_exec);
+			ccl_prof_calc(prof, &err);
 			ccl_if_err_goto(err, error_handler);
 
 			/* Save time to benchmarks. */
-			benchmarks[N - 1][r] = duration;
+			benchmarks[N - 1][r] =  ccl_prof_get_duration(prof);
+			ccl_prof_destroy(prof);
+
+			/* Wait on host thread for data transfer queue to finish... */
+			ccl_queue_finish(cq_comm, &err);
+			ccl_if_err_goto(err, error_handler);
 
 			/* Check if scan was well performed. */
 			if (no_check) {
@@ -250,7 +264,7 @@ int main(int argc, char **argv) {
 		total_time = 0;
 		for (unsigned int i = 0;  i < runs; i++)
 			total_time += benchmarks[N - 1][i];
-		printf("       - %10d : %f MValues/s %s\n", num_elems, 1e-6 * num_elems * runs / total_time, scan_ok);
+		printf("       - %10d : %f MValues/s %s\n", num_elems, (1e-6 * num_elems * runs) / (total_time * 1e-9d), scan_ok);
 
 		num_elems *= 2;
 
@@ -287,7 +301,8 @@ cleanup:
 	if (scanner) scanner->destroy(scanner);
 
 	/* Release OpenCL wrappers. */
-	if (queue) ccl_queue_destroy(queue);
+	if (cq_exec) ccl_queue_destroy(cq_exec);
+	if (cq_comm) ccl_queue_destroy(cq_comm);
 	if (ctx) ccl_context_destroy(ctx);
 
 	/* Free host resources */

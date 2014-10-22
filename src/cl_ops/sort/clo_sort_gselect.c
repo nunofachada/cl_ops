@@ -138,7 +138,7 @@ finish:
 	/* Free data out buffer if copy-back flag is set. */
 	if ((copy_back) && (data_out != NULL)) ccl_buffer_destroy(data_out);
 
-	/* Return. */
+	/* Return event wait list. */
 	return ewl;
 
 }

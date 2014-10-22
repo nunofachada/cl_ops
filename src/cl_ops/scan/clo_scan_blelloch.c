@@ -23,6 +23,7 @@
  * Blelloch scanner internal data.
  * */
 struct clo_scan_blelloch_data {
+	/// @TODO THIS SHOULD BE IN ABSTRACT SCAN CLASS
 	CCLContext* ctx;
 	CCLProgram* prg;
 	CloType elem_type;
@@ -36,12 +37,16 @@ struct clo_scan_blelloch_data {
  *
  * @copydetails ::CloScan::scan_with_device_data()
  * */
-static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
-	CCLQueue* queue, CCLBuffer* data_in, CCLBuffer* data_out,
-	size_t numel, size_t lws_max, double* duration, GError** err) {
+static CCLEventWaitList clo_scan_blelloch_scan_with_device_data(
+	CloScan* scanner, CCLQueue* cq_exec, CCLQueue* cq_comm,
+	CCLBuffer* data_in, CCLBuffer* data_out, size_t numel,
+	size_t lws_max, GError** err) {
 
-	/* Function return status. */
-	cl_bool status;
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
+
+	/* Make sure cq_exec is not NULL. */
+	g_return_val_if_fail(cq_exec != NULL, NULL);
 
 	/* Local worksize. */
 	size_t lws;
@@ -53,9 +58,10 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	CCLKernel* krnl_wgsumsscan;
 	CCLKernel* krnl_addwgsums;
 	CCLBuffer* dev_wgsums;
+	CCLEvent* evt;
 
-	/* Timer object. */
-	GTimer* timer = NULL;
+	/* Event wait list. */
+	CCLEventWaitList ewl = NULL;
 
 	/* Internal error reporting object. */
 	GError* err_internal = NULL;
@@ -70,15 +76,19 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 	/* Scan data. */
 	struct clo_scan_blelloch_data* data = scanner->_data;
 
+	/* If data transfer queue is NULL, use exec queue for data
+	 * transfers. */
+	if (cq_comm == NULL) cq_comm = cq_exec;
+
 	/* Size in bytes of sum scalars. */
 	size_t size_sum = clo_type_sizeof(data->sum_type);
 
 	/* Get device where scan will occurr. */
-	dev = ccl_queue_get_device(queue, &err_internal);
+	dev = ccl_queue_get_device(cq_exec, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get the context wrapper. */
-	ctx = ccl_queue_get_context(queue, &err_internal);
+	ctx = ccl_queue_get_context(cq_exec, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get the wgscan kernel wrapper. */
@@ -86,7 +96,7 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 		data->prg, "workgroupScan", &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-	/* Determine worksizes. */
+	/* Determine worksizes. */ /// @TODO CHANGE THIS
 	if (lws_max != 0) {
 		lws = MIN(lws_max, clo_nlpo2(numel) / 2);
 		gws_wgscan = MIN(CLO_GWS_MULT(numel / 2, lws), lws * lws);
@@ -115,13 +125,11 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 		ccl_arg_priv(numel_cl, cl_uint),
 		ccl_arg_priv(blocks_per_wg, cl_uint), NULL);
 
-	/* Create and start timer, if required. */
-	if (duration) { timer = g_timer_new(); g_timer_start(timer); }
-
 	/* Perform workgroup-wise scan on complete array. */
-	ccl_kernel_enqueue_ndrange(krnl_wgscan, queue, 1, NULL, &gws_wgscan,
-		&lws, NULL, &err_internal);
+	evt = ccl_kernel_enqueue_ndrange(krnl_wgscan, cq_exec, 1, NULL,
+		&gws_wgscan, &lws, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	ccl_event_set_name(evt, "clo_scan_blelloch_wgscan");
 
 	g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | BPWG=%d | Enter? %s",
 		(int) numel, (int) gws_wgscan, (int) ws_wgsumsscan,
@@ -139,50 +147,45 @@ static cl_bool clo_scan_blelloch_scan_with_device_data(CloScan* scanner,
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 		/* Perform scan on workgroup sums array. */
-		ccl_kernel_set_args_and_enqueue_ndrange(krnl_wgsumsscan, queue,
-			1, NULL, &ws_wgsumsscan, &ws_wgsumsscan, NULL, &err_internal,
+		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_wgsumsscan,
+			cq_exec, 1, NULL, &ws_wgsumsscan, &ws_wgsumsscan, NULL,
+			&err_internal,
 			/* Argument list. */
 			dev_wgsums, ccl_arg_full(NULL, size_sum * lws * 2),
 			NULL);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		ccl_event_set_name(evt, "clo_scan_blelloch_wgsumsscan");
 
 		/* Add the workgroup-wise sums to the respective workgroup
 		 * elements.*/
-		ccl_kernel_set_args_and_enqueue_ndrange(krnl_addwgsums, queue,
-			1, NULL, &gws_addwgsums, &lws, NULL, &err_internal,
+		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_addwgsums,
+			cq_exec, 1, NULL, &gws_addwgsums, &lws, NULL, &err_internal,
 			/* Argument list. */
 			dev_wgsums, data_out, ccl_arg_priv(blocks_per_wg, cl_uint),
 			NULL);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		ccl_event_set_name(evt, "clo_scan_blelloch_addwgsums");
 
 	}
 
-	/* Stop timer and keep time, if required. */
-	if (duration) {
-		g_timer_stop(timer);
-		*duration = g_timer_elapsed(timer, NULL);
-	}
+	/* Add last event to wait list to return. */
+	ccl_event_wait_list_add(&ewl, evt, NULL);
 
 	/* If we got here, everything is OK. */
-	status = CL_TRUE;
 	g_assert(err == NULL || *err == NULL);
 	goto finish;
 
 error_handler:
 	/* If we got here there was an error, verify that it is so. */
 	g_assert(err == NULL || *err != NULL);
-	status = CL_FALSE;
 
 finish:
 
 	/* Release temporary buffer. */
 	if (dev_wgsums) ccl_buffer_destroy(dev_wgsums);
 
-	/* Free timer, if required.. */
-	if (timer) g_timer_destroy(timer);
-
-	/* Return. */
-	return status;
+	/* Return event wait list. */
+	return ewl;
 
 }
 
@@ -193,17 +196,22 @@ finish:
  * @copydetails ::CloScan::scan_with_host_data()
  * */
 static cl_bool clo_scan_blelloch_scan_with_host_data(CloScan* scanner,
-	CCLQueue* queue, void* data_in, void* data_out, size_t numel,
-	size_t lws_max, double* duration, GError** err) {
+	CCLQueue* cq_exec, CCLQueue* cq_comm, void* data_in, void* data_out,
+	size_t numel, size_t lws_max, GError** err) {
 
 	/* Function return status. */
 	cl_bool status;
 
 	/* OpenCL wrapper objects. */
+	CCLEvent* evt = NULL;
 	CCLBuffer* data_in_dev = NULL;
 	CCLBuffer* data_out_dev = NULL;
 	CCLQueue* intern_queue = NULL;
 	CCLDevice* dev = NULL;
+	CCLContext* ctx = NULL;
+
+	/* Event wait list. */
+	CCLEventWaitList ewl = NULL;
 
 	/* Internal error object. */
 	GError* err_internal = NULL;
@@ -216,17 +224,24 @@ static cl_bool clo_scan_blelloch_scan_with_host_data(CloScan* scanner,
 	size_t data_in_size = numel * clo_type_sizeof(data->elem_type);
 	size_t data_out_size = numel * clo_type_sizeof(data->sum_type);
 
-	/* If queue is NULL, create own queue using first device in
-	 * context. */
-	if (queue == NULL) {
-		/* Get first device in context. */
-		dev = ccl_context_get_device(data->ctx, 0, &err_internal);
+	/* Get the context wrapper. */
+	ctx = data->ctx;
+
+	/* If execution queue is NULL, create own queue using first device
+	 * in context. */
+	if (cq_exec == NULL) {
+		/* Get first device in queue. */
+		dev = ccl_context_get_device(ctx, 0, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 		/* Create queue. */
-		intern_queue = ccl_queue_new(data->ctx, dev, 0, &err_internal);
+		intern_queue = ccl_queue_new(ctx, dev, 0, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-		queue = intern_queue;
+		cq_exec = intern_queue;
 	}
+
+	/* If data transfer queue is NULL, use exec queue for data
+	 * transfers. */
+	if (cq_comm == NULL) cq_comm = cq_exec;
 
 	/* Create device buffers. */
 	data_in_dev = ccl_buffer_new(
@@ -237,18 +252,27 @@ static cl_bool clo_scan_blelloch_scan_with_host_data(CloScan* scanner,
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data to device. */
-	ccl_buffer_enqueue_write(data_in_dev, queue, CL_TRUE, 0,
+	evt = ccl_buffer_enqueue_write(data_in_dev, cq_comm, CL_TRUE, 0,
 		data_in_size, data_in, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	ccl_event_set_name(evt, "clo_scan_blelloch_write");
 
 	/* Perform scan with device data. */
-	clo_scan_blelloch_scan_with_device_data(scanner, queue, data_in_dev,
-		data_out_dev, numel, lws_max, duration, &err_internal);
+	ewl = clo_scan_blelloch_scan_with_device_data(scanner, cq_exec,
+		cq_comm, data_in_dev, data_out_dev, numel, lws_max,
+		&err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data back to host. */
-	ccl_buffer_enqueue_read(data_out_dev, queue, CL_TRUE, 0,
-		data_out_size, data_out, NULL, &err_internal);
+	evt = ccl_buffer_enqueue_read(data_out_dev, cq_comm, CL_TRUE, 0,
+		data_out_size, data_out, &ewl, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	ccl_event_set_name(evt, "clo_scan_blelloch_read");
+
+	/* Explicitly wait for transfer (some OpenCL implementations don't
+	 * respect CL_TRUE in data transfers). */
+	ccl_event_wait_list_add(&ewl, evt, NULL);
+	ccl_event_wait(&ewl, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* If we got here, everything is OK. */
