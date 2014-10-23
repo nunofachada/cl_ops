@@ -64,13 +64,8 @@
 #define CLO_SORT_ABITONIC_KPARSE_V(kname) atoi(g_strrstr(kname, "s") + 1)
 #define CLO_SORT_ABITONIC_KPARSE_S(kname) atoi(g_strrstr(kname, "_") + 1)
 
-/* Initializes an advanced bitonic sorter object and returns the
- * respective source code. */
-const char* clo_sort_abitonic_init(
-	CloSort* sorter, const char* options, GError** err);
-
-/* Finalizes an advanced bitonic sorter object. */
-void clo_sort_abitonic_finalize(CloSort* sorter);
+/** Definition of the abitonic sort implementation. */
+extern const CloSortImplDef clo_sort_abitonic_def;
 
 #endif
 

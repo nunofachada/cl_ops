@@ -556,7 +556,7 @@ finish:
  * @return Advanced bitonic sorter source code or `NULL` if an error
  * occurs.
  * */
-const char* clo_sort_abitonic_init(
+static const char* clo_sort_abitonic_init(
 	CloSort* sorter, const char* options, GError** err) {
 
 	/* Make sure err is NULL or it is not set. */
@@ -659,8 +659,6 @@ finish:
 	g_strfreev(opt);
 
 	/* Set object methods and internal data. */
-	sorter->sort_with_host_data = clo_sort_abitonic_sort_with_host_data;
-	sorter->sort_with_device_data = clo_sort_abitonic_sort_with_device_data;
 	clo_sort_set_data(sorter, data);
 
 	/* Return source to be compiled. */
@@ -674,10 +672,19 @@ finish:
  *
  * @param[in] sorter Sorter object to finalize.
  * */
-void clo_sort_abitonic_finalize(CloSort* sorter) {
+static void clo_sort_abitonic_finalize(CloSort* sorter) {
 
 	/* Release internal data. */
-	g_slice_free(clo_sort_abitonic_data, sorter->_data);
+	g_slice_free(clo_sort_abitonic_data, clo_sort_get_data(sorter));
 
 	return;
 }
+
+/* Definition of the abitonic sort implementation. */
+const CloSortImplDef clo_sort_abitonic_def = {
+	"abitonic",
+	clo_sort_abitonic_init,
+	clo_sort_abitonic_finalize,
+	clo_sort_abitonic_sort_with_device_data,
+	clo_sort_abitonic_sort_with_host_data
+};

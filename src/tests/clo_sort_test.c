@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 			}
 
 			/* Perform sort. */
-			sorter->sort_with_host_data(sorter, cq_exec, cq_comm,
+			clo_sort_with_host_data(sorter, cq_exec, cq_comm,
 				host_data, host_data, num_elems, lws, &err);
 			ccl_if_err_goto(err, error_handler);
 

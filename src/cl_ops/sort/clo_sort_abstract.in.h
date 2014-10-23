@@ -26,12 +26,36 @@
 
 #include "common/clo_common.h"
 
-typedef struct clo_sort_data CloSortData;
+/* Sort class. */
+typedef struct clo_sort CloSort;
 
 /**
- * Abstract sort class.
+ * Definition of a sort implementation.
  * */
-typedef struct clo_sort {
+typedef struct clo_sort_impl_def {
+
+	/**
+	 * Sort algorithm name.
+	 * */
+	const char* name;
+
+	/**
+	 * Sort algorithm initializer function.
+	 *
+	 * @param[in] sorter
+	 * @param[in] options
+	 * @param[out] err
+	 * @return
+	 * */
+	const char* (*init)(CloSort* sorter, const char* options,
+		GError** err);
+
+	/**
+	 * Sort algorithm finalizer function.
+	 *
+	 * @param[in] sorter
+	 * */
+	void (*finalize)(CloSort* sorter);
 
 	/**
 	 * Perform sort using device data.
@@ -53,9 +77,10 @@ typedef struct clo_sort {
 	 * @return An event wait list which contains events which must
 	 * terminate before sorting is considered complete.
 	 * */
-	CCLEventWaitList (*sort_with_device_data)(struct clo_sort* sorter,
+	CCLEventWaitList (*sort_with_device_data)(CloSort* sorter,
 		CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
-		CCLBuffer* data_out, size_t numel, size_t lws_max, GError** err);
+		CCLBuffer* data_out, size_t numel, size_t lws_max,
+		GError** err);
 
 	/**
 	 * Perform sort using host data. Device buffers will be created and
@@ -76,17 +101,11 @@ typedef struct clo_sort {
 	 * @return `CL_TRUE` if sort was successfully performed, or
 	 * `CL_FALSE` otherwise.
 	 * */
-	cl_bool (*sort_with_host_data)(struct clo_sort* sorter,
-		CCLQueue* cq_exec, CCLQueue* cq_comm, void* data_in,
-		void* data_out, size_t numel, size_t lws_max, GError** err);
+	cl_bool (*sort_with_host_data)(CloSort* sorter, CCLQueue* cq_exec,
+		CCLQueue* cq_comm, void* data_in, void* data_out, size_t numel,
+		size_t lws_max, GError** err);
 
-	/**
-	 * @internal
-	 * Private sorter data.
-	 * */
-	CloSortData* _data;
-
-} CloSort;
+} CloSortImplDef;
 
 /* Generic sorter object constructor. The exact type is given in the
  * first parameter. */
@@ -97,6 +116,17 @@ CloSort* clo_sort_new(const char* type, const char* options,
 
 /* Destroy a sorter object. */
 void clo_sort_destroy(CloSort* sorter);
+
+/* Perform sort using device data. */
+CCLEventWaitList clo_sort_with_device_data(CloSort* sorter,
+	CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
+	CCLBuffer* data_out, size_t numel, size_t lws_max, GError** err);
+
+/* Perform sort using host data. Device buffers will be created and
+ * destroyed by sort implementation. */
+cl_bool clo_sort_with_host_data(CloSort* sorter, CCLQueue* cq_exec,
+	CCLQueue* cq_comm, void* data_in, void* data_out, size_t numel,
+	size_t lws_max, GError** err);
 
 /* Get the context wrapper associated with the given sorter object. */
 CCLContext* clo_sort_get_context(CloSort* sorter);

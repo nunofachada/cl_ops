@@ -268,19 +268,16 @@ finish:
  * reporting is to be ignored.
  * @return Simple bitonic sorter source code.
  * */
-const char* clo_sort_gselect_init(
+static const char* clo_sort_gselect_init(
 	CloSort* sorter, const char* options, GError** err) {
 
 	/* Make sure err is NULL or it is not set. */
 	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
-	/* Set object methods. */
-	sorter->sort_with_host_data = clo_sort_gselect_sort_with_host_data;
-	sorter->sort_with_device_data = clo_sort_gselect_sort_with_device_data;
-
-	/* Ignore specific sbitonic sort options and error handling. */
-	options = options;
-	err = err;
+	/* Ignore specific gselect sort options and error handling. */
+	(void)options;
+	(void)err;
+	(void)sorter;
 
 	/* Return source to be compiled. */
 	return CLO_SORT_GSELECT_SRC;
@@ -293,8 +290,17 @@ const char* clo_sort_gselect_init(
  *
  * @param[in] sorter Sorter object to finalize.
  * */
-void clo_sort_gselect_finalize(CloSort* sorter) {
+static void clo_sort_gselect_finalize(CloSort* sorter) {
 	/* Nothing to finalize. */
 	sorter = sorter;
 	return;
 }
+
+/* Definition of the gselect sort implementation. */
+const CloSortImplDef clo_sort_gselect_def = {
+	"gselect",
+	clo_sort_gselect_init,
+	clo_sort_gselect_finalize,
+	clo_sort_gselect_sort_with_device_data,
+	clo_sort_gselect_sort_with_host_data
+};

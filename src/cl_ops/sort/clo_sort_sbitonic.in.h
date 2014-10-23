@@ -29,12 +29,7 @@
 /** The simple bitonic sort kernels source. */
 #define CLO_SORT_SBITONIC_SRC "@SBITONIC_SRC@"
 
-/* Initializes a simple bitonic sorter object and returns the
- * respective source code. */
-const char* clo_sort_sbitonic_init(
-	CloSort* sorter, const char* options, GError** err);
-
-/* Finalizes a bitonic sorter object. */
-void clo_sort_sbitonic_finalize(CloSort* sorter);
+/** Definition of the sbitonic sort implementation. */
+extern const CloSortImplDef clo_sort_sbitonic_def;
 
 #endif

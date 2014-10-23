@@ -27,60 +27,27 @@
 #include "clo_sort_gselect.h"
 
 /**
- * @internal
- * Internal sorter data.
+ * Sorter class.
  * */
-struct clo_sort_data {
+typedef struct clo_sort {
 
-	/** Finalize function. */
-	void (*finalize)(CloSort* sorter);
+	/** @private Sort implementation. */
+	CloSortImplDef impl_def;
 
-	/** Context wrapper. */
+	/** @private Context wrapper. */
 	CCLContext* ctx;
-	/** Program wrapper. */
+
+	/** @private Program wrapper. */
 	CCLProgram* prg;
-	/** Element type. */
+
+	/** @private Type of elements to sort. */
 	CloType elem_type;
-	/** Sort-specific internal data. */
-	void* other_data;
-};
 
-/**
- * This struct associates a sort type name with its initializer
- * function.
- * */
-struct ocl_sort_impl {
+	/** @private Scan implementation data. */
+	void* data;
 
-	/**
-	 * Sort algorithm name.
-	 * @private
-	 * */
-	const char* name;
+} CloSort;
 
-	/**
-	 * Sort algorithm initializer function.
-	 * @private
-	 * */
-	const char* (*init)(CloSort* sorter, const char* options, GError** err);
-
-	/**
-	 * Sort algorithm finalizer function.
-	 * @private
-	 * */
-	void (*finalize)(CloSort* sorter);
-};
-
-/**
- * @internal
- * List of sort implementations.
- * */
-static const struct ocl_sort_impl const sort_impls[] = {
-	{ "sbitonic", clo_sort_sbitonic_init, clo_sort_sbitonic_finalize },
-	{ "abitonic", clo_sort_abitonic_init, clo_sort_abitonic_finalize },
-	{ "gselect", clo_sort_gselect_init, clo_sort_gselect_finalize },
-	//~ { "satradix", clo_sort_satradix_new },
-	{ NULL, NULL, NULL }
-};
 
 /**
  * Generic sort object constructor. The exact type is given in the
@@ -130,6 +97,15 @@ CloSort* clo_sort_new(const char* type, const char* options,
 	/* Internal error handling object. */
 	GError* err_internal = NULL;
 
+	/* Known sort implementations. */
+	CloSortImplDef sort_impls[] = {
+		clo_sort_sbitonic_def,
+		clo_sort_abitonic_def,
+		clo_sort_gselect_def,
+		//~ clo_sort_satradix_def
+		{ NULL, NULL, NULL, NULL, NULL }
+	};
+
 	/* Search in the list of known sort classes. */
 	for (guint i = 0; sort_impls[i].name != NULL; ++i) {
 		if (g_strcmp0(type, sort_impls[i].name) == 0) {
@@ -137,15 +113,17 @@ CloSort* clo_sort_new(const char* type, const char* options,
 			/* Allocate memory for sorter object. */
 			sorter = g_slice_new0(CloSort);
 
-			/* Allocate memory for sorter object data. */
-			sorter->_data = g_slice_new0(struct clo_sort_data);
+			/* Set implementation definition. */
+			sorter->impl_def = sort_impls[i];
 
-			/* Set finalizer. */
-			sorter->_data->finalize = sort_impls[i].finalize;
+			/* Keep context, program and element type. */
+			ccl_context_ref(ctx);
+			sorter->ctx  = ctx;
+			sorter->elem_type = *elem_type;
 
 			/* Initialize specific sort implementation and get source
 			 * code. */
-			src = sort_impls[i].init(sorter, options, err);
+			src = sorter->impl_def.init(sorter, options, err);
 
 			/* Build sort macros which define element and key types,
 			 * comparison type and how to obtain a key from the
@@ -181,18 +159,13 @@ CloSort* clo_sort_new(const char* type, const char* options,
 			/* Create and build program. */
 			src_full[0] = (const char*) ocl_macros->str;
 			src_full[1] = src;
-			sorter->_data->prg = ccl_program_new_from_sources(
+			sorter->prg = ccl_program_new_from_sources(
 				ctx, 2, src_full, NULL, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 			ccl_program_build(
-				sorter->_data->prg, compiler_opts, &err_internal);
+				sorter->prg, compiler_opts, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
-
-			/* Keep context, program and element type. */
-			ccl_context_ref(ctx);
-			sorter->_data->ctx  = ctx;
-			sorter->_data->elem_type = *elem_type;
 
 		}
 	}
@@ -235,19 +208,90 @@ void clo_sort_destroy(CloSort* sorter) {
 	g_return_val_if_fail(sorter != NULL, NULL);
 
 	/* Free specific algorithm data. */
-	sorter->_data->finalize(sorter);
+	sorter->impl_def.finalize(sorter);
 
 	/* Unreference context wrapper. */
-	if (sorter->_data->ctx) ccl_context_unref(sorter->_data->ctx);
+	if (sorter->ctx) ccl_context_unref(sorter->ctx);
 
 	/* Destroy program wrapper. */
-	if (sorter->_data->prg) ccl_program_destroy(sorter->_data->prg);
-
-	/* Free sorter object data. */
-	g_slice_free(struct clo_sort_data, sorter->_data);
+	if (sorter->prg) ccl_program_destroy(sorter->prg);
 
 	/* Free sorter object. */
 	g_slice_free(CloSort, sorter);
+}
+
+/**
+ * Perform sort using device data.
+ *
+ * @param[in] sorter Sorter object.
+ * @param[in] cq_exec A valid command queue wrapper for kernel
+ * execution, cannot be `NULL`.
+ * @param[in] cq_comm A command queue wrapper for data transfers.
+ * If `NULL`, `cq_exec` will be used for data transfers.
+ * @param[in] data_in Data to be sorted.
+ * @param[out] data_out Location where to place sorted data. If
+ * `NULL`, data will be sorted in-place or copied back from auxiliar
+ * device buffer, depending on the sort implementation.
+ * @param[in] numel Number of elements in `data_in`.
+ * @param[in] lws_max Max. local worksize. If 0, the local worksize
+ * will be automatically determined.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
+ * @return An event wait list which contains events which must
+ * terminate before sorting is considered complete.
+ * */
+CCLEventWaitList clo_sort_with_device_data(CloSort* sorter,
+	CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
+	CCLBuffer* data_out, size_t numel, size_t lws_max, GError** err) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(sorter != NULL, NULL);
+
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
+
+	/* Make sure cq_exec is not NULL. */
+	g_return_val_if_fail(cq_exec != NULL, NULL);
+
+	/* Use specific implementation. */
+	return sorter->impl_def.sort_with_device_data(sorter, cq_exec,
+		cq_comm, data_in, data_out, numel, lws_max, err);
+
+}
+
+/**
+ * Perform sort using host data. Device buffers will be created and
+ * destroyed by sort implementation.
+ *
+ * @param[in] sorter Sorter object.
+ * @param[in] cq_exec Command queue wrapper for kernel execution. If
+ * `NULL` a queue will be created.
+ * @param[in] cq_comm A command queue wrapper for data transfers.
+ * If `NULL`, `cq_exec` will be used for data transfers.
+ * @param[in] data_in Data to be sorted.
+ * @param[out] data_out Location where to place sorted data.
+ * @param[in] numel Number of elements in `data_in`.
+ * @param[in] lws_max Max. local worksize. If 0, the local worksize
+ * will be automatically determined.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
+ * @return `CL_TRUE` if sort was successfully performed, or
+ * `CL_FALSE` otherwise.
+ * */
+cl_bool clo_sort_with_host_data(CloSort* sorter, CCLQueue* cq_exec,
+	CCLQueue* cq_comm, void* data_in, void* data_out, size_t numel,
+	size_t lws_max, GError** err) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(sorter != NULL, NULL);
+
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
+
+	/* Use specific implementation. */
+	return sorter->impl_def.sort_with_host_data(sorter, cq_exec,
+		cq_comm, data_in, data_out, numel, lws_max, err);
+
 }
 
 /**
@@ -264,7 +308,7 @@ CCLContext* clo_sort_get_context(CloSort* sorter) {
 	g_return_val_if_fail(sorter != NULL, NULL);
 
 	/* Return context wrapper. */
-	return sorter->_data->ctx;
+	return sorter->ctx;
 }
 
 
@@ -282,7 +326,7 @@ CCLProgram* clo_sort_get_program(CloSort* sorter) {
 	g_return_val_if_fail(sorter != NULL, NULL);
 
 	/* Return program wrapper. */
-	return sorter->_data->prg;
+	return sorter->prg;
 }
 
 
@@ -300,7 +344,7 @@ CloType clo_sort_get_element_type(CloSort* sorter) {
 	g_return_val_if_fail(sorter != NULL, -1);
 
 	/* Return element type. */
-	return sorter->_data->elem_type;
+	return sorter->elem_type;
 }
 
 /**
@@ -314,13 +358,12 @@ CloType clo_sort_get_element_type(CloSort* sorter) {
 size_t clo_sort_get_element_size(CloSort* sorter) {
 
 	/* Make sure sorter object is not NULL. */
-	g_return_val_if_fail(sorter != NULL, NULL);
+	g_return_val_if_fail(sorter != NULL, 0);
 
 	/* Return element size. */
-	return clo_type_sizeof(sorter->_data->elem_type);
+	return clo_type_sizeof(sorter->elem_type);
 
 }
-
 
 /**
  * Get sort specific data.
@@ -334,7 +377,7 @@ void* clo_sort_get_data(CloSort* sorter) {
 	g_return_val_if_fail(sorter != NULL, NULL);
 
 	/* Return sort specific data. */
-	return sorter->_data->other_data;
+	return sorter->data;
 
 }
 
@@ -350,6 +393,6 @@ void clo_sort_set_data(CloSort* sorter, void* data) {
 	g_return_val_if_fail(sorter != NULL, NULL);
 
 	/* Set sort specific data. */
-	sorter->_data->other_data = data;
+	sorter->data = data;
 
 }

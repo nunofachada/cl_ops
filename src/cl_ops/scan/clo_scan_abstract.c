@@ -53,6 +53,8 @@ struct clo_scan {
  * Generic scan object constructor. The exact type is given in the
  * first parameter.
  *
+ * @public @memberof clo_scan
+ *
  * @param[in] type Name of scan algorithm class to create.
  * @param[in] options Algorithm options.
  * @param[in] ctx OpenCL context wrapper.
@@ -114,6 +116,9 @@ CloScan* clo_scan_new(const char* type, const char* options,
 				" -DCLO_SCAN_SUM_TYPE=", clo_type_get_name(sum_type),
 				compiler_opts, NULL);
 
+			/// @todo init should return source code and program should
+			/// be created here, like sort
+
 			/* Initialize scanner implementation. */
 			prg = scanner->impl_def.init(
 				scanner, options, compiler_opts_final, &err_internal);
@@ -152,6 +157,8 @@ finish:
 /**
  * Destroy scanner object.
  *
+ * @public @memberof clo_scan
+ *
  * @param[in] scan Scanner object to destroy.
  * */
 void clo_scan_destroy(CloScan* scan) {
@@ -175,6 +182,8 @@ void clo_scan_destroy(CloScan* scan) {
 
 /**
  * Perform scan using device data.
+ *
+ * @public @memberof clo_scan
  *
  * @param[in] scanner
  * @param[in] cq_exec
@@ -208,6 +217,8 @@ CCLEventWaitList clo_scan_with_device_data(CloScan* scanner,
 
 /**
  * Perform scan using host data.
+ *
+ * @public @memberof clo_scan
  *
  * @param[in] scanner
  * @param[in] cq_exec
@@ -327,6 +338,8 @@ finish:
 /**
  * Get context wrapper associated with scanner object.
  *
+ * @public @memberof clo_scan
+ *
  * @param[in] Scanner object.
  * @return Context wrapper associated with scanner object.
  * */
@@ -341,6 +354,8 @@ CCLContext* clo_scan_get_context(CloScan* scanner) {
 /**
  * Get program wrapper associated with scanner object.
  *
+ * @public @memberof clo_scan
+ *
  * @param[in] Scanner object.
  * @return Program wrapper associated with scanner object.
  * */
@@ -353,6 +368,8 @@ CCLProgram* clo_scan_get_program(CloScan* scanner) {
 }
 /**
  * Get type of elements to scan.
+ *
+ * @public @memberof clo_scan
  *
  * @param[in] Scanner object.
  * @return Type of elements to scan.
@@ -368,6 +385,8 @@ CloType clo_scan_get_elem_type(CloScan* scanner) {
 /**
  * Get type of elements in scan sum.
  *
+ * @public @memberof clo_scan
+ *
  * @param[in] Scanner object.
  * @return Type of elements in scan sum.
  * */
@@ -381,6 +400,8 @@ CloType clo_scan_get_sum_type(CloScan* scanner) {
 
 /**
  * Get data associated with specific scan implementation.
+ *
+ * @public @memberof clo_scan
  *
  * @param[in] Scanner object.
  * @return Data associated with specific scan implementation.

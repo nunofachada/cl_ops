@@ -29,13 +29,8 @@
 /** The global selection sort kernels source. */
 #define CLO_SORT_GSELECT_SRC "@GSELECT_SRC@"
 
-/* Initializes a gselect sorter object and returns the respective
- * source code. */
-const char* clo_sort_gselect_init(
-	CloSort* sorter, const char* options, GError** err);
-
-/* Finalizes a gselect sorter object. */
-void clo_sort_gselect_finalize(CloSort* sorter);
+/** Definition of the gselect sort implementation. */
+extern const CloSortImplDef clo_sort_gselect_def;
 
 #endif
 
