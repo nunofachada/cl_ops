@@ -45,7 +45,7 @@ typedef struct clo_sort_impl_def {
 	 * @param[in] sorter
 	 * @param[in] options
 	 * @param[out] err
-	 * @return
+	 * @return Sort algorithm source code.
 	 * */
 	const char* (*init)(CloSort* sorter, const char* options,
 		GError** err);

@@ -24,40 +24,16 @@
  *
  * @copydetails ::clo_scan_impl::init()
  * */
-static CCLProgram* clo_scan_blelloch_init(CloScan* scanner,
-	const char* options, const char* compiler_opts, GError** err) {
-
-	/* Internal error management object. */
-	GError *err_internal = NULL;
-
-	/* Blelloch scan program. */
-	CCLProgram* prg = NULL;
+static const char* clo_scan_blelloch_init(CloScan* scanner,
+	const char* options, GError** err) {
 
 	/* For now ignore specific blelloch scan options. */
+	(void)scanner;
 	(void)options;
+	(void)err;
 
-	/* Create and build program. */
-	prg = ccl_program_new_from_source(clo_scan_get_context(scanner),
-		CLO_SCAN_BLELLOCH_SRC, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
-
-	ccl_program_build(prg, compiler_opts, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
-
-	/* If we got here, everything is OK. */
-	g_assert(err == NULL || *err == NULL);
-	goto finish;
-
-error_handler:
-	/* If we got here there was an error, verify that it is so. */
-	g_assert(err == NULL || *err != NULL);
-
-	if (prg) { ccl_program_destroy(prg); prg = NULL; }
-
-finish:
-
-	/* Return Blelloch scan program wrapper. */
-	return prg;
+	/* Return Blelloch source code. */
+	return CLO_SCAN_BLELLOCH_SRC;
 
 }
 

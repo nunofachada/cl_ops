@@ -95,6 +95,9 @@ CloScan* clo_scan_new(const char* type, const char* options,
 	/* Scan program. */
 	CCLProgram* prg = NULL;
 
+	/* Scan source code. */
+	const char* src;
+
 	/* Search in the list of known scan classes. */
 	for (guint i = 0; scan_impl_defs[i].name != NULL; ++i) {
 		if (g_strcmp0(type, scan_impl_defs[i].name) == 0) {
@@ -116,12 +119,17 @@ CloScan* clo_scan_new(const char* type, const char* options,
 				" -DCLO_SCAN_SUM_TYPE=", clo_type_get_name(sum_type),
 				compiler_opts, NULL);
 
-			/// @todo init should return source code and program should
-			/// be created here, like sort
-
 			/* Initialize scanner implementation. */
-			prg = scanner->impl_def.init(
-				scanner, options, compiler_opts_final, &err_internal);
+			src = scanner->impl_def.init(
+				scanner, options, &err_internal);
+			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+			/* Create and build scanner program. */
+			prg = ccl_program_new_from_source(
+				scanner->ctx, src, &err_internal);
+			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+			ccl_program_build(prg, compiler_opts_final, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 			/* Set scanner program. */

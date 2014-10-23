@@ -40,22 +40,19 @@ typedef struct clo_scan_impl_def {
 	const char* name;
 
 	/**
-	 * Initialize specific scan implementation stuff.
+	 * Initialize specific scan implementation.
 	 *
+	 * @param[in] scanner Scanner object.
 	 * @param[in] options Algorithm options.
-	 * @param[in] ctx Context wrapper object.
-	 * @param[in] elem_type Type of elements to scan.
-	 * @param[in] sum_type Type of scanned elements.
-	 * @param[in] compiler_opts Compiler options.
 	 * @param[out] err Return location for a GError, or `NULL` if error
 	 * reporting is to be ignored.
-	 * @return A program wrapper for the scan program.
+	 * @return Scan algorithm source code.
 	 * */
-	CCLProgram* (*init)(CloScan* scanner, const char* options,
-		const char* compiler_opts, GError** err);
+	const char* (*init)(CloScan* scanner, const char* options,
+		GError** err);
 
 	/**
-	 * Finalize specific scan implementation stuff.
+	 * Finalize specific scan implementation.
 	 *
 	 * @param[in] scan Scanner object.
 	 * */
