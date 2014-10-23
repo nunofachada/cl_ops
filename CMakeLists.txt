@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(cl_ops C)
+project(CL_Ops C)
 
 # The version number
 set(${PROJECT_NAME}_VERSION_MAJOR 0)
