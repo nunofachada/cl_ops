@@ -25,32 +25,28 @@
 #include "clo_scan_blelloch.h"
 
 /**
- * Abstract scan class definition.
+ * Scanner class.
  * */
-struct ocl_scan_impl {
+struct clo_scan {
 
-	/**
-	 * Scan algorithm name.
-	 * @private
-	 * */
-	const char* name;
+	/** @private Scan implementation. */
+	CloScanImplDef impl_def;
 
-	/**
-	 * Scan algorithm constructor.
-	 * @private
-	 * */
-	CloScan* (*new)(const char* options, CCLContext* ctx,
-		CloType elem_type, CloType sum_type, const char* compiler_opts,
-		GError** err);
-};
+	/** @private Context wrapper. */
+	CCLContext* ctx;
 
-/**
- * @internal
- * The list of known scan implementations.
- * */
-static const struct ocl_scan_impl const scan_impls[] = {
-	{ "blelloch", clo_scan_blelloch_new },
-	{ NULL, NULL }
+	/** @private Program wrapper. */
+	CCLProgram* prg;
+
+	/** @private Type of elements to scan. */
+	CloType elem_type;
+
+	/** @private Type of elements in scan sum. */
+	CloType sum_type;
+
+	/** @private Scan implementation data. */
+	void* data;
+
 };
 
 /**
@@ -72,17 +68,327 @@ CloScan* clo_scan_new(const char* type, const char* options,
 	CCLContext* ctx, CloType elem_type, CloType sum_type,
 	const char* compiler_opts, GError** err) {
 
+	/* Make sure type is not NULL. */
+	g_return_val_if_fail(type != NULL, NULL);
+	/* Make sure context is not NULL. */
+	g_return_val_if_fail(ctx != NULL, NULL);
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
+
+	/* The list of known scan implementations. */
+	CloScanImplDef scan_impl_defs[] = {
+		clo_scan_blelloch_def,
+		{ NULL, NULL, NULL, NULL }
+	};
+
+	/* Scanner object. */
+	CloScan* scanner = NULL;
+
+	/* Final compiler options. */
+	gchar* compiler_opts_final = NULL;
+
+	/* Internal error management object. */
+	GError *err_internal = NULL;
+
+	/* Scan program. */
+	CCLProgram* prg = NULL;
+
 	/* Search in the list of known scan classes. */
-	for (guint i = 0; scan_impls[i].name != NULL; ++i) {
-		if (g_strcmp0(type, scan_impls[i].name) == 0) {
-			/* If found, return an new instance.*/
-			return scan_impls[i].new(options, ctx, elem_type, sum_type,
-				compiler_opts, err);
+	for (guint i = 0; scan_impl_defs[i].name != NULL; ++i) {
+		if (g_strcmp0(type, scan_impl_defs[i].name) == 0) {
+			/* If found, create a new instance and initialize it.*/
+
+			/* Allocate memory for scan object. */
+			scanner = g_slice_new0(CloScan);
+
+			/* Keep data in scanner object. */
+			scanner->impl_def = scan_impl_defs[i];
+			ccl_context_ref(ctx);
+			scanner->ctx = ctx;
+			scanner->elem_type = elem_type;
+			scanner->sum_type = sum_type;
+
+			/* Determine final compiler options. */
+			compiler_opts_final = g_strconcat(
+				" -DCLO_SCAN_ELEM_TYPE=", clo_type_get_name(elem_type),
+				" -DCLO_SCAN_SUM_TYPE=", clo_type_get_name(sum_type),
+				compiler_opts, NULL);
+
+			/* Initialize scanner implementation. */
+			prg = scanner->impl_def.init(
+				scanner, options, compiler_opts_final, &err_internal);
+			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+			/* Set scanner program. */
+			scanner->prg = prg;
 		}
 	}
 
-	/* If not found, specify error and return NULL. */
-	g_set_error(err, CLO_ERROR, CLO_ERROR_IMPL_NOT_FOUND,
-		"The requested scan implementation, '%s', was not found.", type);
-	return NULL;
+	/* Check if an implementation was indeed found. */
+	ccl_if_err_create_goto(*err, CLO_ERROR, scanner == NULL,
+		CLO_ERROR_IMPL_NOT_FOUND, error_handler,
+		"The requested scan implementation, '%s', was not found.",
+		type);
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+
+	if (scanner) { clo_scan_destroy(scanner); scanner = NULL; }
+
+finish:
+
+	/* Free stuff. */
+	if (compiler_opts_final) g_free(compiler_opts_final);
+
+	/* Return scanner object. */
+	return scanner;
+}
+
+/**
+ * Destroy scanner object.
+ *
+ * @param[in] scan Scanner object to destroy.
+ * */
+void clo_scan_destroy(CloScan* scan) {
+
+	/* Check scanner object is not NULL. */
+	g_return_if_fail(scan != NULL);
+
+	/* Finalize specific scan implementation stuff. */
+	scan->impl_def.finalize(scan);
+
+	/* Unreference context. */
+	if (scan->ctx) ccl_context_unref(scan->ctx);
+
+	/* Destroy program. */
+	if (scan->prg) ccl_program_destroy(scan->prg);
+
+	/* Free scanner object memory. */
+	g_slice_free(CloScan, scan);
+
+}
+
+/**
+ * Perform scan using device data.
+ *
+ * @param[in] scanner
+ * @param[in] cq_exec
+ * @param[in] cq_comm
+ * @param[in] data_in
+ * @param[out] data_out
+ * @param[in] numel
+ * @param[in] lws_max
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
+ * @return
+ * */
+CCLEventWaitList clo_scan_with_device_data(CloScan* scanner,
+	CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
+	CCLBuffer* data_out, size_t numel, size_t lws_max, GError** err) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, NULL);
+
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
+
+	/* Make sure cq_exec is not NULL. */
+	g_return_val_if_fail(cq_exec != NULL, NULL);
+
+	/* Use specific implementation. */
+	return scanner->impl_def.scan_with_device_data(scanner, cq_exec,
+		cq_comm, data_in, data_out, numel, lws_max, err);
+
+}
+
+/**
+ * Perform scan using host data.
+ *
+ * @param[in] scanner
+ * @param[in] cq_exec
+ * @param[in] cq_comm
+ * @param[in] data_in
+ * @param[out] data_out
+ * @param[in] numel
+ * @param[in] lws_max
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
+ * @return
+ * */
+cl_bool clo_scan_with_host_data(CloScan* scanner,
+	CCLQueue* cq_exec, CCLQueue* cq_comm, void* data_in, void* data_out,
+	size_t numel, size_t lws_max, GError** err) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, NULL);
+
+	/* Make sure err is NULL or it is not set. */
+	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
+
+	/* Function return status. */
+	cl_bool status;
+
+	/* OpenCL wrapper objects. */
+	CCLEvent* evt = NULL;
+	CCLBuffer* data_in_dev = NULL;
+	CCLBuffer* data_out_dev = NULL;
+	CCLQueue* intern_queue = NULL;
+	CCLDevice* dev = NULL;
+
+	/* Event wait list. */
+	CCLEventWaitList ewl = NULL;
+
+	/* Internal error object. */
+	GError* err_internal = NULL;
+
+	/* Determine data sizes. */
+	size_t data_in_size = numel * clo_type_sizeof(scanner->elem_type);
+	size_t data_out_size = numel * clo_type_sizeof(scanner->sum_type);
+
+	/* If execution queue is NULL, create own queue using first device
+	 * in context. */
+	if (cq_exec == NULL) {
+		/* Get first device in queue. */
+		dev = ccl_context_get_device(scanner->ctx, 0, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		/* Create queue. */
+		intern_queue = ccl_queue_new(
+			scanner->ctx, dev, 0, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		cq_exec = intern_queue;
+	}
+
+	/* If data transfer queue is NULL, use exec queue for data
+	 * transfers. */
+	if (cq_comm == NULL) cq_comm = cq_exec;
+
+	/* Create device buffers. */
+	data_in_dev = ccl_buffer_new(
+		scanner->ctx, CL_MEM_READ_ONLY, data_in_size, NULL,
+		&err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	data_out_dev = ccl_buffer_new(
+		scanner->ctx, CL_MEM_READ_WRITE, data_out_size, NULL,
+		&err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Transfer data to device. */
+	evt = ccl_buffer_enqueue_write(data_in_dev, cq_comm, CL_TRUE, 0,
+		data_in_size, data_in, NULL, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	ccl_event_set_name(evt, "clo_scan_write");
+
+	/* Perform scan with device data. */
+	ewl = scanner->impl_def.scan_with_device_data(scanner, cq_exec,
+		cq_comm, data_in_dev, data_out_dev, numel, lws_max,
+		&err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Transfer data back to host. */
+	evt = ccl_buffer_enqueue_read(data_out_dev, cq_comm, CL_TRUE, 0,
+		data_out_size, data_out, &ewl, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	ccl_event_set_name(evt, "clo_scan_read");
+
+	/* Explicitly wait for transfer (some OpenCL implementations don't
+	 * respect CL_TRUE in data transfers). */
+	ccl_event_wait_list_add(&ewl, evt, NULL);
+	ccl_event_wait(&ewl, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	status = CL_TRUE;
+	goto finish;
+
+error_handler:
+
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+	status = CL_FALSE;
+
+finish:
+
+	/* Free stuff. */
+	if (data_in_dev) ccl_buffer_destroy(data_in_dev);
+	if (data_out_dev) ccl_buffer_destroy(data_out_dev);
+	if (intern_queue) ccl_queue_destroy(intern_queue);
+
+	/* Return function status. */
+	return status;
+
+}
+
+/**
+ * Get context wrapper associated with scanner object.
+ *
+ * @param[in] Scanner object.
+ * @return Context wrapper associated with scanner object.
+ * */
+CCLContext* clo_scan_get_context(CloScan* scanner) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, NULL);
+
+	return scanner->ctx;
+}
+
+/**
+ * Get program wrapper associated with scanner object.
+ *
+ * @param[in] Scanner object.
+ * @return Program wrapper associated with scanner object.
+ * */
+CCLProgram* clo_scan_get_program(CloScan* scanner) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, NULL);
+
+	return scanner->prg;
+}
+/**
+ * Get type of elements to scan.
+ *
+ * @param[in] Scanner object.
+ * @return Type of elements to scan.
+ * */
+CloType clo_scan_get_elem_type(CloScan* scanner) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, -1);
+
+	return scanner->elem_type;
+}
+
+/**
+ * Get type of elements in scan sum.
+ *
+ * @param[in] Scanner object.
+ * @return Type of elements in scan sum.
+ * */
+CloType clo_scan_get_sum_type(CloScan* scanner) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, -1);
+
+	return scanner->sum_type;
+}
+
+/**
+ * Get data associated with specific scan implementation.
+ *
+ * @param[in] Scanner object.
+ * @return Data associated with specific scan implementation.
+ * */
+void* clo_scan_get_data(CloScan* scanner) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, NULL);
+
+	return scanner->data;
 }

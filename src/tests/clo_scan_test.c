@@ -213,7 +213,7 @@ int main(int argc, char **argv) {
 			}
 
 			/* Perform scan. */
-			scanner->scan_with_host_data(scanner, cq_exec, cq_comm,
+			clo_scan_with_host_data(scanner, cq_exec, cq_comm,
 				host_data, host_data_scanned, num_elems, lws, &err);
 			ccl_if_err_goto(err, error_handler);
 
@@ -298,7 +298,7 @@ error_handler:
 cleanup:
 
 	/* Destroy scanner object. */
-	if (scanner) scanner->destroy(scanner);
+	if (scanner) clo_scan_destroy(scanner);
 
 	/* Release OpenCL wrappers. */
 	if (cq_exec) ccl_queue_destroy(cq_exec);

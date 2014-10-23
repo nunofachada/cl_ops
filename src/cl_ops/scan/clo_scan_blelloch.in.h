@@ -24,9 +24,7 @@
 /** The blelloch's scan kernels source. */
 #define CLO_SCAN_BLELLOCH_SRC "@BLELLOCH_SRC@"
 
-/* Creates a new blelloch scan object. */
-CloScan* clo_scan_blelloch_new(const char* options, CCLContext* ctx,
-	CloType elem_type, CloType sum_type, const char* compiler_opts,
-	GError** err);
+/** Definition of the Blelloch scan implementation. */
+extern const CloScanImplDef clo_scan_blelloch_def;
 
 #endif

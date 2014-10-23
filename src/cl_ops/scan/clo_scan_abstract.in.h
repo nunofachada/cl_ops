@@ -26,79 +26,87 @@
 
 #include "common/clo_common.h"
 
+/* Abstract scan class. */
+typedef struct clo_scan CloScan;
+
 /**
- * Abstract scan class.
+ * Definition of a scan implementation.
  * */
-typedef struct clo_scan {
+typedef struct clo_scan_impl_def {
+
+	/**
+	 * Scan implementation name.
+	 * */
+	const char* name;
+
+	/**
+	 * Initialize specific scan implementation stuff.
+	 *
+	 * @param[in] options Algorithm options.
+	 * @param[in] ctx Context wrapper object.
+	 * @param[in] elem_type Type of elements to scan.
+	 * @param[in] sum_type Type of scanned elements.
+	 * @param[in] compiler_opts Compiler options.
+	 * @param[out] err Return location for a GError, or `NULL` if error
+	 * reporting is to be ignored.
+	 * @return A program wrapper for the scan program.
+	 * */
+	CCLProgram* (*init)(CloScan* scanner, const char* options,
+		const char* compiler_opts, GError** err);
+
+	/**
+	 * Finalize specific scan implementation stuff.
+	 *
+	 * @param[in] scan Scanner object.
+	 * */
+	void (*finalize)(CloScan* scan);
 
 	/**
 	 * Perform scan using device data.
 	 *
-	 * @param[in] scanner Scan object.
-	 * @param[in] cq_exec A valid command queue wrapper for kernel
-	 * execution, cannot be `NULL`.
-	 * @param[in] cq_comm A command queue wrapper for data transfers.
-	 * If `NULL`, `cq_exec` will be used for data transfers.
-	 * @param[in] data_in Data to be scanned.
-	 * @param[out] data_out Location where to place scanned data.
-	 * @param[in] numel Number of elements in `data_in`.
-	 * @param[in] lws_max Max. local worksize. If 0, the local worksize
-	 * will be automatically determined.
-	 * seconds of the scan. If `NULL` it will be ignored.
-	 * @param[out] err Return location for a GError, or `NULL` if error
-	 * reporting is to be ignored.
-	 * @return An event wait list which contains events which must
-	 * terminate before scanning is considered complete.
+	 * @copydetails ::clo_scan_with_device_data()
 	 * */
-	CCLEventWaitList (*scan_with_device_data)(struct clo_scan* scanner,
+	CCLEventWaitList (*scan_with_device_data)(CloScan* scanner,
 		CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
 		CCLBuffer* data_out, size_t numel, size_t lws_max,
 		GError** err);
 
-	/**
-	 * Perform scan using host data. Device buffers will be created and
-	 * destroyed by scan implementation.
-	 *
-	 * @param[in] scanner Scan object.
-	 * @param[in] cq_exec Command queue wrapper for kernel execution. If
-	 * `NULL` a queue will be created.
-	 * @param[in] cq_comm A command queue wrapper for data transfers.
-	 * If `NULL`, `cq_exec` will be used for data transfers.
-	 * @param[in] data_in Data to be scanned.
-	 * @param[out] data_out Location where to place sorted data.
-	 * @param[in] numel Number of elements in `data_in`.
-	 * @param[in] lws_max Max. local worksize. If 0, the local worksize
-	 * will be automatically determined.
-	 * seconds of the scan. If `NULL` it will be ignored.
-	 * @param[out] err Return location for a GError, or `NULL` if error
-	 * reporting is to be ignored.
-	 * @return `CL_TRUE` if scan was successfully performed, or
-	 * `CL_FALSE` otherwise.
-	 * */
-	cl_bool (*scan_with_host_data)(struct clo_scan* scanner,
-		CCLQueue* cq_exec, CCLQueue* cq_comm, void* data_in,
-		void* data_out, size_t numel, size_t lws_max, GError** err);
-
-	/**
-	 * Destroy scan object.
-	 *
-	 * @param[in] scan Scan object to destroy.
-	 * */
-	void (*destroy)(struct clo_scan* scan);
-
-	/**
-	 * @internal
-	 * Private scan data.
-	 * */
-	void* _data;
-
-} CloScan;
+} CloScanImplDef;
 
 /* Generic scan object constructor. The exact type is given in the
  * first parameter. */
 CloScan* clo_scan_new(const char* type, const char* options,
 	CCLContext* ctx, CloType elem_type, CloType sum_type,
 	const char* compiler_opts, GError** err);
+
+/* Destroy scanner object. */
+void clo_scan_destroy(CloScan* scan);
+
+/* Perform scan using device data. */
+CCLEventWaitList clo_scan_with_device_data(
+	CloScan* scanner, CCLQueue* cq_exec, CCLQueue* cq_comm,
+	CCLBuffer* data_in, CCLBuffer* data_out, size_t numel,
+	size_t lws_max, GError** err);
+
+/* Perform scan using host data. */
+cl_bool clo_scan_with_host_data(CloScan* scanner,
+	CCLQueue* cq_exec, CCLQueue* cq_comm, void* data_in, void* data_out,
+	size_t numel, size_t lws_max, GError** err);
+
+/* Get context wrapper associated with scanner object. */
+CCLContext* clo_scan_get_context(CloScan* scanner);
+
+/* Get program wrapper associated with scanner object. */
+CCLProgram* clo_scan_get_program(CloScan* scanner);
+
+/* Get type of elements to scan. */
+CloType clo_scan_get_elem_type(CloScan* scanner);
+
+/* Get type of elements in scan sum. */
+CloType clo_scan_get_sum_type(CloScan* scanner);
+
+/* Get data associated with specific scan implementation. */
+void* clo_scan_get_data(CloScan* scanner);
 
 #endif
 
