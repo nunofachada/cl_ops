@@ -348,7 +348,7 @@ finish:
  *
  * @public @memberof clo_scan
  *
- * @param[in] Scanner object.
+ * @param[in] scanner Scanner object.
  * @return Context wrapper associated with scanner object.
  * */
 CCLContext* clo_scan_get_context(CloScan* scanner) {
@@ -364,7 +364,7 @@ CCLContext* clo_scan_get_context(CloScan* scanner) {
  *
  * @public @memberof clo_scan
  *
- * @param[in] Scanner object.
+ * @param[in] scanner Scanner object.
  * @return Program wrapper associated with scanner object.
  * */
 CCLProgram* clo_scan_get_program(CloScan* scanner) {
@@ -379,7 +379,7 @@ CCLProgram* clo_scan_get_program(CloScan* scanner) {
  *
  * @public @memberof clo_scan
  *
- * @param[in] Scanner object.
+ * @param[in] scanner Scanner object.
  * @return Type of elements to scan.
  * */
 CloType clo_scan_get_elem_type(CloScan* scanner) {
@@ -395,7 +395,7 @@ CloType clo_scan_get_elem_type(CloScan* scanner) {
  *
  * @public @memberof clo_scan
  *
- * @param[in] Scanner object.
+ * @param[in] scanner Scanner object.
  * @return Type of elements in scan sum.
  * */
 CloType clo_scan_get_sum_type(CloScan* scanner) {
@@ -411,7 +411,7 @@ CloType clo_scan_get_sum_type(CloScan* scanner) {
  *
  * @public @memberof clo_scan
  *
- * @param[in] Scanner object.
+ * @param[in] scanner Scanner object.
  * @return Data associated with specific scan implementation.
  * */
 void* clo_scan_get_data(CloScan* scanner) {

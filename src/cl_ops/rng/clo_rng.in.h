@@ -52,16 +52,16 @@ typedef struct clo_rng CloRng;
 typedef enum clo_rng_seed_type {
 
 	/** Device initialized seeds based on workitem global ID. */
-	CLO_RNG_SEED_DEV_GID = 0,
+	CLO_RNG_SEED_DEV_GID  = 0,
 
 	/** Host initialized seeds (Mersenne Twister). */
-	CLO_RNG_SEED_HOST_MT = 1,
+	CLO_RNG_SEED_HOST_MT  = 1,
 
 	/** Client initialized seeds, already in device. */
-	CLO_RNG_SEED_EXT_DEV      = 2,
+	CLO_RNG_SEED_EXT_DEV  = 2,
 
 	/** Client initialized seeds, still in host. */
-	CLO_RNG_SEED_EXT_HOST     = 3
+	CLO_RNG_SEED_EXT_HOST = 3
 
 } CloRngSeedType;
 

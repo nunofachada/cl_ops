@@ -28,8 +28,8 @@ add_library(cl_ops SHARED ${CLO_LIB_SRCS})
 target_link_libraries(cl_ops ${OPENCL_LIBRARIES} ${GLIB_LIBRARIES} ${GLIB_LDFLAGS} ${CF4OCL2_LIBRARIES})
 
 # Set library version
-set_target_properties(cl_ops PROPERTIES
-	VERSION ${${PROJECT_NAME}_VERSION}
+set_target_properties(${PROJECT_NAME} PROPERTIES
+	VERSION ${${PROJECT_NAME}_VERSION_STRING}
 	SOVERSION ${${PROJECT_NAME}_VERSION_MAJOR})
 
 # Where to install lib
