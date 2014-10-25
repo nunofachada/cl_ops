@@ -18,13 +18,13 @@
 
 /**
  * @file
- * @brief CL-Ops RNG class declarations.
+ * CL-Ops RNG class declarations.
  * */
 
 #ifndef _CLO_RNG_H_
 #define _CLO_RNG_H_
 
-#include "common/clo_common.h"
+#include "clo_common.h"
 #include <string.h>
 
 /* Kernels source code. */
@@ -40,6 +40,14 @@
 
 /* Available RNGs */
 #define CLO_RNG_IMPLS "lcg, xorshift64, xorshift128, mwc64x"
+
+/**
+ * @defgroup CLO_RNG Random number generators
+ *
+ * This module provides several random number generators.
+ *
+ * @{
+ */
 
 /**
  * RNG class declaration.
@@ -64,6 +72,8 @@ typedef enum clo_rng_seed_type {
 	CLO_RNG_SEED_EXT_HOST = 3
 
 } CloRngSeedType;
+
+/** @} */
 
 /* Create a new RNG object. */
 CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,

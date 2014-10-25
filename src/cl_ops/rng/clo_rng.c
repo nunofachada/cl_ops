@@ -18,13 +18,18 @@
 
 /**
  * @file
- * @brief CL-Ops RNG class definitions.
+ * CL-Ops RNG class definitions.
  * */
 
 #include "clo_rng.h"
 
 /**
- * RNG class definition.
+ * @addtogroup CLO_RNG
+ * @{
+ */
+
+/**
+ * RNG class.
  * */
 struct clo_rng {
 
@@ -58,7 +63,6 @@ struct ocl_rng_info {
 	/** Seed size in butes. */
 	size_t seed_size;
 };
-
 
 /**
  * @internal
@@ -237,7 +241,9 @@ finish:
 }
 
 /**
- *  Create a new RNG object.
+ * Create a new RNG object.
+ *
+ * @public @memberof clo_rng
  *
  * @param[in] type Type of RNG: lcg, xorshift64, xorshift128, mwc64x.
  * @param[in] seed_type Type of seed.
@@ -380,6 +386,8 @@ finish:
 /**
  * Destroy a RNG object.
  *
+ * @public @memberof clo_rng
+ *
  * @param[in] rng RNG object to destroy.
  * */
 void clo_rng_destroy(CloRng* rng) {
@@ -402,6 +410,8 @@ void clo_rng_destroy(CloRng* rng) {
 /**
  * Get the OpenCL source code for the RNG object.
  *
+ * @public @memberof clo_rng
+ *
  * @param[in] rng RNG object.
  * @return The OpenCL source code associated with the given RNG object.
  * */
@@ -418,6 +428,8 @@ const char* clo_rng_get_source(CloRng* rng) {
 /**
  * Get in-device seeds. Only for non-external seed types.
  *
+ * @public @memberof clo_rng
+ *
  * @param[in] rng RNG object.
  * @return Buffer representing in-device seeds.
  * */
@@ -433,3 +445,4 @@ CCLBuffer* clo_rng_get_device_seeds(CloRng* rng) {
 	return rng->seeds_device;
 }
 
+/** @} */

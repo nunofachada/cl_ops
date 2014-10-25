@@ -17,14 +17,20 @@
  * */
 /**
  * @file
- * @brief Common data structures and functions.
+ * Common data structures and functions.
  *
  * @author Nuno Fachada
  */
 
 #include "clo_common.h"
 
+/* Check if given type is a known type. */
 #define CLO_IS_TYPE(type) (type >= CLO_CHAR) && (type <= CLO_DOUBLE)
+
+/**
+ * @addtogroup CLO_TYPES
+ * @{
+ */
 
 /**
  * Information about an OpenCL type.
@@ -60,7 +66,6 @@ static const CloTypeInfo clo_types[] = {
 	{"double", 8}, /* CCL_DOUBLE = 10 */
 	{NULL,     0}
 };
-
 
 /**
  * Return OpenCL type name.
@@ -118,12 +123,19 @@ CloType clo_type_by_name(const char* name, GError** err) {
 	return -1;
 }
 
+/** @} */
+
 /**
- * @brief Returns the next larger power of 2 of the given value.
+ * @addtogroup CLO_UTILS
+ * @{
+ */
+
+/**
+ * Returns the next larger power of 2 of the given value.
  *
  * @author Henry Gordon Dietz
  *
- * @param x Value of which to get the next larger power of 2.
+ * @param[in] x Value of which to get the next larger power of 2.
  * @return The next larger power of 2 of x.
  */
 unsigned int clo_nlpo2(register unsigned int x)
@@ -140,11 +152,11 @@ unsigned int clo_nlpo2(register unsigned int x)
 }
 
 /**
- * @brief Returns the number of one bits in the given value.
+ * Returns the number of one bits in the given value.
  *
  * @author Henry Gordon Dietz
  *
- * @param x Value of which to get the number of one bits.
+ * @param[in] x Value of which to get the number of one bits.
  * @return The number of one bits in x.
  */
 unsigned int clo_ones32(register unsigned int x)
@@ -161,11 +173,11 @@ unsigned int clo_ones32(register unsigned int x)
 }
 
 /**
- * @brief Returns the trailing Zero Count (i.e. the log2 of a base 2 number).
+ * Returns the trailing Zero Count (i.e. the log2 of a base 2 number).
  *
  * @author Henry Gordon Dietz
  *
- * @param x Value of which to get the trailing Zero Count.
+ * @param[in] x Value of which to get the trailing Zero Count.
  * @return The trailing Zero Count in x.
  */
 unsigned int clo_tzc(register int x)
@@ -174,11 +186,11 @@ unsigned int clo_tzc(register int x)
 }
 
 /**
- * @brief Returns the series (sum of sequence of 0 to) x.
+ * Returns the series (sum of sequence of 0 to) x.
  *
  * @author Henry Gordon Dietz
  *
- * @param x Series limit.
+ * @param[in] x Series limit.
  * @return The series (sum of sequence of 0 to) x.
  */
 unsigned int clo_sum(unsigned int x)
@@ -187,10 +199,10 @@ unsigned int clo_sum(unsigned int x)
 }
 
 /**
- * @brief Implementation of GLib's GPrintFunc which does not print the
+ * Implementation of GLib's GPrintFunc which does not print the
  * string given as a parameter.
  *
- * @param string String to ignore.
+ * @param[in] string String to ignore.
  * */
 void clo_print_to_null(const gchar *string) {
 	(void)string;
@@ -251,8 +263,10 @@ finish:
 
 }
 
+/** @} */
+
 /**
- * @brief Resolves to error category identifying string, in this case an
+ * Resolves to error category identifying string, in this case an
  * error related to ocl-ops.
  *
  * @return A GQuark structure defined by category identifying string,

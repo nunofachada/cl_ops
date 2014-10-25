@@ -1,33 +1,33 @@
-/*   
+/*
  * This file is part of CL-Ops.
- * 
+ *
  * CL-Ops is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
- * CL-Ops is distributed in the hope that it will be useful, 
+ *
+ * CL-Ops is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-/** 
+/**
  * @file
- * @brief Advanced bitonic sort implementation.
+ * Advanced bitonic sort implementation.
  */
- 
+
 #define ABIT_CMPXCH(data, index1, index2) \
 	data1 = data[index1]; \
 	data2 = data[index2]; \
 	if (CLO_SORT_COMPARE(data1, data2) ^ desc) { \
 		data[index1] = data2; \
 		data[index2] = data1; \
-	} 
- 
+	}
+
 #define ABIT_LOCAL_SORT(data, stride) \
   	/* Determine what to compare and possibly swap. */ \
 	index1 = (lid / stride) * stride * 2 + (lid % stride); \
@@ -68,7 +68,7 @@
 	data[baddr + 5 * inc] = data_priv[5]; \
 	data[baddr + 6 * inc] = data_priv[6]; \
 	data[baddr + 7 * inc] = data_priv[7];
-	
+
 #define ABIT_SORT_LOAD16(data_priv, data, baddr, inc) \
 	data_priv[0] = data[baddr]; \
 	data_priv[1] = data[baddr + inc]; \
@@ -105,7 +105,7 @@
 	data[baddr + 13 * inc] = data_priv[13]; \
 	data[baddr + 14 * inc] = data_priv[14]; \
 	data[baddr + 15 * inc] = data_priv[15];
-			
+
 #define ABIT_LOCAL_INIT() \
 	/* Global and local ids for this work-item. */ \
 	uint gid = get_global_id(0); \
@@ -129,12 +129,12 @@
 	uint index1, index2; \
 	/* Data elements to possibly swap. */ \
 	CLO_SORT_ELEM_TYPE data1, data2;
-	
+
 #define ABIT_LOCAL_FINISH() \
 	/* Store data globally */ \
 	data_global[global_index1] = data_local[local_index1]; \
 	data_global[global_index2] = data_local[local_index2];
-	
+
 #define ABIT_PRIV_INIT(n) \
 	__private CLO_SORT_ELEM_TYPE data_priv[n]; \
 	CLO_SORT_ELEM_TYPE data1, data2; \
@@ -215,9 +215,9 @@
 	ABIT_CMPXCH(data2sort, 2, 3);
 
 /**
- * @brief This kernel can perform the two last steps of a stage in a
+ * This kernel can perform the two last steps of a stage in a
  * bitonic sort.
- * 
+ *
  * @param data_global Array of data to sort.
  * @param stage
  * @param data_local
@@ -227,7 +227,7 @@ __kernel void abit_local_s2(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
-	
+
 	/* *********** INIT ************** */
 	ABIT_LOCAL_INIT();
 	/* ********** STEP 2 ************** */
@@ -239,9 +239,9 @@ __kernel void abit_local_s2(
 }
 
 /**
- * @brief This kernel can perform the three last steps of a stage in a
+ * This kernel can perform the three last steps of a stage in a
  * bitonic sort.
- * 
+ *
  * @param data_global Array of data to sort.
  * @param stage
  * @param data_local
@@ -251,7 +251,7 @@ __kernel void abit_local_s3(
 			uint stage,
 			__local CLO_SORT_ELEM_TYPE *data_local)
 {
-	
+
 	/* *********** INIT ************** */
 	ABIT_LOCAL_INIT();
 	/* *********** STEP 3 ************ */
@@ -265,9 +265,9 @@ __kernel void abit_local_s3(
 }
 
 /**
- * @brief This kernel can perform the four last steps of a stage in a
+ * This kernel can perform the four last steps of a stage in a
  * bitonic sort.
- * 
+ *
  * @param data_global Array of data to sort.
  * @param stage
  * @param data_local
@@ -294,9 +294,9 @@ __kernel void abit_local_s4(
 }
 
 /**
- * @brief This kernel can perform the five last steps of a stage in a
+ * This kernel can perform the five last steps of a stage in a
  * bitonic sort.
- * 
+ *
  * @param data_global Array of data to sort.
  * @param stage
  * @param data_local
@@ -325,9 +325,9 @@ __kernel void abit_local_s5(
 }
 
 /**
- * @brief This kernel can perform the six last steps of a stage in a
+ * This kernel can perform the six last steps of a stage in a
  * bitonic sort.
- * 
+ *
  * @param data_global Array of data to sort.
  * @param stage
  * @param data_local
@@ -358,9 +358,9 @@ __kernel void abit_local_s6(
 }
 
 /**
- * @brief This kernel can perform the seven last steps of a stage in a
+ * This kernel can perform the seven last steps of a stage in a
  * bitonic sort.
- * 
+ *
  * @param data_global Array of data to sort.
  * @param stage
  * @param data_local
@@ -393,9 +393,9 @@ __kernel void abit_local_s7(
 }
 
 /**
- * @brief This kernel can perform the eight last steps of a stage in a
+ * This kernel can perform the eight last steps of a stage in a
  * bitonic sort.
- * 
+ *
  * @param data_global Array of data to sort.
  * @param stage
  * @param data_local
@@ -431,9 +431,9 @@ __kernel void abit_local_s8(
 
 
 /**
- * @brief This kernel can perform the nine last steps of a stage in a
+ * This kernel can perform the nine last steps of a stage in a
  * bitonic sort.
- * 
+ *
  * @param data_global Array of data to sort.
  * @param stage
  * @param data_local
@@ -470,9 +470,9 @@ __kernel void abit_local_s9(
 }
 
 /**
- * @brief This kernel can perform the ten last steps of a stage in a
+ * This kernel can perform the ten last steps of a stage in a
  * bitonic sort.
- * 
+ *
  * @param data_global Array of data to sort.
  * @param stage
  * @param data_local
@@ -511,9 +511,9 @@ __kernel void abit_local_s10(
 }
 
 /**
- * @brief This kernel can perform the eleven last steps of a stage in a
+ * This kernel can perform the eleven last steps of a stage in a
  * bitonic sort.
- * 
+ *
  * @param data_global Array of data to sort.
  * @param stage
  * @param data_local
@@ -554,9 +554,9 @@ __kernel void abit_local_s11(
 }
 
 /**
- * @brief This kernel can perform any step of any stage of a bitonic
+ * This kernel can perform any step of any stage of a bitonic
  * sort.
- * 
+ *
  * @param data Array of data to sort.
  * @param stage
  * @param step
@@ -568,7 +568,7 @@ __kernel void abit_any(
 {
 	/* Global id for this work-item. */
 	uint gid = get_global_id(0);
-	
+
 	/* Elements to possibly swap. */
 	CLO_SORT_ELEM_TYPE data1, data2;
 
@@ -576,11 +576,11 @@ __kernel void abit_any(
 	bool desc = (bool) (0x1 & (gid >> (stage - 1)));
 
 	/* Determine stride. */
-	uint pair_stride = (uint) (1 << (step - 1)); 
-	
+	uint pair_stride = (uint) (1 << (step - 1));
+
 	/* Block of which this thread is part of. */
 	uint block = gid / pair_stride;
-	
+
 	/* ID of thread in block. */
 	uint bid = gid % pair_stride;
 
@@ -590,7 +590,7 @@ __kernel void abit_any(
 
 	/* Compare and possibly exchange elements. */
 	ABIT_CMPXCH(data, index1, index2);
-	
+
 }
 
 /* Each thread sorts 4 values (in two steps of a bitonic stage).
@@ -602,7 +602,7 @@ __kernel void abit_priv_2s4v(
 {
 
 	ABIT_PRIV_INIT(4);
-	
+
 	/* ***** Transfer 4 values to sort to private memory ***** */
 	ABIT_SORT_LOAD4(data_priv, data_global, gaddr, inc);
 
@@ -624,7 +624,7 @@ __kernel void abit_priv_3s8v(
 {
 
 	ABIT_PRIV_INIT(8);
-	
+
 	/* ***** Transfer 8 values to sort to private memory ***** */
 	ABIT_SORT_LOAD8(data_priv, data_global, gaddr, inc);
 
@@ -645,7 +645,7 @@ __kernel void abit_priv_4s16v(
 {
 
 	ABIT_PRIV_INIT(16);
-	
+
 	/* ***** Transfer 16 values to sort to private memory ***** */
 	ABIT_SORT_LOAD16(data_priv, data_global, gaddr, inc);
 
@@ -690,14 +690,14 @@ __kernel void abit_priv_4s16v(
 	data_local[local_index4] = data_global[global_index4]; \
 	/* Local memory barrier */ \
 	barrier(CLK_LOCAL_MEM_FENCE);
-	
+
 #define ABIT_HYB_2S4V_FINISH() \
 	/* Store data globally */ \
 	data_global[global_index1] = data_local[local_index1]; \
 	data_global[global_index2] = data_local[local_index2]; \
 	data_global[global_index3] = data_local[local_index3]; \
 	data_global[global_index4] = data_local[local_index4];
-	
+
 #define ABIT_HYB_2S4V_SORT(step) \
 	/* ***** Transfer 4 values to sort from local to private memory ***** */ \
 	blockSize = 1 << step; \
@@ -717,12 +717,12 @@ __kernel void abit_priv_4s16v(
 __kernel void abit_hyb_s4_2s4v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_2S4V_INIT();
 	ABIT_HYB_2S4V_SORT(4);
 	ABIT_HYB_2S4V_SORT(2);
-	ABIT_HYB_2S4V_FINISH();				
+	ABIT_HYB_2S4V_FINISH();
 }
 
 
@@ -731,13 +731,13 @@ __kernel void abit_hyb_s4_2s4v(
 __kernel void abit_hyb_s6_2s4v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_2S4V_INIT();
 	ABIT_HYB_2S4V_SORT(6);
 	ABIT_HYB_2S4V_SORT(4);
 	ABIT_HYB_2S4V_SORT(2);
-	ABIT_HYB_2S4V_FINISH();				
+	ABIT_HYB_2S4V_FINISH();
 }
 
 
@@ -746,14 +746,14 @@ __kernel void abit_hyb_s6_2s4v(
 __kernel void abit_hyb_s8_2s4v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_2S4V_INIT();
 	ABIT_HYB_2S4V_SORT(8);
 	ABIT_HYB_2S4V_SORT(6);
 	ABIT_HYB_2S4V_SORT(4);
 	ABIT_HYB_2S4V_SORT(2);
-	ABIT_HYB_2S4V_FINISH();				
+	ABIT_HYB_2S4V_FINISH();
 }
 
 /* Works from step 10 to step 1, local barriers between each two steps,
@@ -761,7 +761,7 @@ __kernel void abit_hyb_s8_2s4v(
 __kernel void abit_hyb_s10_2s4v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_2S4V_INIT();
 	ABIT_HYB_2S4V_SORT(10);
@@ -769,7 +769,7 @@ __kernel void abit_hyb_s10_2s4v(
 	ABIT_HYB_2S4V_SORT(6);
 	ABIT_HYB_2S4V_SORT(4);
 	ABIT_HYB_2S4V_SORT(2);
-	ABIT_HYB_2S4V_FINISH();				
+	ABIT_HYB_2S4V_FINISH();
 }
 
 /* Works from step 12 to step 1, local barriers between each two steps,
@@ -777,7 +777,7 @@ __kernel void abit_hyb_s10_2s4v(
 __kernel void abit_hyb_s12_2s4v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_2S4V_INIT();
 	ABIT_HYB_2S4V_SORT(12);
@@ -786,7 +786,7 @@ __kernel void abit_hyb_s12_2s4v(
 	ABIT_HYB_2S4V_SORT(6);
 	ABIT_HYB_2S4V_SORT(4);
 	ABIT_HYB_2S4V_SORT(2);
-	ABIT_HYB_2S4V_FINISH();				
+	ABIT_HYB_2S4V_FINISH();
 }
 
 
@@ -835,7 +835,7 @@ __kernel void abit_hyb_s12_2s4v(
 	data_local[local_index8] = data_global[global_index8]; \
 	/* Local memory barrier */ \
 	barrier(CLK_LOCAL_MEM_FENCE);
-	
+
 #define ABIT_HYB_3S8V_FINISH() \
 	/* Store data globally */ \
 	data_global[global_index1] = data_local[local_index1]; \
@@ -846,7 +846,7 @@ __kernel void abit_hyb_s12_2s4v(
 	data_global[global_index6] = data_local[local_index6]; \
 	data_global[global_index7] = data_local[local_index7]; \
 	data_global[global_index8] = data_local[local_index8];
-	
+
 #define ABIT_HYB_3S8V_SORT(step) \
 	/* ***** Transfer 8 values to sort from local to private memory ***** */ \
 	blockSize = 1 << step; \
@@ -866,11 +866,11 @@ __kernel void abit_hyb_s12_2s4v(
 __kernel void abit_hyb_s3_3s8v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_3S8V_INIT();
 	ABIT_HYB_3S8V_SORT(3);
-	ABIT_HYB_3S8V_FINISH();				
+	ABIT_HYB_3S8V_FINISH();
 }
 
 /* Works from step 6 to step 1, local barriers between each three steps,
@@ -878,12 +878,12 @@ __kernel void abit_hyb_s3_3s8v(
 __kernel void abit_hyb_s6_3s8v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_3S8V_INIT();
 	ABIT_HYB_3S8V_SORT(6);
 	ABIT_HYB_3S8V_SORT(3);
-	ABIT_HYB_3S8V_FINISH();				
+	ABIT_HYB_3S8V_FINISH();
 }
 
 /* Works from step 9 to step 1, local barriers between each three steps,
@@ -891,13 +891,13 @@ __kernel void abit_hyb_s6_3s8v(
 __kernel void abit_hyb_s9_3s8v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_3S8V_INIT();
 	ABIT_HYB_3S8V_SORT(9);
 	ABIT_HYB_3S8V_SORT(6);
 	ABIT_HYB_3S8V_SORT(3);
-	ABIT_HYB_3S8V_FINISH();				
+	ABIT_HYB_3S8V_FINISH();
 }
 
 /* Works from step 12 to step 1, local barriers between each three steps,
@@ -905,14 +905,14 @@ __kernel void abit_hyb_s9_3s8v(
 __kernel void abit_hyb_s12_3s8v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_3S8V_INIT();
 	ABIT_HYB_3S8V_SORT(12);
 	ABIT_HYB_3S8V_SORT(9);
 	ABIT_HYB_3S8V_SORT(6);
 	ABIT_HYB_3S8V_SORT(3);
-	ABIT_HYB_3S8V_FINISH();				
+	ABIT_HYB_3S8V_FINISH();
 }
 
 #define ABIT_HYB_4S16V_INIT() \
@@ -984,7 +984,7 @@ __kernel void abit_hyb_s12_3s8v(
 	data_local[local_index16] = data_global[global_index16]; \
 	/* Local memory barrier */ \
 	barrier(CLK_LOCAL_MEM_FENCE);
-	
+
 #define ABIT_HYB_4S16V_FINISH() \
 	/* Store data globally */ \
 	data_global[global_index1] = data_local[local_index1]; \
@@ -1003,7 +1003,7 @@ __kernel void abit_hyb_s12_3s8v(
 	data_global[global_index14] = data_local[local_index14]; \
 	data_global[global_index15] = data_local[local_index15]; \
 	data_global[global_index16] = data_local[local_index16];
-	
+
 #define ABIT_HYB_4S16V_SORT(step) \
 	/* ***** Transfer 16 values to sort from local to private memory ***** */ \
 	blockSize = 1 << step; \
@@ -1023,11 +1023,11 @@ __kernel void abit_hyb_s12_3s8v(
 __kernel void abit_hyb_s4_4s16v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_4S16V_INIT();
 	ABIT_HYB_4S16V_SORT(4);
-	ABIT_HYB_4S16V_FINISH();				
+	ABIT_HYB_4S16V_FINISH();
 }
 
 /* Works from step 8 to step 1, local barriers between each four steps,
@@ -1035,12 +1035,12 @@ __kernel void abit_hyb_s4_4s16v(
 __kernel void abit_hyb_s8_4s16v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_4S16V_INIT();
 	ABIT_HYB_4S16V_SORT(8);
 	ABIT_HYB_4S16V_SORT(4);
-	ABIT_HYB_4S16V_FINISH();				
+	ABIT_HYB_4S16V_FINISH();
 }
 
 /* Works from step 12 to step 1, local barriers between each four steps,
@@ -1048,11 +1048,11 @@ __kernel void abit_hyb_s8_4s16v(
 __kernel void abit_hyb_s12_4s16v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
 			uint stage,
-			__local CLO_SORT_ELEM_TYPE *data_local) 
+			__local CLO_SORT_ELEM_TYPE *data_local)
 {
 	ABIT_HYB_4S16V_INIT();
 	ABIT_HYB_4S16V_SORT(12);
 	ABIT_HYB_4S16V_SORT(8);
 	ABIT_HYB_4S16V_SORT(4);
-	ABIT_HYB_4S16V_FINISH();				
+	ABIT_HYB_4S16V_FINISH();
 }

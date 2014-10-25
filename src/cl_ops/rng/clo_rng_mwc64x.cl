@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief GPU implementation of a random number generator based on a
+ * GPU implementation of a random number generator based on a
  * Multiply-With-Carry (MWC) generator, developed by David B. Thomas
  * from Imperial College London. More information at
  * http://cas.ee.ic.ac.uk/people/dt10/research/rngs-gpu-mwc64x.html.
@@ -29,7 +29,7 @@
 typedef uint2 rng_state;
 
 /**
- * @brief Returns the next pseudorandom value using a MWC random number
+ * Returns the next pseudorandom value using a MWC random number
  * generator.
  *
  * @param[in,out] states Array of RNG states.

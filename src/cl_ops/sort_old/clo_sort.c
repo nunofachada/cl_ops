@@ -17,7 +17,7 @@
 
 /**
  * @file
- * @brief Sorting algorithms host implementation.
+ * Sorting algorithms host implementation.
  */
 
 #include "clo_sort.h"

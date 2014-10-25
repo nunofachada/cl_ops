@@ -18,13 +18,21 @@
 
 /**
  * @file
- * @brief Abstract declarations for a sort algorithm.
+ * Abstract declarations for a sort algorithm.
  * */
 
 #ifndef _CLO_SORT_ABSTRACT_H_
 #define _CLO_SORT_ABSTRACT_H_
 
-#include "common/clo_common.h"
+#include "clo_common.h"
+
+/**
+ * @defgroup CLO_SORT Sorting algorithms
+ *
+ * This module provides several sorting algorithms.
+ *
+ * @{
+ */
 
 /* Sort class. */
 typedef struct clo_sort CloSort;
@@ -107,6 +115,8 @@ typedef struct clo_sort_impl_def {
 
 } CloSortImplDef;
 
+/** @} */
+
 /* Generic sorter object constructor. The exact type is given in the
  * first parameter. */
 CloSort* clo_sort_new(const char* type, const char* options,
@@ -147,6 +157,3 @@ void* clo_sort_get_data(CloSort* sorter);
 void clo_sort_set_data(CloSort* sorter, void* data);
 
 #endif
-
-
-

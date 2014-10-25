@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Advanced bitonic sort host implementation.
+ * Advanced bitonic sort host implementation.
  */
 
 #include "clo_sort_abitonic.h"

@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Global memory selection sort implementation.
+ * Global memory selection sort implementation.
  */
 
 #ifndef CLO_SORT_ELEM_TYPE
@@ -38,7 +38,7 @@
 #endif
 
 /**
- * @brief A global memory selection sort kernel.
+ * A global memory selection sort kernel.
  *
  * @param[in] data_in Array of unsorted elements.
  * @param[out] data_out Array of sorted elements.

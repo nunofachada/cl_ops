@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Global memory selection sort host implementation.
+ * Global memory selection sort host implementation.
  */
 
 #include "clo_sort_gselect.h"

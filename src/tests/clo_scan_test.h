@@ -17,7 +17,7 @@
 
 /**
  * @file
- * @brief Header for scan test.
+ * Header for scan test.
  */
 
 #ifndef _CLO_SCAN_TEST_H

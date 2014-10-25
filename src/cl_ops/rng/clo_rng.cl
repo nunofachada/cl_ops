@@ -18,11 +18,11 @@
 
 /**
  * @file
- * @brief CL-Ops RNG public functions..
+ * CL-Ops RNG public functions.
  * */
 
 /**
- * @brief Returns next integer from 0 (including) to n (not including).
+ * Returns next integer from 0 (including) to n (not including).
  *
  * @param[in] states Array of RNG states.
  * @param[in] n Returned integer is less than this value.
@@ -38,7 +38,7 @@ uint clo_rng_next_int(__global rng_state *states, uint n) {
 }
 
 /**
- * @brief Returns next two integers from 0 (including) to n (not
+ * Returns next two integers from 0 (including) to n (not
  * including).
  *
  * @param[in] states Array of RNG states.
@@ -57,7 +57,7 @@ uint2 clo_rng_next_int2(__global rng_state *states, uint n) {
 }
 
 /**
- * @brief Returns next four integers from 0 (including) to n (not
+ * Returns next four integers from 0 (including) to n (not
  * including).
  *
  * @param[in] states Array of RNG states.
@@ -78,7 +78,7 @@ uint4 clo_rng_next_int4(__global rng_state *states, uint n) {
 }
 
 /**
- * @brief Returns next eight integers from 0 (including) to n (not
+ * Returns next eight integers from 0 (including) to n (not
  * including).
  *
  * @param[in] states Array of RNG states.

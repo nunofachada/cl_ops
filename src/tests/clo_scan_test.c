@@ -17,7 +17,7 @@
 
 /**
  * @file
- * @brief Test scan implementation.
+ * Test scan implementation.
  */
 
 #include "clo_scan_test.h"
@@ -81,7 +81,7 @@ static GOptionEntry entries[] = {
 
 
 /**
- * @brief Main program.
+ * Main program.
  *
  * @param argc Number of command line arguments.
  * @param argv Vector of command line arguments.

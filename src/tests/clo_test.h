@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
- 
+
  /**
  * @file
- * @brief Header for common test functions test.
+ * Header for common test functions test.
  */
 
 #ifndef _CLO_TEST_H_
 #define _CLO_TEST_H_
 
-#include "common/clo_common.h"
+#include "clo_common.h"
 
 cl_int clo_test_compare(CloType type, cl_uchar* a, cl_uchar* b);
 

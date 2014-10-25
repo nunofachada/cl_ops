@@ -18,13 +18,22 @@
 
 /**
  * @file
- * @brief Parallel prefix sum (scan) abstract declarations.
+ * Parallel prefix sum (scan) abstract declarations.
  * */
 
 #ifndef _CLO_SCAN_ABSTRACT_H_
 #define _CLO_SCAN_ABSTRACT_H_
 
-#include "common/clo_common.h"
+#include "clo_common.h"
+
+/**
+ * @defgroup CLO_SCAN Parallel prefix sum (scan)
+ *
+ * This module provides several parallel prefix sum (scan)
+ * implementations.
+ *
+ * @{
+ */
 
 /* Abstract scan class. */
 typedef struct clo_scan CloScan;
@@ -69,6 +78,8 @@ typedef struct clo_scan_impl_def {
 		GError** err);
 
 } CloScanImplDef;
+
+/** @} */
 
 /* Generic scan object constructor. The exact type is given in the
  * first parameter. */

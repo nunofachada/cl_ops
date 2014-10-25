@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Common data structures and function headers for CL-Ops.
+ * Common data structures and function headers for CL-Ops.
  *
  * @author Nuno Fachada
  */
@@ -36,29 +36,39 @@
 #define CLO_ERROR clo_error_quark()
 
 /**
- * @brief Performs integer division returning the ceiling instead of
+ * @defgroup CLO_UTILS Utils
+ *
+ * Several utility functions and macros.
+ *
+ * @{
+ */
+
+/**
+ * Performs integer division returning the ceiling instead of
  * the floor if it is not an exact division.
  *
- * @param a Integer numerator.
- * @param b Integer denominator.
+ * @param[in] a Integer numerator.
+ * @param[in] b Integer denominator.
  * */
 #define CLO_DIV_CEIL(a, b) ((a + b - 1) / b)
 
 /**
- * @brief Calculates an adjusted global worksize equal or larger than
+ * Calculates an adjusted global worksize equal or larger than
  * the given global worksize and is a multiple of the given local
  * worksize.
  *
- * @param gws Minimum global worksize.
- * @param lws Local worksize.
+ * @param[in] gws Minimum global worksize.
+ * @param[in] lws Local worksize.
  * */
 #define CLO_GWS_MULT(gws, lws) (lws * CLO_DIV_CEIL(gws, lws))
 
+/** @} */
+
 /**
- * @brief Program error codes.
+ * Program error codes.
  * */
 /**
- * @brief Error codes.
+ * Error codes.
  * */
 enum clo_error_codes {
 	/** Successful operation. */
@@ -76,6 +86,14 @@ enum clo_error_codes {
 	/** Error in external library. */
 	CLO_ERROR_LIBRARY = 7
 };
+
+/**
+ * @defgroup CLO_TYPES Types
+ *
+ * This module allows to handle OpenCL types in an abstract fashion.
+ *
+ * @{
+ */
 
 /**
  * Enumeration of OpenCL types.
@@ -98,6 +116,8 @@ typedef enum {
  * Information about an OpenCL type.
  * */
 typedef struct clo_type_info CloTypeInfo;
+
+/** @} */
 
 /* Return OpenCL type name. */
 const char* clo_type_get_name(CloType type);

@@ -16,6 +16,11 @@
  * <http://www.gnu.org/licenses/>.
  * */
 
+/**
+ * @file
+ * Blelloch scan definitions.
+ * */
+
 #include "clo_scan_blelloch.h"
 
 /**

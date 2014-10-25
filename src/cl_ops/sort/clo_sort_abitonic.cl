@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Advanced bitonic sort implementation.
+ * Advanced bitonic sort implementation.
  */
 
 #ifndef CLO_SORT_ELEM_TYPE
@@ -232,7 +232,7 @@
 	ABIT_CMPXCH(data2sort, 2, 3);
 
 /**
- * @brief This kernel can perform the two last steps of a stage in a
+ * This kernel can perform the two last steps of a stage in a
  * bitonic sort.
  *
  * @param data_global Array of data to sort.
@@ -256,7 +256,7 @@ __kernel void abit_local_s2(
 }
 
 /**
- * @brief This kernel can perform the three last steps of a stage in a
+ * This kernel can perform the three last steps of a stage in a
  * bitonic sort.
  *
  * @param data_global Array of data to sort.
@@ -282,7 +282,7 @@ __kernel void abit_local_s3(
 }
 
 /**
- * @brief This kernel can perform the four last steps of a stage in a
+ * This kernel can perform the four last steps of a stage in a
  * bitonic sort.
  *
  * @param data_global Array of data to sort.
@@ -311,7 +311,7 @@ __kernel void abit_local_s4(
 }
 
 /**
- * @brief This kernel can perform the five last steps of a stage in a
+ * This kernel can perform the five last steps of a stage in a
  * bitonic sort.
  *
  * @param data_global Array of data to sort.
@@ -342,7 +342,7 @@ __kernel void abit_local_s5(
 }
 
 /**
- * @brief This kernel can perform the six last steps of a stage in a
+ * This kernel can perform the six last steps of a stage in a
  * bitonic sort.
  *
  * @param data_global Array of data to sort.
@@ -375,7 +375,7 @@ __kernel void abit_local_s6(
 }
 
 /**
- * @brief This kernel can perform the seven last steps of a stage in a
+ * This kernel can perform the seven last steps of a stage in a
  * bitonic sort.
  *
  * @param data_global Array of data to sort.
@@ -410,7 +410,7 @@ __kernel void abit_local_s7(
 }
 
 /**
- * @brief This kernel can perform the eight last steps of a stage in a
+ * This kernel can perform the eight last steps of a stage in a
  * bitonic sort.
  *
  * @param data_global Array of data to sort.
@@ -448,7 +448,7 @@ __kernel void abit_local_s8(
 
 
 /**
- * @brief This kernel can perform the nine last steps of a stage in a
+ * This kernel can perform the nine last steps of a stage in a
  * bitonic sort.
  *
  * @param data_global Array of data to sort.
@@ -487,7 +487,7 @@ __kernel void abit_local_s9(
 }
 
 /**
- * @brief This kernel can perform the ten last steps of a stage in a
+ * This kernel can perform the ten last steps of a stage in a
  * bitonic sort.
  *
  * @param data_global Array of data to sort.
@@ -528,7 +528,7 @@ __kernel void abit_local_s10(
 }
 
 /**
- * @brief This kernel can perform the eleven last steps of a stage in a
+ * This kernel can perform the eleven last steps of a stage in a
  * bitonic sort.
  *
  * @param data_global Array of data to sort.
@@ -571,7 +571,7 @@ __kernel void abit_local_s11(
 }
 
 /**
- * @brief This kernel can perform any step of any stage of a bitonic
+ * This kernel can perform any step of any stage of a bitonic
  * sort.
  *
  * @param data Array of data to sort.

@@ -17,7 +17,7 @@
 
 /**
  * @file
- * @brief Test sorting algorithms.
+ * Test sorting algorithms.
  */
 
 #include "clo_sort_test.h"
@@ -60,7 +60,7 @@ static GOptionEntry entries[] = {
 };
 
 /**
- * @brief Main program.
+ * Main program.
  *
  * @param argc Number of command line arguments.
  * @param argv Vector of command line arguments.

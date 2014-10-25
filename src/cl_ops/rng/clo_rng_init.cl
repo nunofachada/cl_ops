@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Device seed initialization kernel.
+ * Device seed initialization kernel.
  */
 
 /* Pre-defined hashes. */

@@ -17,7 +17,7 @@
 
 /**
  * @file
- * @brief Satish radix sort implementation.
+ * Satish radix sort implementation.
  *
  * Requires definition of:
  *

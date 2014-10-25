@@ -636,7 +636,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = @PROJECT_BINARY_DIR@/cl_ops/clo_common.h \
+INPUT                  = @PROJECT_BINARY_DIR@/cl_ops/ \
                          @PROJECT_SOURCE_DIR@/src/cl_ops \
                          @PROJECT_SOURCE_DIR@/scripts \
                          @PROJECT_SOURCE_DIR@/docs

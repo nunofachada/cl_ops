@@ -18,13 +18,18 @@
 
 /**
  * @file
- * @brief Abstract definitions for a sort algorithm.
+ * Abstract definitions for a sort algorithm.
  * */
 
 #include "clo_sort_abstract.h"
 #include "clo_sort_sbitonic.h"
 #include "clo_sort_abitonic.h"
 #include "clo_sort_gselect.h"
+
+/**
+ * @addtogroup CLO_SORT
+ * @{
+ */
 
 /**
  * Sorter class.
@@ -63,14 +68,14 @@ typedef struct clo_sort {
  * @param[in] key_type Type of keys to sort (if NULL, defaults to the
  * element type).
  * @param[in] compare One-liner OpenCL C code string which compares two
- * keys, a and b, yielding a boolean; e.g. `"((a) < (b))"` will sort
+ * keys, a and b, yielding a boolean; e.g. `((a) < (b))` will sort
  * element in descendent order. If NULL, this defaults to
- * `"((a) > (b))"`, i.e. sort in ascendent order.
+ * `((a) > (b))`, i.e. sort in ascendent order.
  * @param[in] get_key One-liner OpenCL C code string which obtains a
  * value of type `key_type` from the element (of type `elem_type`)
- * defined in the `x` variable; e.g. `"((x) & 0xF)"` will obtain a key
+ * defined in the `x` variable; e.g. `((x) & 0xF)` will obtain a key
  * which consists of four LSBs of the corresponding element. If NULL,
- * this defaults to `"(type_of_key) (x)"`, which is simply the element
+ * this defaults to `(type_of_key) (x)`, which is simply the element
  * cast to the key type.
  * @param[in] compiler_opts OpenCL Compiler options.
  * @param[out] err Return location for a GError, or `NULL` if error
@@ -223,6 +228,8 @@ void clo_sort_destroy(CloSort* sorter) {
 /**
  * Perform sort using device data.
  *
+ * @public @memberof clo_sort
+ *
  * @param[in] sorter Sorter object.
  * @param[in] cq_exec A valid command queue wrapper for kernel
  * execution, cannot be `NULL`.
@@ -263,6 +270,8 @@ CCLEventWaitList clo_sort_with_device_data(CloSort* sorter,
  * Perform sort using host data. Device buffers will be created and
  * destroyed by sort implementation.
  *
+ * @public @memberof clo_sort
+ *
  * @param[in] sorter Sorter object.
  * @param[in] cq_exec Command queue wrapper for kernel execution. If
  * `NULL` a queue will be created.
@@ -275,8 +284,8 @@ CCLEventWaitList clo_sort_with_device_data(CloSort* sorter,
  * will be automatically determined.
  * @param[out] err Return location for a GError, or `NULL` if error
  * reporting is to be ignored.
- * @return `CL_TRUE` if sort was successfully performed, or
- * `CL_FALSE` otherwise.
+ * @return `CL_TRUE` if sort was successfully performed, `CL_FALSE`
+ * otherwise.
  * */
 cl_bool clo_sort_with_host_data(CloSort* sorter, CCLQueue* cq_exec,
 	CCLQueue* cq_comm, void* data_in, void* data_out, size_t numel,
@@ -368,6 +377,8 @@ size_t clo_sort_get_element_size(CloSort* sorter) {
 /**
  * Get sort specific data.
  *
+ * @public @memberof clo_sort
+ *
  * @param[in] sorter Sorter object.
  * @return Sort specific data.
  * */
@@ -384,6 +395,8 @@ void* clo_sort_get_data(CloSort* sorter) {
 /**
  * Set sort specific data.
  *
+ * @public @memberof clo_sort
+ *
  * @param[in] sorter Sorter object.
  * @param[in] data Sort specific data.
  * */
@@ -396,3 +409,5 @@ void clo_sort_set_data(CloSort* sorter, void* data) {
 	sorter->data = data;
 
 }
+
+/** @} */

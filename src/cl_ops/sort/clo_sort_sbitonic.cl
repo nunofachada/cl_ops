@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Simple bitonic sort implementation.
+ * Simple bitonic sort implementation.
  */
 
 #ifndef CLO_SORT_ELEM_TYPE
@@ -38,7 +38,7 @@
 #endif
 
 /**
- * @brief A simple bitonic sort kernel.
+ * A simple bitonic sort kernel.
  *
  * @param[in,out] data Array of elements to sort.
  * @param[in] stage Current bitonic sort step.

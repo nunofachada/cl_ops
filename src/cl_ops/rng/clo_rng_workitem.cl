@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Utility macros for OpenCL workitems.
+ * Utility macros for OpenCL workitems.
  */
 
 #define GLOBAL_SIZE() get_global_size(0)

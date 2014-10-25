@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Parallel prefix sum (scan) implementation.
+ * Parallel prefix sum (scan) implementation.
  *
  * This implementation is based on the design described in:
  * Blelloch, G. E. "Prefix Sums and Their Applications.", Technical
@@ -37,7 +37,7 @@
  */
 
 /**
- * @brief Performs a workgroup-wise scan.
+ * Performs a workgroup-wise scan.
  *
  * @param data_in Vector to scan.
  * @param data_out Location where to place scan results.
@@ -126,7 +126,7 @@ __kernel void workgroupScan(
 }
 
 /**
- * @brief Performs a scan on the workgroup sums vector.
+ * Performs a scan on the workgroup sums vector.
  *
  * @param data_wgsum Workgroup-wise sums.
  * @param aux Auxiliary local memory.
@@ -182,7 +182,7 @@ __kernel void workgroupSumsScan(
 }
 
 /**
- * @brief Adds the workgroup-wise sums to the respective workgroup
+ * Adds the workgroup-wise sums to the respective workgroup
  * elements.
  *
  * @param data_wgsum Workgroup-wise sums.

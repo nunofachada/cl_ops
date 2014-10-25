@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Implementation of XorShift random number generator with
+ * Implementation of XorShift random number generator with
  * 128 bit state.
  *
  * Based on code available [here](http://en.wikipedia.org/wiki/Xorshift).
@@ -28,7 +28,7 @@
 typedef uint4 rng_state;
 
 /**
- * @brief Returns the next pseudorandom value using a xorshift random
+ * Returns the next pseudorandom value using a xorshift random
  * number generator with 128 bit state.
  *
  * @param[in,out] states Array of RNG states.

@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Simple bitonic sort header file.
+ * Simple bitonic sort header file.
  */
 
 #ifndef _CLO_SORT_SBITONIC_H_

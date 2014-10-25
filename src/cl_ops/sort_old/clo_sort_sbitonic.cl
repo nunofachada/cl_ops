@@ -1,28 +1,28 @@
-/*   
+/*
  * This file is part of CL-Ops.
- * 
+ *
  * CL-Ops is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
- * CL-Ops is distributed in the hope that it will be useful, 
+ *
+ * CL-Ops is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-/** 
+/**
  * @file
- * @brief Simple bitonic sort implementation.
+ * Simple bitonic sort implementation.
  */
 
 /**
- * @brief A simple bitonic sort kernel.
- * 
+ * A simple bitonic sort kernel.
+ *
  * @param data Array of elements to sort.
  * @param stage Current bitonic sort step.
  * @param step Current bitonic sort stage.
@@ -39,21 +39,21 @@ __kernel void sbitonicSort(
 	uint pair_stride = (uint) (1 << (step - 1));
 	uint index1 = gid + (gid / pair_stride) * pair_stride;
 	uint index2 = index1 + pair_stride;
-	
+
 	/* Get hashes from global memory. */
 	CLO_SORT_ELEM_TYPE data1 = data[index1];
 	CLO_SORT_ELEM_TYPE data2 = data[index2];
-	
+
 	/* Determine if ascending or descending */
 	bool desc = (bool) (0x1 & (gid >> (stage - 1)));
-	
+
 	/* Determine it is required to swap the agents. */
-	bool swap = CLO_SORT_COMPARE(data1, data2) ^ desc; 
-	
-	/* Perform swap if needed */ 
+	bool swap = CLO_SORT_COMPARE(data1, data2) ^ desc;
+
+	/* Perform swap if needed */
 	if (swap) {
-		data[index1] = data2; 
-		data[index2] = data1; 
+		data[index1] = data2;
+		data[index2] = data1;
 	}
 
 

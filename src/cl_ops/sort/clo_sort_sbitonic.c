@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Simple bitonic sort host implementation.
+ * Simple bitonic sort host implementation.
  */
 
 #include "clo_sort_sbitonic.h"

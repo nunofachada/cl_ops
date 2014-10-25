@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Header sorting algorithms test.
+ * Header sorting algorithms test.
  */
 
 #ifndef _CLO_SORT_TEST_H_

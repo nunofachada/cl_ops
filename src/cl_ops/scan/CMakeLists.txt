@@ -7,9 +7,12 @@ file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_scan_blelloch.cl
 string(REGEX REPLACE "(..)" "\\\\x\\1" BLELLOCH_SRC ${BLELLOCH_SRC_RAW})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/clo_scan_blelloch.in.h
-	${CMAKE_BINARY_DIR}/cl_ops/clo_scan_blelloch.h @ONLY)
+	${CMAKE_BINARY_DIR}/${PROJECT_NAME}/clo_scan_blelloch.h @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/clo_scan_abstract.in.h
-	${CMAKE_BINARY_DIR}/cl_ops/clo_scan_abstract.h @ONLY)
+	${CMAKE_BINARY_DIR}/${PROJECT_NAME}/clo_scan_abstract.h @ONLY)
 
-
+# Install the configured headers
+install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/clo_scan_abstract.h
+	${CMAKE_BINARY_DIR}/${PROJECT_NAME}/clo_scan_blelloch.h
+	DESTINATION ${INSTALL_SUBDIR_INCLUDE}/${PROJECT_NAME})
 

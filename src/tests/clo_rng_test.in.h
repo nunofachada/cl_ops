@@ -17,7 +17,7 @@
 
 /**
  * @file
- * @brief Header for RNG test.
+ * Header for RNG test.
  */
 
 #ifndef _CLO_RNG_TEST_H_

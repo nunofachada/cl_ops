@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Global memory selection sort header file.
+ * Global memory selection sort header file.
  */
 
 #ifndef _CLO_SORT_GSELECT_H_

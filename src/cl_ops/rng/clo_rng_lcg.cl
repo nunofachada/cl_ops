@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief GPU implementation of a linear congruential pseudorandom
+ * GPU implementation of a linear congruential pseudorandom
  * number generator (LCG), as defined by D. H. Lehmer and described by
  * Donald E. Knuth in The Art of Computer Programming, Volume 3:
  * Seminumerical Algorithms, section 3.2.1. It is a similar
@@ -29,7 +29,7 @@
 typedef ulong rng_state;
 
 /**
- * @brief Returns the next pseudorandom value using a LCG random number
+ * Returns the next pseudorandom value using a LCG random number
  * generator.
  *
  * @param[in,out] states Array of RNG states.

@@ -17,7 +17,7 @@
 
 /**
  * @file
- * @brief Test RNG implementation.
+ * Test RNG implementation.
  */
 
 #include "clo_rng_test.h"
@@ -93,7 +93,7 @@ static GOptionEntry entries[] = {
 };
 
 /**
- * @brief Main program.
+ * Main program.
  *
  * @param argc Number of command line arguments.
  * @param argv Vector of command line arguments.

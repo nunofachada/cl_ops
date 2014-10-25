@@ -18,11 +18,16 @@
 
 /**
  * @file
- * @brief Parallel prefix sum (scan) abstract definitions.
+ * Parallel prefix sum (scan) abstract definitions.
  * */
 
 #include "clo_scan_abstract.h"
 #include "clo_scan_blelloch.h"
+
+/**
+ * @addtogroup CLO_SCAN
+ * @{
+ */
 
 /**
  * Scanner class.
@@ -193,16 +198,20 @@ void clo_scan_destroy(CloScan* scan) {
  *
  * @public @memberof clo_scan
  *
- * @param[in] scanner
- * @param[in] cq_exec
- * @param[in] cq_comm
- * @param[in] data_in
- * @param[out] data_out
- * @param[in] numel
- * @param[in] lws_max
+ * @param[in] scanner Scanner object.
+ * @param[in] cq_exec A valid command queue wrapper for kernel
+ * execution, cannot be `NULL`.
+ * @param[in] cq_comm A command queue wrapper for data transfers.
+ * If `NULL`, `cq_exec` will be used for data transfers.
+ * @param[in] data_in Data to be scanned.
+ * @param[out] data_out Location where to place scanned data.
+ * @param[in] numel Number of elements in `data_in`.
+ * @param[in] lws_max Max. local worksize. If 0, the local worksize
+ * will be automatically determined.
  * @param[out] err Return location for a GError, or `NULL` if error
  * reporting is to be ignored.
- * @return
+ * @return An event wait list which contains events which must
+ * terminate before scanning is considered complete.
  * */
 CCLEventWaitList clo_scan_with_device_data(CloScan* scanner,
 	CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
@@ -228,16 +237,20 @@ CCLEventWaitList clo_scan_with_device_data(CloScan* scanner,
  *
  * @public @memberof clo_scan
  *
- * @param[in] scanner
- * @param[in] cq_exec
- * @param[in] cq_comm
- * @param[in] data_in
- * @param[out] data_out
- * @param[in] numel
- * @param[in] lws_max
+ * @param[in] scanner Scanner object.
+ * @param[in] cq_exec Command queue wrapper for kernel execution. If
+ * `NULL` a queue will be created.
+ * @param[in] cq_comm A command queue wrapper for data transfers.
+ * If `NULL`, `cq_exec` will be used for data transfers.
+ * @param[in] data_in Data to be scanned.
+ * @param[out] data_out Location where to place scanned data.
+ * @param[in] numel Number of elements in `data_in`.
+ * @param[in] lws_max Max. local worksize. If 0, the local worksize
+ * will be automatically determined.
  * @param[out] err Return location for a GError, or `NULL` if error
  * reporting is to be ignored.
- * @return
+ * @return `CL_TRUE` if scan was successfully performed, `CL_FALSE`
+ * otherwise.
  * */
 cl_bool clo_scan_with_host_data(CloScan* scanner,
 	CCLQueue* cq_exec, CCLQueue* cq_comm, void* data_in, void* data_out,
@@ -421,3 +434,5 @@ void* clo_scan_get_data(CloScan* scanner) {
 
 	return scanner->data;
 }
+
+/** @} */

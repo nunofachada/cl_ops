@@ -1,24 +1,24 @@
-/*   
+/*
  * This file is part of CL-Ops.
- * 
+ *
  * CL-Ops is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
- * CL-Ops is distributed in the hope that it will be useful, 
+ *
+ * CL-Ops is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
- 
-/** 
+
+/**
  * @file
- * @brief Advanced bitonic sort header file.
+ * Advanced bitonic sort header file.
  */
 
 #ifndef CLO_SORTABITONIC_H
@@ -57,7 +57,7 @@
 #define CLO_SORT_ABITONIC_KIDX_HYB_S4_4S16V 23
 #define CLO_SORT_ABITONIC_KIDX_HYB_S8_4S16V 24
 #define CLO_SORT_ABITONIC_KIDX_HYB_S12_4S16V 25
-/** @} */ 
+/** @} */
 
 /**
  * @defgroup CLO_SORT_ABITONIC_KERNELNAME Name of the advanced bitonic sort kernels.
@@ -90,7 +90,7 @@
 #define CLO_SORT_ABITONIC_KNAME_HYB_S4_4S16V "abit_hyb_s4_4s16v"
 #define CLO_SORT_ABITONIC_KNAME_HYB_S8_4S16V "abit_hyb_s8_4s16v"
 #define CLO_SORT_ABITONIC_KNAME_HYB_S12_4S16V "abit_hyb_s12_4s16v"
-/** @} */ 
+/** @} */
 
 #define CLO_SORT_ABITONIC_KNAME_LOCAL_MARK "local"
 #define CLO_SORT_ABITONIC_KNAME_PRIV_MARK "priv"
@@ -99,13 +99,13 @@
 #define CLO_SORT_ABITONIC_KPARSE_V(kname) atoi(g_strrstr(kname, "s") + 1)
 #define CLO_SORT_ABITONIC_KPARSE_S(kname) atoi(g_strrstr(kname, "_") + 1)
 
-/** @brief Number of command queues used by the advanced bitonic sort. */
+/** Number of command queues used by the advanced bitonic sort. */
 #define CLO_SORT_ABITONIC_NUMQUEUES 1
 
-/** @brief Number of kernels used by the advanced bitonic sort. */
+/** Number of kernels used by the advanced bitonic sort. */
 #define CLO_SORT_ABITONIC_NUMKERNELS 26
 
-/** @brief Array of strings containing names of the kernels used by the advanced bitonic sort strategy. */
+/** Array of strings containing names of the kernels used by the advanced bitonic sort strategy. */
 #define CLO_SORT_ABITONIC_KERNELNAMES {CLO_SORT_ABITONIC_KNAME_ANY, \
 	CLO_SORT_ABITONIC_KNAME_LOCAL_S2, CLO_SORT_ABITONIC_KNAME_LOCAL_S3, \
 	CLO_SORT_ABITONIC_KNAME_LOCAL_S4, CLO_SORT_ABITONIC_KNAME_LOCAL_S5, \
@@ -130,34 +130,34 @@ typedef struct {
 	unsigned int num_steps;
 } clo_sort_abitonic_step;
 
-/** @brief Sort agents using the advanced bitonic sort. */
-int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls, 
-	size_t lws_max, size_t len, unsigned int numel, const char* options, 
+/** Sort agents using the advanced bitonic sort. */
+int clo_sort_abitonic_sort(cl_command_queue *queues, cl_kernel *krnls,
+	size_t lws_max, size_t len, unsigned int numel, const char* options,
 	GArray *evts, gboolean profile, GError **err);
 
-/** @brief Returns the name of the kernel identified by the given
+/** Returns the name of the kernel identified by the given
  * index. */
 const char* clo_sort_abitonic_kernelname_get(unsigned int index);
 
-/** @brief Create kernels for the advanced bitonic sort. */
+/** Create kernels for the advanced bitonic sort. */
 int clo_sort_abitonic_kernels_create(cl_kernel **krnls, cl_program program, GError **err);
 
-/** @brief Get local memory usage for the advanced bitonic sort kernels. */
+/** Get local memory usage for the advanced bitonic sort kernels. */
 size_t clo_sort_abitonic_localmem_usage(const char* kernel_name, size_t lws_max, size_t len, unsigned int numel);
 
-/** @brief Set kernels arguments for the advanced bitonic sort. */
+/** Set kernels arguments for the advanced bitonic sort. */
 int clo_sort_abitonic_kernelargs_set(cl_kernel **krnls, cl_mem data, size_t lws, size_t len, GError **err);
 
-/** @brief Free the advanced bitonic sort kernels. */
+/** Free the advanced bitonic sort kernels. */
 void clo_sort_abitonic_kernels_free(cl_kernel **krnls);
 
 void clo_sort_abitonic_strategy_get(clo_sort_abitonic_step *steps,
 	size_t lws_max, unsigned int totalStages, unsigned int numel,
-	unsigned int min_inkrnl_stps, unsigned int max_inkrnl_stps, 
+	unsigned int min_inkrnl_stps, unsigned int max_inkrnl_stps,
 	unsigned int max_inkrnl_sfs);
-	
-int clo_sort_abitonic_options_parse(const char* options, unsigned int *max_inkrnl_stps, 
-	unsigned int *min_inkrnl_stps, unsigned int *max_inkrnl_sfs, GError **err);	
+
+int clo_sort_abitonic_options_parse(const char* options, unsigned int *max_inkrnl_stps,
+	unsigned int *min_inkrnl_stps, unsigned int *max_inkrnl_sfs, GError **err);
 
 #endif
 

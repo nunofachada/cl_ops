@@ -26,5 +26,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/clo_sort_gselect.in.h
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/clo_sort_abitonic.in.h
 	${CMAKE_BINARY_DIR}/cl_ops/clo_sort_abitonic.h @ONLY)
 
-
-
+# Install the configured headers
+install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/clo_sort_abstract.h
+	${CMAKE_BINARY_DIR}/${PROJECT_NAME}/clo_sort_sbitonic.h
+	${CMAKE_BINARY_DIR}/${PROJECT_NAME}/clo_sort_gselect.h
+	${CMAKE_BINARY_DIR}/${PROJECT_NAME}/clo_sort_abitonic.h
+	DESTINATION ${INSTALL_SUBDIR_INCLUDE}/${PROJECT_NAME})

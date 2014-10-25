@@ -17,7 +17,7 @@
 
 /**
  * @file
- * @brief Kernel for testing RNGs
+ * Kernel for testing RNGs
  */
 
 __kernel void clo_rng_test(

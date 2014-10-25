@@ -23,4 +23,8 @@ file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_rng_init.cl RNG_SRC_INIT_RAW HEX)
 string(REGEX REPLACE "(..)" "\\\\x\\1" RNG_SRC_INIT ${RNG_SRC_INIT_RAW})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/clo_rng.in.h
-	${CMAKE_BINARY_DIR}/cl_ops/clo_rng.h @ONLY)
+	${CMAKE_BINARY_DIR}/${PROJECT_NAME}/clo_rng.h @ONLY)
+
+# Install the configured header
+install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/clo_rng.h
+	DESTINATION ${INSTALL_SUBDIR_INCLUDE}/${PROJECT_NAME})

@@ -18,7 +18,7 @@
 
 /**
  * @file
- * @brief Implementation of simple XorShift random number generator.
+ * Implementation of simple XorShift random number generator.
  *
  * Based on code available [here](http://www.javamex.com/tutorials/random_numbers/xorshift.shtml).
  */
@@ -27,7 +27,7 @@
 typedef ulong rng_state;
 
 /**
- * @brief Returns the next pseudorandom value using a xorshift random
+ * Returns the next pseudorandom value using a xorshift random
  * number generator with 64 bit state.
  *
  * @param[in,out] states Array of RNG states.
