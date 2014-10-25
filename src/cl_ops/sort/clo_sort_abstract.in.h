@@ -48,6 +48,11 @@ typedef struct clo_sort_impl_def {
 	const char* name;
 
 	/**
+	 * Does the algorithm sort values in-place?
+	 * */
+	cl_bool in_place;
+
+	/**
 	 * Sort algorithm initializer function.
 	 *
 	 * @param[in] sorter
@@ -89,29 +94,6 @@ typedef struct clo_sort_impl_def {
 		CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
 		CCLBuffer* data_out, size_t numel, size_t lws_max,
 		GError** err);
-
-	/**
-	 * Perform sort using host data. Device buffers will be created and
-	 * destroyed by sort implementation.
-	 *
-	 * @param[in] sorter Sorter object.
-	 * @param[in] cq_exec Command queue wrapper for kernel execution. If
-	 * `NULL` a queue will be created.
-	 * @param[in] cq_comm A command queue wrapper for data transfers.
-	 * If `NULL`, `cq_exec` will be used for data transfers.
-	 * @param[in] data_in Data to be sorted.
-	 * @param[out] data_out Location where to place sorted data.
-	 * @param[in] numel Number of elements in `data_in`.
-	 * @param[in] lws_max Max. local worksize. If 0, the local worksize
-	 * will be automatically determined.
-	 * @param[out] err Return location for a GError, or `NULL` if error
-	 * reporting is to be ignored.
-	 * @return `CL_TRUE` if sort was successfully performed, or
-	 * `CL_FALSE` otherwise.
-	 * */
-	cl_bool (*sort_with_host_data)(CloSort* sorter, CCLQueue* cq_exec,
-		CCLQueue* cq_comm, void* data_in, void* data_out, size_t numel,
-		size_t lws_max, GError** err);
 
 } CloSortImplDef;
 
