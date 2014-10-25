@@ -298,7 +298,6 @@ finish:
 }
 
 /**
- * @internal
  * Perform sort using device data.
  *
  * @copydetails ::CloSort::sort_with_device_data()
@@ -442,12 +441,7 @@ finish:
  * Initializes an advanced bitonic sorter object and returns the
  * respective source code.
  *
- * @param[in] Sorter object to initialize.
- * @param[in] options Algorithm options.
- * @param[out] err Return location for a GError, or `NULL` if error
- * reporting is to be ignored.
- * @return Advanced bitonic sorter source code or `NULL` if an error
- * occurs.
+ * @copydetails ::CloSort::init()
  * */
 static const char* clo_sort_abitonic_init(
 	CloSort* sorter, const char* options, GError** err) {
@@ -563,7 +557,7 @@ finish:
 /**
  * Finalizes an advanced bitonic sorter object.
  *
- * @param[in] sorter Sorter object to finalize.
+ * @copydetails ::CloSort::finalize()
  * */
 static void clo_sort_abitonic_finalize(CloSort* sorter) {
 

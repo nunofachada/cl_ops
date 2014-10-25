@@ -24,7 +24,6 @@
 #include "clo_sort_sbitonic.h"
 
 /**
- * @internal
  * Perform sort using device data.
  *
  * @copydetails ::CloSort::sort_with_device_data()
@@ -138,11 +137,7 @@ finish:
  * Initializes a simple bitonic sorter object and returns the
  * respective source code.
  *
- * @param[in] Sorter object to initialize.
- * @param[in] options Algorithm options.
- * @param[out] err Return location for a GError, or `NULL` if error
- * reporting is to be ignored.
- * @return Simple bitonic sorter source code.
+ * @copydetails ::CloSort::init()
  * */
 static const char* clo_sort_sbitonic_init(
 	CloSort* sorter, const char* options, GError** err) {
@@ -164,11 +159,11 @@ static const char* clo_sort_sbitonic_init(
 /**
  * Finalizes a bitonic sorter object.
  *
- * @param[in] sorter Sorter object to finalize.
+ * @copydetails ::CloSort::finalize()
  * */
 static void clo_sort_sbitonic_finalize(CloSort* sorter) {
 	/* Nothing to finalize. */
-	sorter = sorter;
+	(void)sorter;
 	return;
 }
 

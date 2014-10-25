@@ -25,6 +25,7 @@
 #include "clo_sort_sbitonic.h"
 #include "clo_sort_abitonic.h"
 #include "clo_sort_gselect.h"
+#include "clo_sort_satradix.h"
 
 /**
  * @addtogroup CLO_SORT
@@ -107,7 +108,7 @@ CloSort* clo_sort_new(const char* type, const char* options,
 		clo_sort_sbitonic_def,
 		clo_sort_abitonic_def,
 		clo_sort_gselect_def,
-		//~ clo_sort_satradix_def
+		clo_sort_satradix_def,
 		{ NULL, CL_FALSE, NULL, NULL, NULL }
 	};
 
