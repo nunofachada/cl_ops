@@ -22,23 +22,11 @@
  * Requires definition of:
  *
  * * CLO_SORT_NUM_BITS - Number of bits in digit
+ * * CLO_SORT_ELEM_TYPE - Type of element to sort
+ * * CLO_SORT_COMPARE(a,b) - Compare macro or function
+ * * CLO_SORT_KEY_GET(x) - Get key macro or function
+ * * CLO_SORT_KEY_TYPE - Type of key
  */
-
-#ifndef CLO_SORT_ELEM_TYPE
-	#define CLO_SORT_ELEM_TYPE uint
-#endif
-
-#ifndef CLO_SORT_COMPARE
-	#define CLO_SORT_COMPARE(a, b) ((a) > (b))
-#endif
-
-#ifndef CLO_SORT_KEY_GET
-	#define CLO_SORT_KEY_GET(x) (x)
-#endif
-
-#ifndef CLO_SORT_KEY_TYPE
-	#define CLO_SORT_KEY_TYPE uint
-#endif
 
 #define CLO_SORT_RADIX (1 << CLO_SORT_NUM_BITS)
 #define CLO_SORT_RADIX1 (CLO_SORT_RADIX - 1)

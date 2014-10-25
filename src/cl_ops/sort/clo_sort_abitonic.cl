@@ -19,23 +19,14 @@
 /**
  * @file
  * Advanced bitonic sort implementation.
+ *
+ * Requires definition of:
+ *
+ * * CLO_SORT_ELEM_TYPE - Type of element to sort
+ * * CLO_SORT_COMPARE(a,b) - Compare macro or function
+ * * CLO_SORT_KEY_GET(x) - Get key macro or function
+ * * CLO_SORT_KEY_TYPE - Type of key
  */
-
-#ifndef CLO_SORT_ELEM_TYPE
-	#define CLO_SORT_ELEM_TYPE uint
-#endif
-
-#ifndef CLO_SORT_COMPARE
-	#define CLO_SORT_COMPARE(a, b) ((a) > (b))
-#endif
-
-#ifndef CLO_SORT_KEY_GET
-	#define CLO_SORT_KEY_GET(x) (x)
-#endif
-
-#ifndef CLO_SORT_KEY_TYPE
-	#define CLO_SORT_KEY_TYPE uint
-#endif
 
 #define ABIT_CMPXCH(data, index1, index2) \
 	data1 = data[index1]; \
