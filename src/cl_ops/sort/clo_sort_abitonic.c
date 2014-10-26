@@ -513,7 +513,8 @@ static const char* clo_sort_abitonic_init(
 			} else {
 				ccl_if_err_create_goto(*err, CLO_ERROR, TRUE,
 					CLO_ERROR_ARGS, error_handler,
-					"Invalid option key '%s' for a-bitonic sort.", opt[0]);
+					"Invalid option key '%s' for abitonic sort.",
+					opt[0]);
 			}
 
 			/* Free token. */
