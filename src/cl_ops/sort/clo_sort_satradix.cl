@@ -31,7 +31,7 @@
 #define CLO_SORT_RADIX (1 << CLO_SORT_NUM_BITS)
 #define CLO_SORT_RADIX1 (CLO_SORT_RADIX - 1)
 
-__kernel void satradixLocalSort(
+__kernel void satradix_localsort(
 	__global CLO_SORT_ELEM_TYPE* data_global,
 	__global CLO_SORT_ELEM_TYPE* data_global_tmp,
 	__local CLO_SORT_ELEM_TYPE* data_local,
@@ -122,7 +122,7 @@ __kernel void satradixLocalSort(
 
 }
 
-__kernel void satradixHistogram(
+__kernel void satradix_histogram(
 	__global CLO_SORT_ELEM_TYPE* data_global_tmp,
 	__global uint *offsets,
 	__global uint *counters,
@@ -221,7 +221,7 @@ __kernel void satradixHistogram(
 
 }
 
-__kernel void satradixScatter(
+__kernel void satradix_scatter(
 	__global CLO_SORT_ELEM_TYPE* data_global,
 	__global CLO_SORT_ELEM_TYPE* data_global_tmp,
 	__global uint *offsets,
