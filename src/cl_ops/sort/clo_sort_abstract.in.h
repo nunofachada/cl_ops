@@ -132,6 +132,12 @@ CloType clo_sort_get_element_type(CloSort* sorter);
 /* Get the size in bytes of each element to be sorted. */
 size_t clo_sort_get_element_size(CloSort* sorter);
 
+/* Get the key type associated with the given sorter object. */
+CloType clo_sort_get_key_type(CloSort* sorter);
+
+/* Get the size in bytes of each key to be sorted. */
+size_t clo_sort_get_key_size(CloSort* sorter);
+
 /* Get sort specific data. */
 void* clo_sort_get_data(CloSort* sorter);
 

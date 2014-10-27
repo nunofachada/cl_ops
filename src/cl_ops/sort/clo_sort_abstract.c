@@ -49,6 +49,9 @@ typedef struct clo_sort {
 	/** @private Type of elements to sort. */
 	CloType elem_type;
 
+	/** @private Type of keys to sort. */
+	CloType key_type;
+
 	/** @private Scan implementation data. */
 	void* data;
 
@@ -126,6 +129,8 @@ CloSort* clo_sort_new(const char* type, const char* options,
 			ccl_context_ref(ctx);
 			sorter->ctx  = ctx;
 			sorter->elem_type = *elem_type;
+			sorter->key_type =
+				(key_type != NULL) ? *key_type : *elem_type;
 
 			/* Initialize specific sort implementation and get source
 			 * code. */
@@ -139,14 +144,12 @@ CloSort* clo_sort_new(const char* type, const char* options,
 			/* Element type. */
 			g_string_append_printf(ocl_macros,
 				"#define CLO_SORT_ELEM_TYPE %s\n",
-					clo_type_get_name(*elem_type));
+				clo_type_get_name(sorter->elem_type));
 
 			/* Key type. */
 			g_string_append_printf(ocl_macros,
 				"#define CLO_SORT_KEY_TYPE %s\n",
-				key_type != NULL
-					? clo_type_get_name(*key_type)
-					: clo_type_get_name(*elem_type));
+				clo_type_get_name(sorter->key_type));
 
 			/* Comparison type. */
 			g_string_append_printf(ocl_macros,
@@ -449,7 +452,6 @@ CCLProgram* clo_sort_get_program(CloSort* sorter) {
 	return sorter->prg;
 }
 
-
 /**
  * Get the element type associated with the given sorter object.
  *
@@ -482,6 +484,41 @@ size_t clo_sort_get_element_size(CloSort* sorter) {
 
 	/* Return element size. */
 	return clo_type_sizeof(sorter->elem_type);
+
+}
+
+/**
+ * Get the key type associated with the given sorter object.
+ *
+ * @public @memberof clo_sort
+ *
+ * @param[in] sorter Sorter object.
+ * @return The key type associated with the given sorter object.
+ * */
+CloType clo_sort_get_key_type(CloSort* sorter) {
+
+	/* Make sure sorter object is not NULL. */
+	g_return_val_if_fail(sorter != NULL, -1);
+
+	/* Return key type. */
+	return sorter->key_type;
+}
+
+/**
+ * Get the size in bytes of each key to be sorted.
+ *
+ * @public @memberof clo_sort
+ *
+ * @param[in] sorter Sorter object.
+ * @return The size in bytes of each key to be sorted.
+ * */
+size_t clo_sort_get_key_size(CloSort* sorter) {
+
+	/* Make sure sorter object is not NULL. */
+	g_return_val_if_fail(sorter != NULL, 0);
+
+	/* Return key size. */
+	return clo_type_sizeof(sorter->key_type);
 
 }
 
