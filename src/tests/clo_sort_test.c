@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 	host_data = g_slice_alloc(bytes * (1 << maxpo2));
 
 	/* Perform test. */
-	for (unsigned int N = 1; N <= maxpo2; N++) {
+	for (unsigned int N = 4; N <= maxpo2; N++) {
 
 		unsigned int num_elems = 1 << N;
 		gboolean sorted_ok;

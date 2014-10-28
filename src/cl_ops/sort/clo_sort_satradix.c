@@ -22,11 +22,15 @@
  */
 
 #include "clo_sort_satradix.h"
+#include "clo_scan_abstract.h"
 
 typedef struct {
 
 	/** Radix. */
 	cl_uint radix;
+
+	/** Source code. */
+	char* src;
 
 } clo_sort_satradix_data;
 
@@ -59,6 +63,9 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 	CCLKernel* krnl_hist = NULL;
 	CCLKernel* krnl_scat = NULL;
 
+	/* Scanner object, required for part of the radix sort. */
+	CloScan* scanner = NULL;
+
 	/* Effective local worksize for the several radix sort kernels. */
 	size_t lws_sort;
 	/* Number of workgroups for the several radix sort kernels. */
@@ -83,6 +90,10 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 	total_digits =
 		clo_sort_get_element_size(sorter) * 8 / bits_in_digit;
 
+	/* If data transfer queue is NULL, use exec queue for data
+	 * transfers. */
+	if (cq_comm == NULL) cq_comm = cq_exec;
+
 	/* Get device where sort will occurr. */
 	dev = ccl_queue_get_device(cq_exec, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
@@ -96,21 +107,37 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 
 	/* Determine the number of workgroups for the several radix sort
 	 * kernels. */
-	num_wgs = numel / lws_sort;
+	num_wgs = numel / lws_sort + numel % lws_sort;
 
 	/* Get context and program. */
 	ctx = clo_sort_get_context(sorter);
 	prg = clo_sort_get_program(sorter);
 
+	/* Determine which buffer to use. */
+	if (data_out == NULL) {
+		/* Sort directly in original data. */
+		data_out = data_in;
+	} else {
+		/* Copy data_in to data_out first, and then sort on copied
+		 * data. */
+		evt = ccl_buffer_enqueue_copy(data_in, data_out, cq_comm, 0, 0,
+			clo_sort_get_element_size(sorter) * numel, NULL,
+			&err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+		ccl_event_set_name(evt, "copy_satradix");
+		ccl_event_wait_list_add(&ewl, evt, NULL);
+	}
+
 	/* Get kernels. */
 	krnl_lsrt = ccl_program_get_kernel(
-		prg, "satradixLocalSort", &err_internal);
+		prg, "satradix_localsort", &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	krnl_hist = ccl_program_get_kernel(
-		prg, "satradixHistogram", &err_internal);
+		prg, "satradix_histogram", &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	krnl_scat = ccl_program_get_kernel(
-		prg, "satradixScatter", &err_internal);
+		prg, "satradix_scatter", &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine size of aux. buffers. */
@@ -134,43 +161,63 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 		ctx, CL_MEM_READ_WRITE, aux_buf_size, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
+	/* Create scanner object. */
+	scanner = clo_scan_new("blelloch", NULL, ctx, CLO_UINT, CLO_UINT,
+		NULL, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
 	/* Perform sort. */
 	for (cl_uint i = 0; i < total_digits; ++i) {
 
 		cl_uint start_bit = i * bits_in_digit;
 		cl_uint array_len = numel / num_wgs;
 
-		/* Determine local memory arguments. */
-		CCLArg* data_sort_loc = ccl_arg_full(
-			NULL, clo_sort_get_element_size(sorter));
-		CCLArg* data_scan_loc = ccl_arg_local(numel / num_wgs, cl_uint);
-		CCLArg* offsets_loc = ccl_arg_local(radix, cl_uint);
-		CCLArg* counters_loc = ccl_arg_local(radix, cl_uint);
-		CCLArg* digits_loc = ccl_arg_full(array_len, cl_uint);
+//~ #define data_sort_loc ccl_arg_full(NULL, clo_sort_get_element_size(sorter))
+//~ #define data_scan_loc ccl_arg_local(numel / num_wgs, cl_uint)
+//~ #define offsets_loc ccl_arg_local(data.radix, cl_uint)
+//~ #define counters_loc ccl_arg_local(data.radix, cl_uint)
+//~ #define digits_loc ccl_arg_full(array_len, cl_uint)
 
 		/* Local sort. */
-		ccl_kernel_set_args_and_enqueue_ndrange(krnl_lsrt, cq_exec, 1,
-			NULL, &numel, &lws_sort, NULL, &err_internal, data_in,
-			data_aux, data_sort_loc, data_scan_loc,
-			ccl_arg_priv(start_bit, cl_uint), NULL);
+		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_lsrt,
+			cq_exec, 1, NULL, &numel, &lws_sort, NULL, &err_internal,
+			data_out, data_aux,
+			ccl_arg_full(NULL, clo_sort_get_element_size(sorter)),
+			ccl_arg_local(numel / num_wgs, cl_uint),
+			ccl_arg_priv(start_bit, cl_uint),
+			NULL);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		ccl_event_set_name(evt, "localsort_satradix");
 
 		/* Histogram. */
-		ccl_kernel_set_args_and_enqueue_ndrange(krnl_hist, cq_exec, 1,
-			NULL, &numel, &lws_sort, NULL, &err_internal, data_aux,
-			offsets, counters, offsets_loc, counters_loc, digits_loc,
+		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_hist, cq_exec, 1,
+			NULL, &numel, &lws_sort, NULL, &err_internal,
+			data_aux, offsets, counters,
+			ccl_arg_local(data.radix, cl_uint),
+			ccl_arg_local(data.radix, cl_uint),
+			ccl_arg_full(NULL, array_len * clo_sort_get_key_size(sorter)),
 			ccl_arg_priv(start_bit, cl_uint),
-			ccl_arg_priv(array_len, cl_uint), NULL);
+			ccl_arg_priv(array_len, cl_uint),
+			NULL);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		ccl_event_set_name(evt, "histogram_satradix");
 
 		/* Scan. */
+		clo_scan_with_device_data(scanner, cq_exec, cq_comm, counters,
+			counters_sum, num_wgs * data.radix, lws_max, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 		/* Scatter. */
 		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_scat,
 			cq_exec, 1, NULL, &numel, &lws_sort, NULL, &err_internal,
-			data_in, data_aux, offsets, counters_sum, data_sort_loc,
-			offsets_loc, offsets_loc, ccl_arg_priv(start_bit, cl_uint));
+			data_in, data_aux, offsets, counters_sum,
+			ccl_arg_full(NULL, clo_sort_get_element_size(sorter)),
+			ccl_arg_local(data.radix, cl_uint),
+			ccl_arg_local(data.radix, cl_uint),
+			ccl_arg_priv(start_bit, cl_uint),
+			NULL);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		ccl_event_set_name(evt, "scatter_satradix");
 	}
 
 	/* Add last event to wait list to return. */
@@ -209,7 +256,7 @@ static const char* clo_sort_satradix_init(
 	/* Make sure err is NULL or it is not set. */
 	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
-	const char* satradix_src;
+	char* satradix_src;
 	clo_sort_satradix_data* data;
 	data = g_slice_new0(clo_sort_satradix_data);
 
@@ -273,13 +320,16 @@ static const char* clo_sort_satradix_init(
 
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);
-	satradix_src = CLO_SORT_SATRADIX_SRC;
+	satradix_src = g_strdup_printf("#define CLO_SORT_NUM_BITS %d\n%s",
+		 clo_tzc(data->radix), CLO_SORT_SATRADIX_SRC);
+	data->src = satradix_src;
 	goto finish;
 
 error_handler:
 	/* If we got here there was an error, verify that it is so. */
 	g_assert(err == NULL || *err != NULL);
 	satradix_src = NULL;
+	data->src = NULL;
 
 finish:
 
@@ -291,7 +341,7 @@ finish:
 	clo_sort_set_data(sorter, data);
 
 	/* Return source to be compiled. */
-	return satradix_src;
+	return (const char*) satradix_src;
 
 }
 
@@ -303,8 +353,13 @@ finish:
  * */
 static void clo_sort_satradix_finalize(CloSort* sorter) {
 
+	/* Get internal data. */
+	clo_sort_satradix_data* data =
+		(clo_sort_satradix_data*) clo_sort_get_data(sorter);
+
 	/* Release internal data. */
-	g_slice_free(clo_sort_satradix_data, clo_sort_get_data(sorter));
+	g_free(data->src);
+	g_slice_free(clo_sort_satradix_data, data);
 
 	return;
 }
