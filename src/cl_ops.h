@@ -23,17 +23,29 @@
  * @author Nuno Fachada
  */
 
-#ifndef _CL_OPS_H
-#define _CL_OPS_H
+#ifndef _CL_OPS_H_
+#define _CL_OPS_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/* Common header. */
 #include <cl_ops/clo_common.h>
+
+/* RNG header. */
 #include <cl_ops/clo_rng.h>
-#include <cl_ops/clo_sort.h>
-#include <cl_ops/clo_scan.h>
+
+/* Sort headers. */
+#include <cl_ops/clo_sort_abstract.h>
+#include <cl_ops/clo_sort_abitonic.h>
+#include <cl_ops/clo_sort_sbitonic.h>
+#include <cl_ops/clo_sort_gselect.h>
+#include <cl_ops/clo_sort_satradix.h>
+
+/* Scan headers. */
+#include <cl_ops/clo_scan_abstract.h>
+#include <cl_ops/clo_scan_blelloch.h>
 
 #ifdef __cplusplus
 }
