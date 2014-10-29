@@ -182,8 +182,8 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_lsrt,
 			cq_exec, 1, NULL, &numel, &lws_sort, NULL, &err_internal,
 			data_out, data_aux,
-			ccl_arg_full(NULL, clo_sort_get_element_size(sorter)),
-			ccl_arg_local(numel / num_wgs, cl_uint),
+			ccl_arg_full(NULL, array_len * clo_sort_get_element_size(sorter)),
+			ccl_arg_local(array_len, cl_uint),
 			ccl_arg_priv(start_bit, cl_uint),
 			NULL);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
@@ -211,7 +211,7 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_scat,
 			cq_exec, 1, NULL, &numel, &lws_sort, NULL, &err_internal,
 			data_in, data_aux, offsets, counters_sum,
-			ccl_arg_full(NULL, clo_sort_get_element_size(sorter)),
+			ccl_arg_full(NULL, array_len * clo_sort_get_element_size(sorter)),
 			ccl_arg_local(data.radix, cl_uint),
 			ccl_arg_local(data.radix, cl_uint),
 			ccl_arg_priv(start_bit, cl_uint),
