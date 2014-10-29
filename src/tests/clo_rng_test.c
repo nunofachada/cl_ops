@@ -97,21 +97,16 @@ static GOptionEntry entries[] = {
  *
  * @param argc Number of command line arguments.
  * @param argv Vector of command line arguments.
- * @return @link clo_error_codes::CLO_SUCCESS @endlink if program
- * terminates successfully, or another value of #clo_error_codes if an
- * error occurs.
+ * @return ::CLO_SUCCESS if program terminates successfully, or another
+ * value of ::clo_error_codes if an error occurs.
  * */
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 
 	/* Status var aux */
 	int status;
 
 	/* Context object for command line argument parsing. */
 	GOptionContext *context = NULL;
-
-	/* Kernel file. */
-	gchar* kernelFile = NULL;
 
 	/* Test data structures. */
 	cl_uint *result_host = NULL;
@@ -180,14 +175,14 @@ int main(int argc, char **argv)
 
 	/* Build compiler options. */
 	compiler_opts = g_strconcat(
-		maxint ? " -D CLO_RNCLO_RNG_TEST_MAXINT" : "",
+		maxint ? " -D CLO_RNG_TEST_MAXINT" : "",
 		NULL);
 
 	/* Create command queue. */
 	queue = ccl_queue_new(ctx, dev, 0, &err);
 	ccl_if_err_goto(err, error_handler);
 
-	/* Create scan object. */
+	/* Create RNG object. */
 	rng_ocl = clo_rng_new(rng, seed_type, NULL, gws, rng_seed, gid_hash,
 		ctx, queue, &err);
 	ccl_if_err_goto(err, error_handler);
@@ -196,7 +191,8 @@ int main(int argc, char **argv)
 	seeds_dev = clo_rng_get_device_seeds(rng_ocl);
 
 	/* Get RNG kernels source. */
-	src = g_strconcat(clo_rng_get_source(rng_ocl), CLO_RNG_TEST_SRC, NULL);
+	src = g_strconcat(
+		clo_rng_get_source(rng_ocl), CLO_RNG_TEST_SRC, NULL);
 
 	/* Create and build program. */
 	prg = ccl_program_new_from_source(ctx, src, &err);
@@ -330,7 +326,8 @@ int main(int argc, char **argv)
 			fwrite(result_host, sizeof(cl_uint), gws, output_pointer);
 		} else {
 			for (unsigned int i = 0; i < gws; i++) {
-				fprintf(output_pointer, "%u%s", result_host[i], output_sep_field);
+				fprintf(output_pointer, "%u%s", result_host[i],
+					output_sep_field);
 			}
 			fprintf(output_pointer, "%s", output_sep_line);
 		}
@@ -349,6 +346,7 @@ int main(int argc, char **argv)
 	goto cleanup;
 
 error_handler:
+
 	/* Handle error. */
 	g_assert(err != NULL);
 	status = err->code;
@@ -357,16 +355,25 @@ error_handler:
 
 cleanup:
 
-	/* Free command line options. */
+	/* Free CLI options context. */
 	if (context) g_option_context_free(context);
+
+	/* Free host RNG object. */
 	if (rng) g_free(rng);
+
+	/* Free output data. */
 	if (output) g_free(output);
+
+	/* Free compiler options. */
 	if (compiler_opts) g_free(compiler_opts);
-	if (kernelFile) g_free(kernelFile);
+
+	/* Free the gid hash. */
 	if (gid_hash) g_free(gid_hash);
 
+	/* Free the cl_ops device RNG object. */
 	if (rng_ocl) clo_rng_destroy(rng_ocl);
 
+	/* Free the source code string. */
 	if (src) g_free(src);
 
 	/* Free timer. */
@@ -377,7 +384,6 @@ cleanup:
 
 	/* Free file output buffer. */
 	if (output_buffer) g_slice_free1(CLO_RNG_TEST_BUFF_SIZE * sizeof(char), output_buffer);
-
 
 	/* Free filename strings. */
 	if (output_filename) g_free(output_filename);
