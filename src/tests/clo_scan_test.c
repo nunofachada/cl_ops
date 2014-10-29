@@ -264,7 +264,7 @@ int main(int argc, char **argv) {
 		total_time = 0;
 		for (unsigned int i = 0;  i < runs; i++)
 			total_time += benchmarks[N - 1][i];
-		printf("       - %10d : %f MValues/s %s\n", num_elems, (1e-6 * num_elems * runs) / (total_time * 1e-9d), scan_ok);
+		printf("       - %10d : %f MValues/s %s\n", num_elems, (1e-6 * num_elems * runs) / (total_time * 1e-9), scan_ok);
 
 		num_elems *= 2;
 

@@ -119,6 +119,15 @@ typedef struct clo_type_info CloTypeInfo;
 
 /** @} */
 
+/* Sort class. */
+typedef struct clo_sort CloSort;
+
+/* Scan class. */
+typedef struct clo_scan CloScan;
+
+/* RNG class. */
+typedef struct clo_rng CloRng;
+
 /* Return OpenCL type name. */
 const char* clo_type_get_name(CloType type);
 

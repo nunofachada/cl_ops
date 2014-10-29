@@ -210,7 +210,9 @@ int main(int argc, char **argv)
 		total_time = 0;
 		for (unsigned int i = 0;  i < runs; i++)
 			total_time += benchmarks[N - 1][i];
-		printf("       - 2^%d: %lf Mkeys/s %s\n", N, (1e-6d * num_elems * runs) / (total_time * 1e-9d), sorted_ok ? "" : "(sort did not work)");
+		printf("       - 2^%d: %lf Mkeys/s %s\n", N,
+			(1e-6 * num_elems * runs) / (total_time * 1e-9),
+			sorted_ok ? "" : "(sort did not work)");
 	}
 
 	/* Save benchmarks to file, if filename was given as cli option. */

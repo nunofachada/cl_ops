@@ -257,10 +257,10 @@ cl_bool clo_scan_with_host_data(CloScan* scanner,
 	size_t numel, size_t lws_max, GError** err) {
 
 	/* Make sure scanner object is not NULL. */
-	g_return_val_if_fail(scanner != NULL, NULL);
+	g_return_val_if_fail(scanner != NULL, CL_FALSE);
 
 	/* Make sure err is NULL or it is not set. */
-	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
+	g_return_val_if_fail(err == NULL || *err == NULL, CL_FALSE);
 
 	/* Function return status. */
 	cl_bool status;

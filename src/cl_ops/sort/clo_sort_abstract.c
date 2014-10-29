@@ -35,7 +35,7 @@
 /**
  * Sorter class.
  * */
-typedef struct clo_sort {
+struct clo_sort {
 
 	/** @private Sort implementation. */
 	CloSortImplDef impl_def;
@@ -55,7 +55,7 @@ typedef struct clo_sort {
 	/** @private Scan implementation data. */
 	void* data;
 
-} CloSort;
+};
 
 
 /**
@@ -214,7 +214,7 @@ finish:
 void clo_sort_destroy(CloSort* sorter) {
 
 	/* Make sure sorter object is not NULL. */
-	g_return_val_if_fail(sorter != NULL, NULL);
+	g_return_if_fail(sorter != NULL);
 
 	/* Free specific algorithm data. */
 	sorter->impl_def.finalize(sorter);
@@ -296,10 +296,10 @@ cl_bool clo_sort_with_host_data(CloSort* sorter, CCLQueue* cq_exec,
 	size_t lws_max, GError** err) {
 
 	/* Make sure scanner object is not NULL. */
-	g_return_val_if_fail(sorter != NULL, NULL);
+	g_return_val_if_fail(sorter != NULL, CL_FALSE);
 
 	/* Make sure err is NULL or it is not set. */
-	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
+	g_return_val_if_fail(err == NULL || *err == NULL, CL_FALSE);
 
 	/* Function return status. */
 	cl_bool status;
@@ -551,7 +551,7 @@ void* clo_sort_get_data(CloSort* sorter) {
 void clo_sort_set_data(CloSort* sorter, void* data) {
 
 	/* Make sure sorter object is not NULL. */
-	g_return_val_if_fail(sorter != NULL, NULL);
+	g_return_if_fail(sorter != NULL);
 
 	/* Set sort specific data. */
 	sorter->data = data;

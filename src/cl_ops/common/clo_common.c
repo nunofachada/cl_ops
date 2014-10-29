@@ -223,13 +223,14 @@ void clo_print_to_null(const gchar *string) {
  * worksize.
  * @param[out] err Return location for a GError, or `NULL` if error
  * reporting is to be ignored.
- * @return A local worksize based on the given parameters.
+ * @return A local worksize based on the given parameters or zero if an
+ * error occurs.
  * */
 size_t clo_get_lws(CCLKernel* krnl, CCLDevice* dev, size_t gws,
 	size_t lws_max, GError** err) {
 
 	/* Make sure err is NULL or it is not set. */
-	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
+	g_return_val_if_fail(err == NULL || *err == NULL,0);
 
 	size_t lws;
 	GError* err_internal = NULL;

@@ -35,9 +35,6 @@
  * @{
  */
 
-/* Abstract scan class. */
-typedef struct clo_scan CloScan;
-
 /**
  * Definition of a scan implementation.
  * */

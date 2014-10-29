@@ -34,9 +34,6 @@
  * @{
  */
 
-/* Sort class. */
-typedef struct clo_sort CloSort;
-
 /**
  * Definition of a sort implementation.
  * */

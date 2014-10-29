@@ -50,11 +50,6 @@
  */
 
 /**
- * RNG class declaration.
- * */
-typedef struct clo_rng CloRng;
-
-/**
  * Type of seed to use.
  * */
 typedef enum clo_rng_seed_type {
