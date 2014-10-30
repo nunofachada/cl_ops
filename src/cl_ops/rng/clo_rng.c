@@ -189,6 +189,8 @@ static CCLBuffer* clo_rng_host_seed_init(CCLContext* ctx, CCLQueue* cq,
 	void* seeds_host = NULL;
 	/* Internal error handling object. */
 	GError* err_internal = NULL;
+	/* Event wrapper. */
+	CCLEvent* evt;
 
 	/* Determine size in bytes of seeds vector. */
 	seeds_vec_size = seed_size * seeds_count;
@@ -211,9 +213,10 @@ static CCLBuffer* clo_rng_host_seed_init(CCLContext* ctx, CCLQueue* cq,
 	}
 
 	/* Copy seeds to device. */
-	ccl_buffer_enqueue_write(seeds_dev, cq, CL_TRUE, 0, seeds_vec_size,
-		seeds_host, NULL, &err_internal);
+	evt = ccl_buffer_enqueue_write(seeds_dev, cq, CL_TRUE, 0,
+		seeds_vec_size, seeds_host, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	ccl_event_set_name(evt, "CLO: write seeds");
 
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);
