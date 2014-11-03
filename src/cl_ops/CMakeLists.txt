@@ -24,7 +24,8 @@ endforeach()
 add_library(cl_ops SHARED ${CLO_LIB_SRCS})
 
 # Set cl-ops library dependencies
-target_link_libraries(cl_ops ${OPENCL_LIBRARIES} ${GLIB_LIBRARIES} ${GLIB_LDFLAGS} ${CF4OCL2_LIBRARIES})
+target_link_libraries(cl_ops ${OPENCL_LIBRARIES} ${GLIB_LIBRARIES}
+	${GLIB_LDFLAGS} ${CF4OCL2_LIBRARIES})
 
 # Set library version
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -32,6 +33,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 	SOVERSION ${${PROJECT_NAME}_VERSION_MAJOR})
 
 # Where to install lib
-install(TARGETS cl_ops LIBRARY DESTINATION lib)
+install(TARGETS ${PROJECT_NAME}
+	LIBRARY DESTINATION ${INSTALL_SUBDIR_LIB}
+	ARCHIVE DESTINATION ${INSTALL_SUBDIR_LIB}
+	RUNTIME DESTINATION ${INSTALL_SUBDIR_BIN})
 
 
