@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 		for (unsigned int i = 0; i < maxpo2; i++) {
 			fprintf(outfile, "%d", i);
 			for (unsigned int j = 0; j < runs; j++) {
-				fprintf(outfile, "\t%lu", benchmarks[i][j]);
+				fprintf(outfile, "\t%lu", (unsigned long)benchmarks[i][j]);
 			}
 			fprintf(outfile, "\n");
 		}
