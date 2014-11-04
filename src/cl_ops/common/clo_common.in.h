@@ -62,6 +62,13 @@
  * */
 #define CLO_GWS_MULT(gws, lws) (lws * CLO_DIV_CEIL(gws, lws))
 
+/**
+ * Yields true if `x` is a power of 2.
+ *
+ * @param[in] x Value to check if it is power of 2.
+ * */
+#define CLO_IS_PO2(x) (((x) & ((x) - 1)) == 0)
+
 /** @} */
 
 /**

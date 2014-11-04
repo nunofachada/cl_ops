@@ -26,6 +26,9 @@
 
 #include "clo_common.h"
 
+/* Available sort algoritms. */
+#define CLO_SORT_IMPLS "sbitonic, abitonic, gselect, satradix"
+
 /**
  * @defgroup CLO_SORT Sorting algorithms
  *
