@@ -134,7 +134,8 @@ CloSort* clo_sort_new(const char* type, const char* options,
 
 			/* Initialize specific sort implementation and get source
 			 * code. */
-			src = sorter->impl_def.init(sorter, options, err);
+			src = sorter->impl_def.init(sorter, options, &err_internal);
+			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 			/* Build sort macros which define element and key types,
 			 * comparison type and how to obtain a key from the
