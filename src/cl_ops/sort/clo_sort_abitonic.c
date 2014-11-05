@@ -568,11 +568,27 @@ static void clo_sort_abitonic_finalize(CloSort* sorter) {
 	return;
 }
 
+/**
+ * Get the maximum number of kernels used by the sort implementation.
+ *
+ * @copydetails ::CloSort::get_num_kernels()
+ * */
+static cl_uint clo_sort_abitonic_get_num_kernels(CloSort* sorter) {
+
+	/* Avoid compiler warnings. */
+	(void)sorter;
+
+	/* Return number of kernels. */
+	return CLO_SORT_ABITONIC_NUM_KERNELS;
+
+}
+
 /* Definition of the abitonic sort implementation. */
 const CloSortImplDef clo_sort_abitonic_def = {
 	"abitonic",
 	CL_TRUE,
 	clo_sort_abitonic_init,
 	clo_sort_abitonic_finalize,
-	clo_sort_abitonic_sort_with_device_data
+	clo_sort_abitonic_sort_with_device_data,
+	clo_sort_abitonic_get_num_kernels
 };

@@ -29,6 +29,9 @@
 /** The advanced bitonic sort kernels source. */
 #define CLO_SORT_ABITONIC_SRC "@ABITONIC_SRC@"
 
+/* Number of kernels. */
+#define CLO_SORT_ABITONIC_NUM_KERNELS 26
+
 /* Kernel names. */
 #define CLO_SORT_ABITONIC_KNAME_ANY "abit_any"
 #define CLO_SORT_ABITONIC_KNAME_LOCAL_S2 "abit_local_s2"

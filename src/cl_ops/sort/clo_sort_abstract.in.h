@@ -95,6 +95,16 @@ typedef struct clo_sort_impl_def {
 		CCLBuffer* data_out, size_t numel, size_t lws_max,
 		GError** err);
 
+	/**
+	 * Get the maximum number of kernels used by the sort
+	 * implementation.
+	 *
+	 * @param[in] sorter Sorter object.
+	 * @return Maximum number of kernels used by the sort
+	 * implementation.
+	 * */
+	cl_uint (*get_num_kernels)(CloSort* sorter);
+
 } CloSortImplDef;
 
 /** @} */

@@ -345,7 +345,6 @@ finish:
 
 }
 
-
 /**
  * Finalizes a SatRadix sorter object.
  *
@@ -364,11 +363,30 @@ static void clo_sort_satradix_finalize(CloSort* sorter) {
 	return;
 }
 
+/**
+ * Get the maximum number of kernels used by the sort implementation.
+ *
+ * @copydetails ::CloSort::get_num_kernels()
+ * */
+static cl_uint clo_sort_satradix_get_num_kernels(CloSort* sorter) {
+
+	/* Avoid compiler warnings. */
+	(void)sorter;
+
+	/* Return number of kernels. */
+	return 3;
+
+	/** @todo Take into account the number of scan kernel.
+	 * We have to ask the scan implementation about it. */
+
+}
+
 /* Definition of the satradix sort implementation. */
 const CloSortImplDef clo_sort_satradix_def = {
 	"satradix",
 	CL_TRUE,
 	clo_sort_satradix_init,
 	clo_sort_satradix_finalize,
-	clo_sort_satradix_sort_with_device_data
+	clo_sort_satradix_sort_with_device_data,
+	clo_sort_satradix_get_num_kernels
 };

@@ -164,7 +164,6 @@ static const char* clo_sort_gselect_init(
 
 }
 
-
 /**
  * Finalizes a bitonic sorter object.
  *
@@ -176,11 +175,27 @@ static void clo_sort_gselect_finalize(CloSort* sorter) {
 	return;
 }
 
+/**
+ * Get the maximum number of kernels used by the sort implementation.
+ *
+ * @copydetails ::CloSort::get_num_kernels()
+ * */
+static cl_uint clo_sort_gselect_get_num_kernels(CloSort* sorter) {
+
+	/* Avoid compiler warnings. */
+	(void)sorter;
+
+	/* Return number of kernels. */
+	return 1;
+
+}
+
 /* Definition of the gselect sort implementation. */
 const CloSortImplDef clo_sort_gselect_def = {
 	"gselect",
 	CL_FALSE,
 	clo_sort_gselect_init,
 	clo_sort_gselect_finalize,
-	clo_sort_gselect_sort_with_device_data
+	clo_sort_gselect_sort_with_device_data,
+	clo_sort_gselect_get_num_kernels
 };

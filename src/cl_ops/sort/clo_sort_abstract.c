@@ -112,7 +112,7 @@ CloSort* clo_sort_new(const char* type, const char* options,
 		clo_sort_abitonic_def,
 		clo_sort_gselect_def,
 		clo_sort_satradix_def,
-		{ NULL, CL_FALSE, NULL, NULL, NULL }
+		{ NULL, CL_FALSE, NULL, NULL, NULL, NULL }
 	};
 
 	/* Search in the list of known sort classes. */
@@ -557,6 +557,23 @@ void clo_sort_set_data(CloSort* sorter, void* data) {
 	/* Set sort specific data. */
 	sorter->data = data;
 
+}
+
+/**
+ * Get the maximum number of kernels used by the sort implementation.
+ *
+ * @public @memberof clo_sort
+ *
+ * @param[in] sorter Sorter object.
+ * @return Maximum number of kernels used by the sort implementation.
+ * */
+cl_uint clo_sort_get_num_kernels(CloSort* sorter) {
+
+	/* Make sure sorter object is not NULL. */
+	g_return_if_fail(sorter != NULL);
+
+	/* Return number of kernels. */
+	return sorter->impl_def.get_num_kernels(sorter);
 }
 
 /** @} */
