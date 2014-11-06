@@ -112,7 +112,7 @@ CloSort* clo_sort_new(const char* type, const char* options,
 		clo_sort_abitonic_def,
 		clo_sort_gselect_def,
 		clo_sort_satradix_def,
-		{ NULL, CL_FALSE, NULL, NULL, NULL, NULL }
+		{ NULL, CL_FALSE, NULL, NULL, NULL, NULL, NULL, NULL }
 	};
 
 	/* Search in the list of known sort classes. */
@@ -570,10 +570,56 @@ void clo_sort_set_data(CloSort* sorter, void* data) {
 cl_uint clo_sort_get_num_kernels(CloSort* sorter) {
 
 	/* Make sure sorter object is not NULL. */
-	g_return_if_fail(sorter != NULL);
+	g_return_val_if_fail(sorter != NULL, 0);
 
 	/* Return number of kernels. */
 	return sorter->impl_def.get_num_kernels(sorter);
+}
+
+/**
+ * Get name of the i^th kernel used by the sort implementation.
+ *
+ * @public @memberof clo_sort
+ *
+ * @param[in] sorter Sorter object.
+ * @param[in] i i^th kernel used by the sort implementation.
+ * @return The name of the i^th kernel used by the sort implementation.
+ * */
+const char* clo_sort_get_kernel_name(CloSort* sorter, cl_uint i) {
+
+	/* Make sure sorter object is not NULL. */
+	g_return_val_if_fail(sorter != NULL, NULL);
+
+	/* Return kernel name. */
+	return sorter->impl_def.get_kernel_name(sorter, i);
+}
+
+/**
+ * Get local memory usage of i^th kernel used by the sort implementation
+ * for the given maximum local worksize and number of elements to sort.
+ *
+ * @public @memberof clo_sort
+ *
+ * @param[in] sorter Sorter object.
+ * @param[in] i i^th kernel used by the sort implementation.
+ * @param[in] lws_max Max. local worksize. If 0, the local worksize
+ * is automatically determined and the returned memory usage corresponds
+ * to this value.
+ * @param[in] numel Number of elements to sort.
+ * @return The local memory usage of i^th kernel used by the sort
+ * implementation for the given maximum local worksize and number of
+ * elements to sort.
+ * */
+size_t clo_sort_get_localmem_usage(CloSort* sorter, cl_uint i,
+	size_t lws_max, size_t numel) {
+
+	/* Make sure sorter object is not NULL. */
+	g_return_val_if_fail(sorter != NULL, 0);
+
+	/* Return local memory usage. */
+	return sorter->impl_def.get_localmem_usage(
+		sorter, i, lws_max, numel);
+
 }
 
 /** @} */

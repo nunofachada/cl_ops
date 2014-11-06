@@ -190,6 +190,41 @@ static cl_uint clo_sort_gselect_get_num_kernels(CloSort* sorter) {
 
 }
 
+/**
+ * Get name of the i^th kernel used by the sort implementation.
+ *
+ * @copydetails ::CloSort::get_kernel_name()
+ * */
+const char* clo_sort_gselect_get_kernel_name(CloSort* sorter, cl_uint i) {
+
+	/* Avoid compiler warnings. */
+	(void) sorter;
+	(void) i;
+
+	/* Return kernel name. */
+	return NULL;
+}
+
+/**
+ * Get local memory usage of i^th kernel used by the sort implementation
+ * for the given maximum local worksize and number of elements to sort.
+ *
+ * @copydetails ::CloSort::get_localmem_usage()
+ * */
+size_t clo_sort_gselect_get_localmem_usage(CloSort* sorter, cl_uint i,
+	size_t lws_max, size_t numel) {
+
+	/* Avoid compiler warnings. */
+	(void) sorter;
+	(void) i;
+	(void) lws_max;
+	(void) numel;
+
+	/* Return local memory usage. */
+	return 0;
+
+}
+
 /* Definition of the gselect sort implementation. */
 const CloSortImplDef clo_sort_gselect_def = {
 	"gselect",
@@ -197,5 +232,7 @@ const CloSortImplDef clo_sort_gselect_def = {
 	clo_sort_gselect_init,
 	clo_sort_gselect_finalize,
 	clo_sort_gselect_sort_with_device_data,
-	clo_sort_gselect_get_num_kernels
+	clo_sort_gselect_get_num_kernels,
+	clo_sort_gselect_get_kernel_name,
+	clo_sort_gselect_get_localmem_usage
 };

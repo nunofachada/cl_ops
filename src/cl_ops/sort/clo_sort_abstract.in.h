@@ -105,6 +105,34 @@ typedef struct clo_sort_impl_def {
 	 * */
 	cl_uint (*get_num_kernels)(CloSort* sorter);
 
+	/**
+	 * Get name of the i^th kernel used by the sort implementation.
+	 *
+	 * @param[in] sorter Sorter object.
+	 * @param[in] i i^th kernel used by the sort implementation.
+	 * @return The name of the i^th kernel used by the sort
+	 * implementation.
+	 * */
+	const char* (*get_kernel_name)(CloSort* sorter, cl_uint i);
+
+	/**
+	 * Get local memory usage of i^th kernel used by the sort
+	 * implementation for the given maximum local worksize and number
+	 * of elements to sort.
+	 *
+	 * @param[in] sorter Sorter object.
+	 * @param[in] i i^th kernel used by the sort implementation.
+	 * @param[in] lws_max Max. local worksize. If 0, the local worksize
+	 * is automatically determined and the returned memory usage
+	 * corresponds to this value.
+	 * @param[in] numel Number of elements to sort.
+	 * @return The local memory usage of i^th kernel used by the sort
+	 * implementation for the given maximum local worksize and number of
+	 * elements to sort.
+	 * */
+	size_t (*get_localmem_usage)(CloSort* sorter, cl_uint i,
+		size_t lws_max, size_t numel);
+
 } CloSortImplDef;
 
 /** @} */
@@ -153,5 +181,17 @@ void* clo_sort_get_data(CloSort* sorter);
 
 /* Set sort specific data. */
 void clo_sort_set_data(CloSort* sorter, void* data);
+
+/* Get the maximum number of kernels used by the sort implementation. */
+cl_uint clo_sort_get_num_kernels(CloSort* sorter);
+
+/* Get name of the i^th kernel used by the sort implementation. */
+const char* clo_sort_get_kernel_name(CloSort* sorter, cl_uint i);
+
+/* Get local memory usage of i^th kernel used by the sort implementation
+ * for the given maximum local worksize and number of elements to
+ * sort. */
+size_t clo_sort_get_localmem_usage(CloSort* sorter, cl_uint i,
+	size_t lws_max, size_t numel);
 
 #endif
