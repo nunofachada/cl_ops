@@ -66,7 +66,7 @@ static CCLEventWaitList clo_sort_sbitonic_sort_with_device_data(
 
 	/* Get the kernel wrapper. */
 	krnl = ccl_program_get_kernel(clo_sort_get_program(sorter),
-		"clo_sort_sbitonic", &err_internal);
+		"sbitonic", &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine worksizes. */
@@ -89,7 +89,7 @@ static CCLEventWaitList clo_sort_sbitonic_sort_with_device_data(
 			&err_internal);
 
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-		ccl_event_set_name(evt, "copy_sbitonic");
+		ccl_event_set_name(evt, "sbitonic_copy");
 		ccl_event_wait_list_add(&ewl, evt, NULL);
 	}
 
@@ -110,7 +110,7 @@ static CCLEventWaitList clo_sort_sbitonic_sort_with_device_data(
 			evt = ccl_kernel_enqueue_ndrange(krnl, cq_exec, 1, NULL,
 				&gws, &lws, &ewl, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
-			ccl_event_set_name(evt, "ndrange_sbitonic");
+			ccl_event_set_name(evt, "sbitonic_ndrange");
 
 		}
 	}
@@ -187,14 +187,17 @@ static cl_uint clo_sort_sbitonic_get_num_kernels(CloSort* sorter) {
  *
  * @copydetails ::CloSort::get_kernel_name()
  * */
-const char* clo_sort_sbitonic_get_kernel_name(CloSort* sorter, cl_uint i) {
+const char* clo_sort_sbitonic_get_kernel_name(
+	CloSort* sorter, cl_uint i) {
+
+	/* i must be zero because there is only one kernel. */
+	g_return_val_if_fail(i == 0, NULL);
 
 	/* Avoid compiler warnings. */
-	(void) sorter;
-	(void) i;
+	(void)sorter;
 
 	/* Return kernel name. */
-	return NULL;
+	return CLO_SORT_SBITONIC_KNAME;
 }
 
 /**
@@ -206,13 +209,15 @@ const char* clo_sort_sbitonic_get_kernel_name(CloSort* sorter, cl_uint i) {
 size_t clo_sort_sbitonic_get_localmem_usage(CloSort* sorter, cl_uint i,
 	size_t lws_max, size_t numel) {
 
-	/* Avoid compiler warnings. */
-	(void) sorter;
-	(void) i;
-	(void) lws_max;
-	(void) numel;
+	/* i must be zero because there is only one kernel. */
+	g_return_val_if_fail(i == 0, NULL);
 
-	/* Return local memory usage. */
+	/* Avoid compiler warnings. */
+	(void)sorter;
+	(void)lws_max;
+	(void)numel;
+
+	/* Simple bitonic sort doesn't use local memory. */
 	return 0;
 
 }

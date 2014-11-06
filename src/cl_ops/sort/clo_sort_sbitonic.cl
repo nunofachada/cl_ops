@@ -35,7 +35,7 @@
  * @param[in] stage Current bitonic sort step.
  * @param[in] step Current bitonic sort stage.
  */
-__kernel void clo_sort_sbitonic(__global CLO_SORT_ELEM_TYPE *data,
+__kernel void sbitonic(__global CLO_SORT_ELEM_TYPE *data,
 	const uint stage, const uint step) {
 
 	/* Global id for this work-item. */

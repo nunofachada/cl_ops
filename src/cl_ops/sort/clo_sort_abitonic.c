@@ -46,6 +46,10 @@ typedef struct {
 	guint num_steps;
 } clo_sort_abitonic_step;
 
+/* Array of kernel names. */
+static const char* clo_sort_abitnonic_knames[] =
+	CLO_SORT_ABITONIC_KERNELNAMES;
+
 /**
  * @internal
  * Determine abitonic sort strategy for the given parameters.
@@ -141,10 +145,13 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 	/* Get a maximum lws for "private" kernels if step > max_inkrnl_sfs.
 	 * The 1 << 20 is just a "high enough" gws value, i.e. higher than
 	 * the max lws supported by the device. */
-	size_t lws_max_sfs = clo_get_lws(NULL, dev, 1 << 20, lws_max, &err_internal);
+	size_t lws_max_sfs =
+		clo_get_lws(NULL, dev, 1 << 20, lws_max, &err_internal);
 
 	/* Determine effective maximum in-kernel "stage finish" step. */
-	data.max_inkrnl_sfs = MIN(MIN(12, data.max_inkrnl_sfs), clo_tzc(lws_max_sfs) + data.max_inkrnl_stps);
+	data.max_inkrnl_sfs = MIN(
+		MIN(12, data.max_inkrnl_sfs),
+		clo_tzc(lws_max_sfs) + data.max_inkrnl_stps);
 
 	/* Build strategy. */
 	for (guint step = 1; step <= tot_stages; step++) {
@@ -244,7 +251,7 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 				 * memory steps AND IF required LWS within limits of
 				 * maximum LWS, THEN chose this kernel. */
 				steps[step - 1].gws =
-					clo_nlpo2(numel) / (1 << priv_steps);
+					numel_nlpo2 / (1 << priv_steps);
 				steps[step - 1].lws = clo_get_lws(NULL, dev,
 					steps[step - 1].gws, lws_max, &err_internal);
 				ccl_if_err_propagate_goto(
@@ -273,7 +280,7 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 					prg, CLO_SORT_ABITONIC_KNAME_ANY, &err_internal);
 				ccl_if_err_propagate_goto(
 					err, err_internal, error_handler);
-				steps[step - 1].gws = clo_nlpo2(numel) / 2;
+				steps[step - 1].gws = numel_nlpo2 / 2;
 				steps[step - 1].lws = clo_get_lws(steps[step - 1].krnl,
 					dev, steps[step - 1].gws, lws_max, &err_internal);
 				ccl_if_err_propagate_goto(err, err_internal, error_handler);
@@ -356,7 +363,7 @@ static CCLEventWaitList clo_sort_abitonic_sort_with_device_data(
 			&err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-		ccl_event_set_name(evt, "copy_abitonic");
+		ccl_event_set_name(evt, "abit_copy");
 		ccl_event_wait_list_add(&ewl, evt, NULL);
 	}
 
@@ -409,6 +416,7 @@ static CCLEventWaitList clo_sort_abitonic_sort_with_device_data(
 				NULL, &stp_strat.gws, &stp_strat.lws, NULL,
 				&err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			ccl_event_set_name(evt, stp_strat.krnl_name);
 
 			/* Update step. */
 			curr_step -= stp_strat.num_steps;
@@ -588,14 +596,17 @@ static cl_uint clo_sort_abitonic_get_num_kernels(CloSort* sorter) {
  *
  * @copydetails ::CloSort::get_kernel_name()
  * */
-const char* clo_sort_abitonic_get_kernel_name(CloSort* sorter, cl_uint i) {
+const char* clo_sort_abitonic_get_kernel_name(
+	CloSort* sorter, cl_uint i) {
+
+	/* Check that i is within bounds. */
+	g_return_val_if_fail(i < CLO_SORT_ABITONIC_NUM_KERNELS, NULL);
 
 	/* Avoid compiler warnings. */
-	(void) sorter;
-	(void) i;
+	(void)sorter;
 
 	/* Return kernel name. */
-	return NULL;
+	return clo_sort_abitnonic_knames[i];
 }
 
 /**
@@ -607,14 +618,71 @@ const char* clo_sort_abitonic_get_kernel_name(CloSort* sorter, cl_uint i) {
 size_t clo_sort_abitonic_get_localmem_usage(CloSort* sorter, cl_uint i,
 	size_t lws_max, size_t numel) {
 
-	/* Avoid compiler warnings. */
-	(void) sorter;
-	(void) i;
-	(void) lws_max;
-	(void) numel;
+	/* Check that i is within bounds. */
+	g_return_val_if_fail(i < CLO_SORT_ABITONIC_NUM_KERNELS, 0);
 
-	/* Return local memory usage. */
-	return 0;
+	/* Internal error handling object. */
+	GError* err_internal = NULL;
+	/* Local memory usage. */
+	size_t local_mem_usage;
+	/* Kernel name. */
+	const char* kernel_name;
+	/* Size of each element. */
+	size_t elem_size;
+	/* Global and local worksizes. */
+	size_t gws, lws;
+	/* Device where sort will take place. */
+	CCLDevice* dev = NULL;
+
+	/* Get kernel name. */
+	kernel_name = clo_sort_abitnonic_knames[i];
+
+	/* Get element size. */
+	elem_size = clo_sort_get_element_size(sorter);
+
+	/* Determine (worst-case) global worksize. */
+	/// @todo Maybe this could be a more exact global worksize if we use
+	/// the same rationale as in the strategy?
+	gws = clo_nlpo2(numel) / 2;
+
+	/* Get device where sort will take place (it is assumed to be the
+	 * first device in the context). */
+	dev = ccl_context_get_device(
+		clo_sort_get_context(sorter), 0, &err_internal);
+
+	/* Force program stop, this should not yield errors. */
+	if (err_internal != NULL) g_error("%s", err_internal->message);
+
+	/* Determine local worksize. */
+	lws = clo_get_lws(NULL, dev, gws, lws_max, &err_internal);
+
+	/* Determine local memory usage. */
+	if ((g_strcmp0(kernel_name, CLO_SORT_ABITONIC_KNAME_ANY) == 0) ||
+		(g_strrstr(kernel_name, CLO_SORT_ABITONIC_KNAME_PRIV_MARK))) {
+
+		/* No local memory for private memory kernels and for kernel
+		 * "any" */
+		local_mem_usage = 0;
+
+	} else if (g_strrstr(kernel_name, CLO_SORT_ABITONIC_KNAME_LOCAL_MARK)) {
+
+		/* Local memory kernels use local memory. */
+		local_mem_usage = elem_size * lws * 2;
+
+	} else if (g_strrstr(kernel_name, CLO_SORT_ABITONIC_KNAME_HYB_MARK)) {
+
+		/* Hybrid memory kernels use local memory, but it depends on
+		 * how many elements each thread sorts. */
+		local_mem_usage =
+			elem_size * lws * CLO_SORT_ABITONIC_KPARSE_V(kernel_name);
+
+	} else {
+		g_assert_not_reached();
+	}
+
+	/* Advanced bitonic sort doesn't use local memory. */
+	return local_mem_usage;
+
 
 }
 

@@ -29,6 +29,9 @@
 /** The simple bitonic sort kernels source. */
 #define CLO_SORT_SBITONIC_SRC "@SBITONIC_SRC@"
 
+/** The name of the simple bitonic sort kernel. */
+#define CLO_SORT_SBITONIC_KNAME "sbitonic"
+
 /** Definition of the sbitonic sort implementation. */
 extern const CloSortImplDef clo_sort_sbitonic_def;
 

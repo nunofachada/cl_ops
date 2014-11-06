@@ -29,6 +29,9 @@
 /** The global selection sort kernels source. */
 #define CLO_SORT_GSELECT_SRC "@GSELECT_SRC@"
 
+/** The name of the simple bitonic sort kernel. */
+#define CLO_SORT_GSELECT_KNAME "gselect"
+
 /** Definition of the gselect sort implementation. */
 extern const CloSortImplDef clo_sort_gselect_def;
 

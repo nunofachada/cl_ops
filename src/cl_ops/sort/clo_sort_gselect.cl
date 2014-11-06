@@ -35,7 +35,7 @@
  * @param[out] data_out Array of sorted elements.
  * @param[in] size Number of elements to sort.
  */
-__kernel void clo_sort_gselect(__global CLO_SORT_ELEM_TYPE *data_in,
+__kernel void gselect(__global CLO_SORT_ELEM_TYPE *data_in,
 	__global CLO_SORT_ELEM_TYPE *data_out, ulong size) {
 
 	/* Global id for this work-item. */

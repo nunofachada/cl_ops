@@ -68,7 +68,7 @@ static CCLEventWaitList clo_sort_gselect_sort_with_device_data(
 
 	/* Get the kernel wrapper. */
 	krnl = ccl_program_get_kernel(clo_sort_get_program(sorter),
-		"clo_sort_gselect", &err_internal);
+		"gselect", &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine worksizes. */
@@ -108,7 +108,7 @@ static CCLEventWaitList clo_sort_gselect_sort_with_device_data(
 	evt = ccl_kernel_enqueue_ndrange(
 		krnl, cq_exec, 1, NULL, &gws, &lws, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
-	ccl_event_set_name(evt, "ndrange_gselect");
+	ccl_event_set_name(evt, "gselect_ndrange");
 
 	/* If copy-back flag is set, copy sorted data back to original
 	 * buffer. */
@@ -118,7 +118,7 @@ static CCLEventWaitList clo_sort_gselect_sort_with_device_data(
 			numel * clo_sort_get_element_size(sorter), &ewl,
 			&err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-		ccl_event_set_name(evt, "copy_gselect");
+		ccl_event_set_name(evt, "gselect_copy");
 	}
 
 	/* Add last event to wait list to return. */
@@ -197,12 +197,14 @@ static cl_uint clo_sort_gselect_get_num_kernels(CloSort* sorter) {
  * */
 const char* clo_sort_gselect_get_kernel_name(CloSort* sorter, cl_uint i) {
 
+	/* i must be zero because there is only one kernel. */
+	g_return_val_if_fail(i == 0, NULL);
+
 	/* Avoid compiler warnings. */
 	(void) sorter;
-	(void) i;
 
 	/* Return kernel name. */
-	return NULL;
+	return CLO_SORT_GSELECT_KNAME;
 }
 
 /**
@@ -214,13 +216,16 @@ const char* clo_sort_gselect_get_kernel_name(CloSort* sorter, cl_uint i) {
 size_t clo_sort_gselect_get_localmem_usage(CloSort* sorter, cl_uint i,
 	size_t lws_max, size_t numel) {
 
+	/* i must be zero because there is only one kernel. */
+	g_return_val_if_fail(i == 0, NULL);
+
 	/* Avoid compiler warnings. */
 	(void) sorter;
-	(void) i;
 	(void) lws_max;
 	(void) numel;
 
-	/* Return local memory usage. */
+	/* Return local memory usage, which is zero for global selection
+	 * sort. */
 	return 0;
 
 }
