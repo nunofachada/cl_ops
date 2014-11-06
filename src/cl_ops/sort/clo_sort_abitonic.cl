@@ -644,7 +644,7 @@ __kernel void abit_priv_3s8v(
 
 }
 
-/* Each thread sorts 16 values (in three steps of a bitonic stage).
+/* Each thread sorts 16 values (in four steps of a bitonic stage).
  * Assumes gws = numel2sort / 16 */
 __kernel void abit_priv_4s16v(
 			__global CLO_SORT_ELEM_TYPE *data_global,
