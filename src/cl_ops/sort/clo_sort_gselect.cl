@@ -42,7 +42,6 @@ __kernel void gselect(__global CLO_SORT_ELEM_TYPE *data_in,
 	size_t gid = get_global_id(0);
 
 	size_t pos = 0;
-	uint count = 0;
 	CLO_SORT_ELEM_TYPE data_gid = data_in[gid];
 	CLO_SORT_KEY_TYPE key_gid = CLO_SORT_KEY_GET(data_gid);
 
