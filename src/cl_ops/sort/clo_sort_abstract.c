@@ -606,19 +606,21 @@ const char* clo_sort_get_kernel_name(CloSort* sorter, cl_uint i) {
  * is automatically determined and the returned memory usage corresponds
  * to this value.
  * @param[in] numel Number of elements to sort.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
  * @return The local memory usage of i^th kernel used by the sort
  * implementation for the given maximum local worksize and number of
  * elements to sort.
  * */
 size_t clo_sort_get_localmem_usage(CloSort* sorter, cl_uint i,
-	size_t lws_max, size_t numel) {
+	size_t lws_max, size_t numel, GError** err) {
 
 	/* Make sure sorter object is not NULL. */
 	g_return_val_if_fail(sorter != NULL, 0);
 
 	/* Return local memory usage. */
 	return sorter->impl_def.get_localmem_usage(
-		sorter, i, lws_max, numel);
+		sorter, i, lws_max, numel, err);
 
 }
 

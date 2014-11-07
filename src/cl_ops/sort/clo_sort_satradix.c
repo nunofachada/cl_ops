@@ -388,11 +388,12 @@ static cl_uint clo_sort_satradix_get_num_kernels(CloSort* sorter) {
  *
  * @copydetails ::CloSort::get_kernel_name()
  * */
-const char* clo_sort_satradix_get_kernel_name(CloSort* sorter, cl_uint i) {
+const char* clo_sort_satradix_get_kernel_name(
+	CloSort* sorter, cl_uint i) {
 
 	/* Avoid compiler warnings. */
-	(void) sorter;
-	(void) i;
+	(void)sorter;
+	(void)i;
 
 	/* Return kernel name. */
 	return NULL;
@@ -405,13 +406,14 @@ const char* clo_sort_satradix_get_kernel_name(CloSort* sorter, cl_uint i) {
  * @copydetails ::CloSort::get_localmem_usage()
  * */
 size_t clo_sort_satradix_get_localmem_usage(CloSort* sorter, cl_uint i,
-	size_t lws_max, size_t numel) {
+	size_t lws_max, size_t numel, GError** err) {
 
 	/* Avoid compiler warnings. */
-	(void) sorter;
-	(void) i;
-	(void) lws_max;
-	(void) numel;
+	(void)sorter;
+	(void)i;
+	(void)lws_max;
+	(void)numel;
+	(void)err;
 
 	/* Return local memory usage. */
 	return 0;

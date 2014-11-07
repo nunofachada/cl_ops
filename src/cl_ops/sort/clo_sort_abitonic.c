@@ -624,7 +624,7 @@ const char* clo_sort_abitonic_get_kernel_name(
  * @copydetails ::CloSort::get_localmem_usage()
  * */
 size_t clo_sort_abitonic_get_localmem_usage(CloSort* sorter, cl_uint i,
-	size_t lws_max, size_t numel) {
+	size_t lws_max, size_t numel, GError** err) {
 
 	/* Check that i is within bounds. */
 	g_return_val_if_fail(i < CLO_SORT_ABITONIC_NUM_KERNELS, 0);
@@ -657,14 +657,13 @@ size_t clo_sort_abitonic_get_localmem_usage(CloSort* sorter, cl_uint i,
 	 * first device in the context). */
 	dev = ccl_context_get_device(
 		clo_sort_get_context(sorter), 0, &err_internal);
-
-	/* Force program stop, this should not yield errors. */
-	if (err_internal != NULL) g_error("%s", err_internal->message);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine local worksize. */
 	lws = lws_max;
 	ccl_kernel_suggest_worksizes(
 		NULL, dev, 1, &gws, NULL, &lws, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Force program stop, this should not yield errors. */
 	if (err_internal != NULL) g_error("%s", err_internal->message);
@@ -692,6 +691,17 @@ size_t clo_sort_abitonic_get_localmem_usage(CloSort* sorter, cl_uint i,
 	} else {
 		g_assert_not_reached();
 	}
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+	local_mem_usage = 0;
+
+finish:
 
 	/* Advanced bitonic sort doesn't use local memory. */
 	return local_mem_usage;

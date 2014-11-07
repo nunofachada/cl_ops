@@ -203,7 +203,7 @@ const char* clo_sort_gselect_get_kernel_name(CloSort* sorter, cl_uint i) {
 	g_return_val_if_fail(i == 0, NULL);
 
 	/* Avoid compiler warnings. */
-	(void) sorter;
+	(void)sorter;
 
 	/* Return kernel name. */
 	return CLO_SORT_GSELECT_KNAME;
@@ -216,15 +216,16 @@ const char* clo_sort_gselect_get_kernel_name(CloSort* sorter, cl_uint i) {
  * @copydetails ::CloSort::get_localmem_usage()
  * */
 size_t clo_sort_gselect_get_localmem_usage(CloSort* sorter, cl_uint i,
-	size_t lws_max, size_t numel) {
+	size_t lws_max, size_t numel, GError** err) {
 
 	/* i must be zero because there is only one kernel. */
 	g_return_val_if_fail(i == 0, NULL);
 
 	/* Avoid compiler warnings. */
-	(void) sorter;
-	(void) lws_max;
-	(void) numel;
+	(void)sorter;
+	(void)lws_max;
+	(void)numel;
+	(void)err;
 
 	/* Return local memory usage, which is zero for global selection
 	 * sort. */

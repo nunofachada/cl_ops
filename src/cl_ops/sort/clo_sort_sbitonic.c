@@ -209,7 +209,7 @@ const char* clo_sort_sbitonic_get_kernel_name(
  * @copydetails ::CloSort::get_localmem_usage()
  * */
 size_t clo_sort_sbitonic_get_localmem_usage(CloSort* sorter, cl_uint i,
-	size_t lws_max, size_t numel) {
+	size_t lws_max, size_t numel, GError** err) {
 
 	/* i must be zero because there is only one kernel. */
 	g_return_val_if_fail(i == 0, NULL);
@@ -218,6 +218,7 @@ size_t clo_sort_sbitonic_get_localmem_usage(CloSort* sorter, cl_uint i,
 	(void)sorter;
 	(void)lws_max;
 	(void)numel;
+	(void)err;
 
 	/* Simple bitonic sort doesn't use local memory. */
 	return 0;
