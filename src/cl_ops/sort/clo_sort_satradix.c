@@ -100,7 +100,9 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 
 	/* Determine the effective local worksize for the several radix
 	 * sort kernels... */
-	lws_sort = clo_get_lws(NULL, dev, numel, lws_max, &err_internal);
+	lws_sort = lws_max;
+	ccl_kernel_suggest_worksizes(
+		NULL, dev, 1, &numel, NULL, &lws_sort, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	/* ...and it can't be smaller than the radix itself. */
 	lws_sort = MAX(lws_sort, data.radix);

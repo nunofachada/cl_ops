@@ -209,61 +209,6 @@ void clo_print_to_null(const gchar *string) {
 	return;
 }
 
-/**
- * Get a local worksize based on what was requested by the user in
- * `lws_max`, the global worksize and the kernel and device
- * capabilities.
- *
- * @param[in] krnl The kernel wrapper object, may be `NULL`.
- * @param[in] dev The device wrapper object.
- * @param[in] gws The global worksize.
- * @param[in] lws_max The maximum local worksize; if not zero, the
- * returned worksize is the minimum between this value and `gws`;
- * otherwise, the kernel and device are queried for an adequate
- * worksize.
- * @param[out] err Return location for a GError, or `NULL` if error
- * reporting is to be ignored.
- * @return A local worksize based on the given parameters or zero if an
- * error occurs.
- * */
-size_t clo_get_lws(CCLKernel* krnl, CCLDevice* dev, size_t gws,
-	size_t lws_max, GError** err) {
-
-	/* Make sure err is NULL or it is not set. */
-	g_return_val_if_fail(err == NULL || *err == NULL,0);
-
-	size_t lws;
-	GError* err_internal = NULL;
-
-	/* Check if a maximum local worksize was specified. */
-	if (lws_max != 0) {
-		/* lws_max was specified, as such, return the minimum between
-		 * this value and the global worksize. */
-		lws = MIN(lws_max, gws);
-	} else {
-		/* lws_max was not specified, as such, return an adequate
-		 * worksize for the given kernel, device and global worksize. */
-		ccl_kernel_suggest_worksizes(
-			krnl, dev, 1, &gws, NULL, &lws, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-	}
-
-	/* If we got here, everything is OK. */
-	g_assert(err == NULL || *err == NULL);
-	goto finish;
-
-error_handler:
-	/* If we got here there was an error, verify that it is so. */
-	g_assert(err == NULL || *err != NULL);
-	lws = 0;
-
-finish:
-
-	/* Return local worksize. */
-	return lws;
-
-}
-
 /** @} */
 
 /**

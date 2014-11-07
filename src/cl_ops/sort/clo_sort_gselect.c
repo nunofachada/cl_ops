@@ -73,7 +73,9 @@ static CCLEventWaitList clo_sort_gselect_sort_with_device_data(
 
 	/* Determine worksizes. */
 	gws = numel;
-	lws = clo_get_lws(krnl, dev, gws, lws_max, &err_internal);
+	lws = lws_max;
+	ccl_kernel_suggest_worksizes(
+		krnl, dev, 1, &gws, NULL, &lws, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Check if data_out is set. */

@@ -145,8 +145,11 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 	/* Get a maximum lws for "private" kernels if step > max_inkrnl_sfs.
 	 * The 1 << 20 is just a "high enough" gws value, i.e. higher than
 	 * the max lws supported by the device. */
-	size_t lws_max_sfs =
-		clo_get_lws(NULL, dev, 1 << 20, lws_max, &err_internal);
+	size_t big_gws = 1 << 20;
+	size_t lws_max_sfs = lws_max;
+	ccl_kernel_suggest_worksizes(
+		NULL, dev, 1, &big_gws, NULL, &lws_max_sfs, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine effective maximum in-kernel "stage finish" step. */
 	data.max_inkrnl_sfs = MIN(
@@ -162,8 +165,10 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 				prg, CLO_SORT_ABITONIC_KNAME_ANY, &err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].gws = numel_nlpo2 / 2;
-			steps[step - 1].lws = clo_get_lws(steps[step - 1].krnl, dev,
-				steps[step - 1].gws, lws_max, &err_internal);
+			steps[step - 1].lws = lws_max;
+			ccl_kernel_suggest_worksizes(steps[step - 1].krnl, dev, 1,
+				&(steps[step - 1].gws), NULL, &(steps[step - 1].lws),
+				&err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].set_step = TRUE;
 			steps[step - 1].num_steps = 1;
@@ -218,7 +223,6 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].gws = numel_nlpo2 / (1 << step_margin);
 			steps[step - 1].lws = MIN(lws_max_sfs, steps[step - 1].gws);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].set_step = TRUE;
 			steps[step - 1].num_steps = step_margin;
 		} else {
@@ -252,8 +256,10 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 				 * maximum LWS, THEN chose this kernel. */
 				steps[step - 1].gws =
 					numel_nlpo2 / (1 << priv_steps);
-				steps[step - 1].lws = clo_get_lws(NULL, dev,
-					steps[step - 1].gws, lws_max, &err_internal);
+				steps[step - 1].lws = lws_max;
+				ccl_kernel_suggest_worksizes(NULL, dev, 1,
+					&(steps[step - 1].gws), NULL,
+					&(steps[step - 1].lws), &err_internal);
 				ccl_if_err_propagate_goto(
 					err, err_internal, error_handler);
 
@@ -281,8 +287,10 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 				ccl_if_err_propagate_goto(
 					err, err_internal, error_handler);
 				steps[step - 1].gws = numel_nlpo2 / 2;
-				steps[step - 1].lws = clo_get_lws(steps[step - 1].krnl,
-					dev, steps[step - 1].gws, lws_max, &err_internal);
+				steps[step - 1].lws = lws_max;
+				ccl_kernel_suggest_worksizes(steps[step - 1].krnl, dev,
+					1, &(steps[step - 1].gws), NULL,
+					&(steps[step - 1].lws), &err_internal);
 				ccl_if_err_propagate_goto(err, err_internal, error_handler);
 				steps[step - 1].set_step = TRUE;
 				steps[step - 1].num_steps = 1;
@@ -654,7 +662,12 @@ size_t clo_sort_abitonic_get_localmem_usage(CloSort* sorter, cl_uint i,
 	if (err_internal != NULL) g_error("%s", err_internal->message);
 
 	/* Determine local worksize. */
-	lws = clo_get_lws(NULL, dev, gws, lws_max, &err_internal);
+	lws = lws_max;
+	ccl_kernel_suggest_worksizes(
+		NULL, dev, 1, &gws, NULL, &lws, &err_internal);
+
+	/* Force program stop, this should not yield errors. */
+	if (err_internal != NULL) g_error("%s", err_internal->message);
 
 	/* Determine local memory usage. */
 	if ((g_strcmp0(kernel_name, CLO_SORT_ABITONIC_KNAME_ANY) == 0) ||
