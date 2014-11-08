@@ -157,7 +157,6 @@ static const char* clo_sort_sbitonic_init(
 
 }
 
-
 /**
  * Finalizes a bitonic sorter object.
  *

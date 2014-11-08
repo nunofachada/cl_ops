@@ -96,7 +96,7 @@ static CCLEventWaitList clo_scan_blelloch_scan_with_device_data(
 	prg = clo_scan_get_program(scanner);
 
 	/* Size in bytes of sum scalars. */
-	size_t size_sum = clo_type_sizeof(clo_scan_get_sum_type(scanner));
+	size_t size_sum = clo_scan_get_sum_size(scanner);
 
 	/* Get device where scan will occurr. */
 	dev = ccl_queue_get_device(cq_exec, &err_internal);
@@ -108,20 +108,16 @@ static CCLEventWaitList clo_scan_blelloch_scan_with_device_data(
 
 	/* Get the wgscan kernel wrapper. */
 	krnl_wgscan = ccl_program_get_kernel(
-		prg, "workgroupScan", &err_internal);
+		prg, CLO_SCAN_BLELLOCH_KNAME_WGSCAN, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine worksizes. */
-	if (lws_max != 0) {
-		lws = MIN(lws_max, clo_nlpo2(numel) / 2);
-		gws_wgscan = MIN(CLO_GWS_MULT(numel / 2, lws), lws * lws);
-	} else {
-		size_t realws = numel / 2;
-		ccl_kernel_suggest_worksizes(krnl_wgscan, dev, 1, &realws,
-			&gws_wgscan, &lws, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-		gws_wgscan = MIN(gws_wgscan, lws * lws);
-	}
+	lws = lws_max;
+	size_t realws = numel / 2;
+	ccl_kernel_suggest_worksizes(krnl_wgscan, dev, 1, &realws,
+		&gws_wgscan, &lws, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	gws_wgscan = MIN(gws_wgscan, lws * lws);
 	ws_wgsumsscan = (gws_wgscan / lws) / 2;
 	gws_addwgsums = CLO_GWS_MULT(numel, lws);
 
@@ -155,10 +151,10 @@ static CCLEventWaitList clo_scan_blelloch_scan_with_device_data(
 
 		/* Get the remaining kernel wrappers. */
 		krnl_wgsumsscan = ccl_program_get_kernel(
-			prg, "workgroupSumsScan", &err_internal);
+			prg, CLO_SCAN_BLELLOCH_KNAME_WGSUMSSCAN, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 		krnl_addwgsums = ccl_program_get_kernel(
-			prg, "addWorkgroupSums", &err_internal);
+			prg, CLO_SCAN_BLELLOCH_KNAME_ADDWGSUMS, &err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 		/* Perform scan on workgroup sums array. */
@@ -204,10 +200,129 @@ finish:
 
 }
 
+/**
+ * Get the maximum number of kernels used by the scan implementation.
+ *
+ * @copydetails ::CloScan::get_num_kernels()
+ * */
+static cl_uint clo_scan_blelloch_get_num_kernels(CloScan* scanner) {
+
+	/* Avoid compiler warnings. */
+	(void)scanner;
+
+	/* Return number of kernels. */
+	return CLO_SCAN_BLELLOCH_NUM_KERNELS;
+
+}
+
+/**
+ * Get name of the i^th kernel used by the scan implementation.
+ *
+ * @copydetails ::CloScan::get_kernel_name()
+ * */
+const char* clo_scan_blelloch_get_kernel_name(
+	CloScan* scanner, cl_uint i) {
+
+	/* Check that i is within bounds. */
+	g_return_val_if_fail(i < CLO_SCAN_BLELLOCH_NUM_KERNELS, NULL);
+
+	/* Avoid compiler warnings. */
+	(void)scanner;
+
+	/* Kernel name. */
+	const char* kernel_name = NULL;
+
+	/* Determine kernel name. */
+	switch (i) {
+		case CLO_SCAN_BLELLOCH_KIDX_WGSCAN:
+			kernel_name = CLO_SCAN_BLELLOCH_KNAME_WGSCAN;
+			break;
+		case CLO_SCAN_BLELLOCH_KIDX_WGSUMSSCAN:
+			kernel_name = CLO_SCAN_BLELLOCH_KNAME_WGSUMSSCAN;
+			break;
+		case CLO_SCAN_BLELLOCH_KIDX_ADDWGSUMS:
+			kernel_name = CLO_SCAN_BLELLOCH_KNAME_ADDWGSUMS;
+			break;
+		default:
+			g_assert_not_reached();
+	}
+
+	/* Return kernel name. */
+	return kernel_name;
+
+}
+
+/**
+ * Get local memory usage of i^th kernel used by the scan implementation
+ * for the given maximum local worksize and number of elements to scan.
+ *
+ * @copydetails ::CloScan::get_localmem_usage()
+ * */
+size_t clo_scan_blelloch_get_localmem_usage(CloScan* scanner, cl_uint i,
+	size_t lws_max, size_t numel, GError** err) {
+
+	/* Check that i is within bounds. */
+	g_return_val_if_fail(i < CLO_SCAN_BLELLOCH_NUM_KERNELS, 0);
+
+	/* Internal error handling object. */
+	GError* err_internal = NULL;
+	/* Local memory usage. */
+	size_t local_mem;
+	/* Worksizes. */
+	size_t realws, gws;
+	/* Device where scan will take place. */
+	CCLDevice* dev = NULL;
+
+	/* Get device where sort will take place (it is assumed to be the
+	 * first device in the context). */
+	dev = ccl_context_get_device(
+		clo_scan_get_context(scanner), 0, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Determine worksizes. */
+	realws = numel / 2;
+	ccl_kernel_suggest_worksizes(
+		NULL, dev, 1, &realws, &gws, &lws_max, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Determine kernel name. */
+	switch (i) {
+		case CLO_SCAN_BLELLOCH_KIDX_WGSCAN:
+			local_mem = clo_scan_get_sum_size(scanner) * lws_max * 2;
+			break;
+		case CLO_SCAN_BLELLOCH_KIDX_WGSUMSSCAN:
+			local_mem = clo_scan_get_sum_size(scanner) * lws_max * 2;
+			break;
+		case CLO_SCAN_BLELLOCH_KIDX_ADDWGSUMS:
+			local_mem = 0;
+			break;
+		default:
+			g_assert_not_reached();
+	}
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+	local_mem = 0;
+
+finish:
+	/* Return kernel name. */
+	return local_mem;
+
+
+}
+
 /* Definition of the Blelloch scan implementation. */
 const CloScanImplDef clo_scan_blelloch_def = {
 	"blelloch",
 	clo_scan_blelloch_init,
 	clo_scan_blelloch_finalize,
-	clo_scan_blelloch_scan_with_device_data
+	clo_scan_blelloch_scan_with_device_data,
+	clo_scan_blelloch_get_num_kernels,
+	clo_scan_blelloch_get_kernel_name,
+	clo_scan_blelloch_get_localmem_usage
 };

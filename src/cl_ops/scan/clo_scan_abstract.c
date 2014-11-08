@@ -85,7 +85,7 @@ CloScan* clo_scan_new(const char* type, const char* options,
 	/* The list of known scan implementations. */
 	CloScanImplDef scan_impl_defs[] = {
 		clo_scan_blelloch_def,
-		{ NULL, NULL, NULL, NULL }
+		{ NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 	};
 
 	/* Scanner object. */
@@ -403,6 +403,25 @@ CloType clo_scan_get_elem_type(CloScan* scanner) {
 	return scanner->elem_type;
 }
 
+
+/**
+ * Get the size in bytes of each element to be scanned.
+ *
+ * @public @memberof clo_scan
+ *
+ * @param[in] scanner Scanner object.
+ * @return Size in bytes of each element to be scanned.
+ * */
+size_t clo_scan_get_element_size(CloScan* scanner) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, 0);
+
+	/* Return element size. */
+	return clo_type_sizeof(scanner->elem_type);
+
+}
+
 /**
  * Get type of elements in scan sum.
  *
@@ -420,6 +439,25 @@ CloType clo_scan_get_sum_type(CloScan* scanner) {
 }
 
 /**
+ * Get the size in bytes of element in scan sum.
+ *
+ * @public @memberof clo_scan
+ *
+ * @param[in] scanner Scanner object.
+ * @return Size in bytes of of element in scan sum.
+ * */
+size_t clo_scan_get_sum_size(CloScan* scanner) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, 0);
+
+	/* Return element size. */
+	return clo_type_sizeof(scanner->sum_type);
+
+}
+
+
+/**
  * Get data associated with specific scan implementation.
  *
  * @public @memberof clo_scan
@@ -433,6 +471,89 @@ void* clo_scan_get_data(CloScan* scanner) {
 	g_return_val_if_fail(scanner != NULL, NULL);
 
 	return scanner->data;
+}
+
+/**
+ * Set scan specific data.
+ *
+ * @public @memberof clo_scan
+ *
+ * @param[in] scanner Scanner object.
+ * @param[in] data Sort specific data.
+ * */
+void clo_scan_set_data(CloScan* scanner, void* data) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_if_fail(scanner != NULL);
+
+	/* Set scan specific data. */
+	scanner->data = data;
+
+}
+
+/**
+ * Get the maximum number of kernels used by the scan implementation.
+ *
+ * @public @memberof clo_scan
+ *
+ * @param[in] scanner Scanner object.
+ * @return Maximum number of kernels used by the scan implementation.
+ * */
+cl_uint clo_scan_get_num_kernels(CloScan* scanner) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, 0);
+
+	/* Return number of kernels. */
+	return scanner->impl_def.get_num_kernels(scanner);
+}
+
+/**
+ * Get name of the i^th kernel used by the scan implementation.
+ *
+ * @public @memberof clo_scan
+ *
+ * @param[in] scanner Scanner object.
+ * @param[in] i i^th kernel used by the scan implementation.
+ * @return The name of the i^th kernel used by the scan implementation.
+ * */
+const char* clo_scan_get_kernel_name(CloScan* scanner, cl_uint i) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, NULL);
+
+	/* Return kernel name. */
+	return scanner->impl_def.get_kernel_name(scanner, i);
+}
+
+/**
+ * Get local memory usage of i^th kernel used by the scan implementation
+ * for the given maximum local worksize and number of elements to scan.
+ *
+ * @public @memberof clo_scan
+ *
+ * @param[in] scanner Scanner object.
+ * @param[in] i i^th kernel used by the scan implementation.
+ * @param[in] lws_max Max. local worksize. If 0, the local worksize
+ * is automatically determined and the returned memory usage corresponds
+ * to this value.
+ * @param[in] numel Number of elements to scan.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
+ * @return The local memory usage of i^th kernel used by the scan
+ * implementation for the given maximum local worksize and number of
+ * elements to scan.
+ * */
+size_t clo_scan_get_localmem_usage(CloScan* scanner, cl_uint i,
+	size_t lws_max, size_t numel, GError** err) {
+
+	/* Make sure scanner object is not NULL. */
+	g_return_val_if_fail(scanner != NULL, 0);
+
+	/* Return local memory usage. */
+	return scanner->impl_def.get_localmem_usage(
+		scanner, i, lws_max, numel, err);
+
 }
 
 /** @} */

@@ -32,7 +32,7 @@
 /* Number of kernels. */
 #define CLO_SORT_ABITONIC_NUM_KERNELS 26
 
-/* Index of the advance bitonic sort kernels. */
+/* Index of the advanced bitonic sort kernels. */
 #define CLO_SORT_ABITONIC_KIDX_ANY 0
 #define CLO_SORT_ABITONIC_KIDX_LOCAL_S2 1
 #define CLO_SORT_ABITONIC_KIDX_LOCAL_S3 2

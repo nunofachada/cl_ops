@@ -29,6 +29,19 @@
 /** The blelloch's scan kernels source. */
 #define CLO_SCAN_BLELLOCH_SRC "@BLELLOCH_SRC@"
 
+/* Number of kernels. */
+#define CLO_SCAN_BLELLOCH_NUM_KERNELS 3
+
+/* Index of the blelloch scan kernels. */
+#define CLO_SCAN_BLELLOCH_KIDX_WGSCAN 0
+#define CLO_SCAN_BLELLOCH_KIDX_WGSUMSSCAN 1
+#define CLO_SCAN_BLELLOCH_KIDX_ADDWGSUMS 2
+
+/* Blelloch scan kernel names. */
+#define CLO_SCAN_BLELLOCH_KNAME_WGSCAN "workgroupScan"
+#define CLO_SCAN_BLELLOCH_KNAME_WGSUMSSCAN "workgroupSumsScan"
+#define CLO_SCAN_BLELLOCH_KNAME_ADDWGSUMS "addWorkgroupSums"
+
 /** Definition of the Blelloch scan implementation. */
 extern const CloScanImplDef clo_scan_blelloch_def;
 
