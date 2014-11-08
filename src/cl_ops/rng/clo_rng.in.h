@@ -84,4 +84,7 @@ const char* clo_rng_get_source(CloRng* rng);
 /* Get in-device seeds. */
 CCLBuffer* clo_rng_get_device_seeds(CloRng* rng);
 
+/* Get size in bytes of seeds buffer in device. */
+size_t clo_rng_get_size(CloRng* rng) ;
+
 #endif

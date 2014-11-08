@@ -45,6 +45,12 @@ struct clo_rng {
 	 * */
 	CCLBuffer* seeds_device;
 
+	/**
+	 * Size of seeds buffer in device.
+	 * @private
+	 * */
+	size_t size_in_device;
+
 };
 
 /**
@@ -250,9 +256,14 @@ finish:
  *
  * @param[in] type Type of RNG: lcg, xorshift64, xorshift128, mwc64x.
  * @param[in] seed_type Type of seed.
- * @param[in] seeds Array of seeds (only for ::CLO_RNG_SEED_EXT_HOST
- * seed type, assumed to be an array of `cl_ulong` seeds with length
- * equal to `seeds_count`).
+ * @param[in] seeds Array of seeds. Must be `NULL` for
+ * ::CLO_RNG_SEED_DEV_GID and ::CLO_RNG_SEED_HOST_MT seed types. For
+ * the ::CLO_RNG_SEED_EXT_HOST seed type, it must be an array of a
+ * minimum of `seeds_count` values of _seed size_ each. Finally, for
+ * ::CLO_RNG_SEED_EXT_DEV seed types, the `seeds` parameter must be a
+ * device buffer wrapper, `CCLBuffer*`, of size at least `seeds_count` *
+ * _seed size_. _seed size_ is the seed size required by the selected
+ * RNG `type`.
  * @param[in] seeds_count Number of seeds.
  * @param[in] main_seed Base seed (ignored for external seed types).
  * @param[in] hash Hash for ::CLO_RNG_SEED_DEV_GID seed type.
@@ -276,6 +287,9 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 
 	/* Device seeds. */
 	CCLBuffer* dev_seeds = NULL;
+
+	/* Size of external dev. buffer (for CLO_RNG_SEED_EXT_DEV only). */
+	size_t ext_buf_size;
 
 	/* Internal error object. */
 	GError* err_internal = NULL;
@@ -322,6 +336,26 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 						seeds != NULL, CLO_ERROR_ARGS, error_handler,
 						"The EXT_DEV seed type expects a NULL seeds "\
 						"parameter.");
+					/* Check that external device buffer has the
+					 * required size. */
+					ext_buf_size = ccl_memobj_get_info_scalar(
+						(CCLMemObj*) seeds, CL_MEM_SIZE, size_t,
+						&err_internal);
+					ccl_if_err_propagate_goto(err, err_internal,
+						error_handler);
+					ccl_if_err_create_goto(*err, CLO_ERROR,
+						ext_buf_size < seeds_count * rng_infos[i].seed_size,
+						CLO_ERROR_ARGS, error_handler,
+						"The '%s' RNG type requires a buffer of at " \
+						"least %d bytes. The size of the proviced " \
+						"external device seeds buffer is only %d bytes.",
+						type, (int) (seeds_count * rng_infos[i].seed_size),
+						(int) ext_buf_size);
+					/* Keep external device seeds as the RNG seeds.
+					 * Increase reference count, client will have to
+					 * destroy external buffer himself. */
+					ccl_buffer_ref((CCLBuffer*) seeds);
+					dev_seeds = (CCLBuffer*) seeds;
 					/* Get out of switch. */
 					break;
 				case CLO_RNG_SEED_EXT_HOST:
@@ -332,13 +366,13 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 						"seeds parameter.");
 					/* Create device buffer and copy seeds to device. */
 					dev_seeds = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
-						seeds_count * sizeof(cl_ulong), NULL,
+						seeds_count * rng_infos[i].seed_size, NULL,
 						&err_internal);
 					ccl_if_err_propagate_goto(err, err_internal,
 						error_handler);
 					ccl_buffer_enqueue_write(dev_seeds , cq, CL_TRUE, 0,
-						seeds_count * sizeof(cl_ulong), seeds, NULL,
-						&err_internal);
+						seeds_count * rng_infos[i].seed_size, seeds,
+						NULL, &err_internal);
 					ccl_if_err_propagate_goto(err, err_internal,
 						error_handler);
 					/* Get out of switch. */
@@ -359,6 +393,9 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 
 			/* Set seeds buffer. */
 			rng->seeds_device = dev_seeds;
+
+			/* Set seed buffer size in device. */
+			rng->size_in_device = seeds_count * rng_infos[i].seed_size;
 
 		}
 	}
@@ -399,8 +436,7 @@ void clo_rng_destroy(CloRng* rng) {
 	g_return_if_fail(rng != NULL);
 
 	/* Destroy in-device seeds buffer. */
-	if (rng->seeds_device != NULL)
-		ccl_buffer_destroy(rng->seeds_device);
+	ccl_buffer_destroy(rng->seeds_device);
 
 	/* Destroy source code string. */
 	g_free(rng->src);
@@ -441,11 +477,26 @@ CCLBuffer* clo_rng_get_device_seeds(CloRng* rng) {
 	/* Make sure rng object is not NULL. */
 	g_return_val_if_fail(rng != NULL, NULL);
 
-	/* Make sure in-device seeds are not NULL. */
-	g_return_val_if_fail(rng->seeds_device != NULL, NULL);
-
 	/* Return in-device seeds. */
 	return rng->seeds_device;
+}
+
+/**
+ * Get size in bytes of seeds buffer in device.
+ *
+ * @public @memberof clo_rng
+ *
+ * @param[in] rng RNG object.
+ * @return Size in bytes of seeds buffer in device.
+ * */
+size_t clo_rng_get_size(CloRng* rng) {
+
+	/* Make sure rng object is not NULL. */
+	g_return_val_if_fail(rng != NULL, NULL);
+
+	/* Return size in bytes of seeds buffer in device. */
+	return rng->size_in_device;
+
 }
 
 /** @} */
