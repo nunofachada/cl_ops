@@ -24,6 +24,9 @@
 #include "clo_sort_satradix.h"
 #include "clo_scan_abstract.h"
 
+/* The default scan implementation. */
+#define CLO_SORT_SATRADIX_SCAN_DEFAULT "blelloch"
+
 typedef struct {
 
 	/** Radix. */
@@ -32,7 +35,75 @@ typedef struct {
 	/** Source code. */
 	char* src;
 
+	/** Scanner type. */
+	char* scan_type;
+
+	/** Scanner options. */
+	char* scan_opts;
+
+	/** Scanner object. */
+	CloScan* scanner;
+
 } clo_sort_satradix_data;
+
+
+/**
+ * @internal
+ * Get scanner object used for radix sort.
+ *
+ * @param[in] sorter Sorter object (radix sort).
+ * @return Scanner object used for radix sort.
+ * */
+static CloScan* clo_sort_satradix_get_scanner(
+	CloSort* sorter, GError** err) {
+
+	/* Variables. */
+	CCLContext* ctx = NULL;
+	CCLProgram* prg = NULL;
+	CCLDevice* dev = NULL;
+	char* compiler_opts = NULL;
+	GError* err_internal = NULL;
+
+	/* Get radix sort parameters. */
+	clo_sort_satradix_data* data =
+		(clo_sort_satradix_data*) clo_sort_get_data(sorter);
+
+	/* Check if scanner object was already created. */
+	if (data->scanner == NULL) {
+
+		/* If not, create it. */
+
+		/* Get context, program and device. */
+		ctx = clo_sort_get_context(sorter);
+		prg = clo_sort_get_program(sorter);
+		dev = ccl_program_get_device(prg, 0, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+		/* Get sorter compiler options, which will also be used for
+		 * the scanner. */
+		compiler_opts = ccl_program_get_build_info_array(
+			prg, dev, CL_PROGRAM_BUILD_OPTIONS, char*, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+		/* Create scanner object. */
+		data->scanner = clo_scan_new(data->scan_type, data->scan_opts,
+			ctx, CLO_UINT, CLO_UINT, compiler_opts, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	}
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+
+finish:
+
+	/* Return. */
+	return data->scanner;
+}
 
 /**
  * Perform sort using device data.
@@ -163,9 +234,8 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 		ctx, CL_MEM_READ_WRITE, aux_buf_size, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-	/* Create scanner object. */
-	scanner = clo_scan_new("blelloch", NULL, ctx, CLO_UINT, CLO_UINT,
-		NULL, &err_internal);
+	/* Get scanner object. */
+	scanner = clo_sort_satradix_get_scanner(sorter, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Perform sort. */
@@ -173,12 +243,6 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 
 		cl_uint start_bit = i * bits_in_digit;
 		cl_uint array_len = numel / num_wgs;
-
-//~ #define data_sort_loc ccl_arg_full(NULL, clo_sort_get_element_size(sorter))
-//~ #define data_scan_loc ccl_arg_local(numel / num_wgs, cl_uint)
-//~ #define offsets_loc ccl_arg_local(data.radix, cl_uint)
-//~ #define counters_loc ccl_arg_local(data.radix, cl_uint)
-//~ #define digits_loc ccl_arg_full(array_len, cl_uint)
 
 		/* Local sort. */
 		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_lsrt,
@@ -258,8 +322,8 @@ static const char* clo_sort_satradix_init(
 	/* Make sure err is NULL or it is not set. */
 	g_return_val_if_fail(err == NULL || *err == NULL, NULL);
 
-	char* satradix_src;
-	clo_sort_satradix_data* data;
+	char* satradix_src = NULL;
+	clo_sort_satradix_data* data = NULL;
 	data = g_slice_new0(clo_sort_satradix_data);
 
 	/* Set internal data default values. */
@@ -272,8 +336,8 @@ static const char* clo_sort_satradix_init(
 	gchar** opts = NULL;
 	gchar** opt = NULL;
 
-	/* Value to read from current option. */
-	guint value;
+	/* Scan options. */
+	GString* scan_opts = g_string_new("");
 
 	/* Check options. */
 	if (options) {
@@ -294,17 +358,30 @@ static const char* clo_sort_satradix_init(
 				CLO_ERROR_ARGS, error_handler,
 				"Invalid option '%s' for abitonic sort.", opts[i]);
 
-			/* Get option value. */
-			value = atoi(opt[1]);
-
 			/* Check key/value option. */
 			if (g_strcmp0("radix", opt[0]) == 0) {
+				/* Get option value. */
+				data->radix = atoi(opt[1]);
 				/* Radix. */
 				ccl_if_err_create_goto(*err, CLO_ERROR,
-					clo_ones32(value) != 1, CLO_ERROR_ARGS,
+					clo_ones32(data->radix) != 1, CLO_ERROR_ARGS,
 					error_handler,
 					"Radix must be a power of 2.");
-				data->radix = value;
+			} else if (g_ascii_strncasecmp("scan", opt[0], 4) == 0) {
+				/* Its a scanner option, analyse it. */
+
+				/// @todo Test this code better.
+
+				if (strlen(opt[0]) == 4) {
+					/* It's the type of scan. */
+					data->scan_type = g_strdup(opt[1]);
+				} else {
+					/* It's some other scan option. */
+					g_string_append_printf(
+						scan_opts, "%s,", opts[i] + 4);
+				}
+
+
 			} else {
 				ccl_if_err_create_goto(*err, CLO_ERROR, TRUE,
 					CLO_ERROR_ARGS, error_handler,
@@ -323,8 +400,11 @@ static const char* clo_sort_satradix_init(
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);
 	satradix_src = g_strdup_printf("#define CLO_SORT_NUM_BITS %d\n%s",
-		 clo_tzc(data->radix), CLO_SORT_SATRADIX_SRC);
+		clo_tzc(data->radix), CLO_SORT_SATRADIX_SRC);
 	data->src = satradix_src;
+	if (data->scan_type == NULL)
+		data->scan_type = g_strdup(CLO_SORT_SATRADIX_SCAN_DEFAULT);
+	data->scan_opts = scan_opts->str;
 	goto finish;
 
 error_handler:
@@ -338,6 +418,7 @@ finish:
 	/* Free parsed a-bitonic options. */
 	g_strfreev(opts);
 	g_strfreev(opt);
+	g_string_free(scan_opts, FALSE);
 
 	/* Set object methods and internal data. */
 	clo_sort_set_data(sorter, data);
@@ -360,6 +441,9 @@ static void clo_sort_satradix_finalize(CloSort* sorter) {
 
 	/* Release internal data. */
 	g_free(data->src);
+	g_free(data->scan_type);
+	if (data->scan_opts) g_free(data->scan_opts);
+	if (data->scanner) clo_scan_destroy(data->scanner);
 	g_slice_free(clo_sort_satradix_data, data);
 
 	return;

@@ -32,13 +32,33 @@
 static const char* clo_scan_blelloch_init(CloScan* scanner,
 	const char* options, GError** err) {
 
-	/* For now ignore specific blelloch scan options. */
+	/* Blelloch scan source code. */
+	const char* src;
+
+	/* Avoid compiler warnings. */
 	(void)scanner;
-	(void)options;
-	(void)err;
+
+	/* For now ignore specific blelloch scan options and throw error
+	 * if any option is given. */
+	ccl_if_err_create_goto(*err, CLO_ERROR,
+		(options != NULL) || (strlen(options) > 0), CLO_ERROR_ARGS,
+		error_handler, "Invalid options for blelloch scan.");
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	src = CLO_SCAN_BLELLOCH_SRC;
+	goto finish;
+
+error_handler:
+
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+	src = NULL;
+
+finish:
 
 	/* Return Blelloch source code. */
-	return CLO_SCAN_BLELLOCH_SRC;
+	return src;
 
 }
 

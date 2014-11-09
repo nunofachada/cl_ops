@@ -25,6 +25,7 @@
 #define _CLO_SORT_SATRADIX_H_
 
 #include "clo_sort_abstract.h"
+#include "clo_scan_abstract.h"
 
 /** The SatRadix sort kernels source. */
 #define CLO_SORT_SATRADIX_SRC "@SATRADIX_SRC@"
