@@ -94,11 +94,10 @@ static GOptionEntry entries[] = {
 /**
  * Main program.
  *
- * @param argc Number of command line arguments.
- * @param argv Vector of command line arguments.
- * @return @link clo_error_codes::CLO_SUCCESS @endlink if program
- * terminates successfully, or another value of #clo_error_codes if an
- * error occurs.
+ * @param[in] argc Number of command line arguments.
+ * @param[in] Vector of command line arguments.
+ * @return ::CLO_SUCCESS if program terminates successfully, or another
+ * value of ::clo_error_codes if an error occurs.
  * */
 int main(int argc, char **argv) {
 

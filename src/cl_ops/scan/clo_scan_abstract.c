@@ -310,10 +310,16 @@ cl_bool clo_scan_with_host_data(CloScan* scanner,
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data to device. */
-	evt = ccl_buffer_enqueue_write(data_in_dev, cq_comm, CL_TRUE, 0,
+	evt = ccl_buffer_enqueue_write(data_in_dev, cq_comm, CL_FALSE, 0,
 		data_in_size, data_in, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	ccl_event_set_name(evt, "clo_scan_write");
+
+	/* Explicitly wait for transfer (some OpenCL implementations don't
+	 * respect CL_TRUE in data transfers). */
+	ccl_event_wait_list_add(&ewl, evt, NULL);
+	ccl_event_wait(&ewl, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Perform scan with device data. */
 	ewl = scanner->impl_def.scan_with_device_data(scanner, cq_exec,
@@ -322,7 +328,7 @@ cl_bool clo_scan_with_host_data(CloScan* scanner,
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data back to host. */
-	evt = ccl_buffer_enqueue_read(data_out_dev, cq_comm, CL_TRUE, 0,
+	evt = ccl_buffer_enqueue_read(data_out_dev, cq_comm, CL_FALSE, 0,
 		data_out_size, data_out, &ewl, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	ccl_event_set_name(evt, "clo_scan_read");
