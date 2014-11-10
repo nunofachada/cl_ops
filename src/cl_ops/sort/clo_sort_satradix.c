@@ -141,6 +141,9 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 	/* Scanner object, required for part of the radix sort. */
 	CloScan* scanner = NULL;
 
+	/* Effective number of elements to sort, appropriate for the
+	 * radix sort. */
+	 size_t numel_eff;
 	/* Effective local worksize for the several radix sort kernels. */
 	size_t lws_sort;
 	/* Number of workgroups for the several radix sort kernels. */
@@ -165,6 +168,9 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 	total_digits =
 		clo_sort_get_element_size(sorter) * 8 / bits_in_digit;
 
+	g_debug("SATRADIX: radix=%d (bits_in_digit=%d)",
+		data.radix, bits_in_digit);
+
 	/* If data transfer queue is NULL, use exec queue for data
 	 * transfers. */
 	if (cq_comm == NULL) cq_comm = cq_exec;
@@ -176,15 +182,19 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 	/* Determine the effective local worksize for the several radix
 	 * sort kernels... */
 	lws_sort = lws_max;
+	numel_eff = clo_nlpo2(numel);
 	ccl_kernel_suggest_worksizes(
-		NULL, dev, 1, &numel, NULL, &lws_sort, &err_internal);
+		NULL, dev, 1, &numel_eff, NULL, &lws_sort, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	/* ...and it can't be smaller than the radix itself. */
 	lws_sort = MAX(lws_sort, data.radix);
 
+	g_debug("SATRADIX: numel=%d,  gws=%d, lws=%d",
+		(int) numel, (int) numel_eff, (int) lws_sort);
+
 	/* Determine the number of workgroups for the several radix sort
 	 * kernels. */
-	num_wgs = numel / lws_sort + numel % lws_sort;
+	num_wgs = numel_eff / lws_sort + numel_eff % lws_sort;
 
 	/* Get context and program. */
 	ctx = clo_sort_get_context(sorter);
@@ -198,7 +208,7 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 		/* Copy data_in to data_out first, and then sort on copied
 		 * data. */
 		evt = ccl_buffer_enqueue_copy(data_in, data_out, cq_comm, 0, 0,
-			clo_sort_get_element_size(sorter) * numel, NULL,
+			clo_sort_get_element_size(sorter) * numel_eff, NULL,
 			&err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
@@ -222,7 +232,7 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 
 	/* Allocate auxiliary device buffers. */
 	data_aux = ccl_buffer_new(
-		ctx, CL_MEM_READ_WRITE, numel * clo_sort_get_element_size(sorter),
+		ctx, CL_MEM_READ_WRITE, numel_eff * clo_sort_get_element_size(sorter),
 		NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
@@ -246,11 +256,11 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 	for (cl_uint i = 0; i < total_digits; ++i) {
 
 		cl_uint start_bit = i * bits_in_digit;
-		cl_uint array_len = numel / num_wgs;
+		cl_uint array_len = numel_eff / num_wgs;
 
 		/* Local sort. */
 		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_lsrt,
-			cq_exec, 1, NULL, &numel, &lws_sort, NULL, &err_internal,
+			cq_exec, 1, NULL, &numel_eff, &lws_sort, NULL, &err_internal,
 			data_out, data_aux,
 			ccl_arg_full(NULL, array_len * clo_sort_get_element_size(sorter)),
 			ccl_arg_local(array_len, cl_uint),
@@ -261,7 +271,7 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 
 		/* Histogram. */
 		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_hist, cq_exec, 1,
-			NULL, &numel, &lws_sort, NULL, &err_internal,
+			NULL, &numel_eff, &lws_sort, NULL, &err_internal,
 			data_aux, offsets, counters,
 			ccl_arg_local(data.radix, cl_uint),
 			ccl_arg_local(data.radix, cl_uint),
@@ -279,7 +289,7 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 
 		/* Scatter. */
 		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_scat,
-			cq_exec, 1, NULL, &numel, &lws_sort, NULL, &err_internal,
+			cq_exec, 1, NULL, &numel_eff, &lws_sort, NULL, &err_internal,
 			data_in, data_aux, offsets, counters_sum,
 			ccl_arg_full(NULL, array_len * clo_sort_get_element_size(sorter)),
 			ccl_arg_local(data.radix, cl_uint),
@@ -599,7 +609,7 @@ size_t clo_sort_satradix_get_localmem_usage(CloSort* sorter, cl_uint i,
 		default:
 			/* It's for a scan kernel. */
 			local_mem_usage = clo_scan_get_localmem_usage(scanner,
-				i - CLO_SORT_SATRADIX_NUM_KERNELS, lws_max, numel,
+				i - CLO_SORT_SATRADIX_NUM_KERNELS, lws_max, numel, /// @todo numel is wrong here, see how satradix uses scan
 				&err_internal);
 			ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	}
