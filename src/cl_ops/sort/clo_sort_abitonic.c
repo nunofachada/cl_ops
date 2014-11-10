@@ -589,10 +589,12 @@ static void clo_sort_abitonic_finalize(CloSort* sorter) {
  *
  * @copydetails ::CloSort::get_num_kernels()
  * */
-static cl_uint clo_sort_abitonic_get_num_kernels(CloSort* sorter) {
+static cl_uint clo_sort_abitonic_get_num_kernels(
+	CloSort* sorter, GError** err) {
 
 	/* Avoid compiler warnings. */
 	(void)sorter;
+	(void)err;
 
 	/* Return number of kernels. */
 	return CLO_SORT_ABITONIC_NUM_KERNELS;
@@ -605,13 +607,14 @@ static cl_uint clo_sort_abitonic_get_num_kernels(CloSort* sorter) {
  * @copydetails ::CloSort::get_kernel_name()
  * */
 const char* clo_sort_abitonic_get_kernel_name(
-	CloSort* sorter, cl_uint i) {
+	CloSort* sorter, cl_uint i, GError** err) {
 
 	/* Check that i is within bounds. */
 	g_return_val_if_fail(i < CLO_SORT_ABITONIC_NUM_KERNELS, NULL);
 
 	/* Avoid compiler warnings. */
 	(void)sorter;
+	(void)err;
 
 	/* Return kernel name. */
 	return clo_sort_abitnonic_knames[i];
@@ -626,7 +629,7 @@ const char* clo_sort_abitonic_get_kernel_name(
 size_t clo_sort_abitonic_get_localmem_usage(CloSort* sorter, cl_uint i,
 	size_t lws_max, size_t numel, GError** err) {
 
-	/* Check that i is within bounds. */
+	/* Check that it's within bounds. */
 	g_return_val_if_fail(i < CLO_SORT_ABITONIC_NUM_KERNELS, 0);
 
 	/* Internal error handling object. */

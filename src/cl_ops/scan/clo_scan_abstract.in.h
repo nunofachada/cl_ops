@@ -79,20 +79,25 @@ typedef struct clo_scan_impl_def {
 	 * implementation.
 	 *
 	 * @param[in] scanner Scanner object.
+	 * @param[out] err Return location for a GError, or `NULL` if error
+	 * reporting is to be ignored.
 	 * @return Maximum number of kernels used by the scan
 	 * implementation.
 	 * */
-	cl_uint (*get_num_kernels)(CloScan* scanner);
+	cl_uint (*get_num_kernels)(CloScan* scanner, GError** err);
 
 	/**
 	 * Get name of the i^th kernel used by the scan implementation.
 	 *
 	 * @param[in] scanner Scanner object.
 	 * @param[in] i i^th kernel used by the scan implementation.
+	 * @param[out] err Return location for a GError, or `NULL` if error
+	 * reporting is to be ignored.
 	 * @return The name of the i^th kernel used by the scan
 	 * implementation.
 	 * */
-	const char* (*get_kernel_name)(CloScan* scanner, cl_uint i);
+	const char* (*get_kernel_name)(
+		CloScan* scanner, cl_uint i, GError** err);
 
 	/**
 	 * Get local memory usage of i^th kernel used by the scan
@@ -163,10 +168,11 @@ void* clo_scan_get_data(CloScan* scanner);
 void clo_scan_set_data(CloScan* scanner, void* data);
 
 /* Get the maximum number of kernels used by the scan implementation. */
-cl_uint clo_scan_get_num_kernels(CloScan* scanner);
+cl_uint clo_scan_get_num_kernels(CloScan* scanner, GError** err);
 
 /* Get name of the i^th kernel used by the scan implementation. */
-const char* clo_scan_get_kernel_name(CloScan* scanner, cl_uint i);
+const char* clo_scan_get_kernel_name(
+	CloScan* scanner, cl_uint i, GError** err);
 
 /* Get local memory usage of i^th kernel used by the scan implementation
  * for the given maximum local worksize and number of elements to

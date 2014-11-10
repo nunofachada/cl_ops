@@ -565,15 +565,17 @@ void clo_sort_set_data(CloSort* sorter, void* data) {
  * @public @memberof clo_sort
  *
  * @param[in] sorter Sorter object.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
  * @return Maximum number of kernels used by the sort implementation.
  * */
-cl_uint clo_sort_get_num_kernels(CloSort* sorter) {
+cl_uint clo_sort_get_num_kernels(CloSort* sorter, GError** err) {
 
 	/* Make sure sorter object is not NULL. */
 	g_return_val_if_fail(sorter != NULL, 0);
 
 	/* Return number of kernels. */
-	return sorter->impl_def.get_num_kernels(sorter);
+	return sorter->impl_def.get_num_kernels(sorter, err);
 }
 
 /**
@@ -583,15 +585,18 @@ cl_uint clo_sort_get_num_kernels(CloSort* sorter) {
  *
  * @param[in] sorter Sorter object.
  * @param[in] i i^th kernel used by the sort implementation.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
  * @return The name of the i^th kernel used by the sort implementation.
  * */
-const char* clo_sort_get_kernel_name(CloSort* sorter, cl_uint i) {
+const char* clo_sort_get_kernel_name(
+	CloSort* sorter, cl_uint i, GError** err) {
 
 	/* Make sure sorter object is not NULL. */
 	g_return_val_if_fail(sorter != NULL, NULL);
 
 	/* Return kernel name. */
-	return sorter->impl_def.get_kernel_name(sorter, i);
+	return sorter->impl_def.get_kernel_name(sorter, i, err);
 }
 
 /**

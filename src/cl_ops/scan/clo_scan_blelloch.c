@@ -41,7 +41,7 @@ static const char* clo_scan_blelloch_init(CloScan* scanner,
 	/* For now ignore specific blelloch scan options and throw error
 	 * if any option is given. */
 	ccl_if_err_create_goto(*err, CLO_ERROR,
-		(options != NULL) || (strlen(options) > 0), CLO_ERROR_ARGS,
+		(options != NULL) && (strlen(options) > 0), CLO_ERROR_ARGS,
 		error_handler, "Invalid options for blelloch scan.");
 
 	/* If we got here, everything is OK. */
@@ -225,10 +225,12 @@ finish:
  *
  * @copydetails ::CloScan::get_num_kernels()
  * */
-static cl_uint clo_scan_blelloch_get_num_kernels(CloScan* scanner) {
+static cl_uint clo_scan_blelloch_get_num_kernels(
+	CloScan* scanner, GError** err) {
 
 	/* Avoid compiler warnings. */
 	(void)scanner;
+	(void)err;
 
 	/* Return number of kernels. */
 	return CLO_SCAN_BLELLOCH_NUM_KERNELS;
@@ -241,13 +243,16 @@ static cl_uint clo_scan_blelloch_get_num_kernels(CloScan* scanner) {
  * @copydetails ::CloScan::get_kernel_name()
  * */
 const char* clo_scan_blelloch_get_kernel_name(
-	CloScan* scanner, cl_uint i) {
+	CloScan* scanner, cl_uint i, GError** err) {
 
 	/* Check that i is within bounds. */
 	g_return_val_if_fail(i < CLO_SCAN_BLELLOCH_NUM_KERNELS, NULL);
 
 	/* Avoid compiler warnings. */
 	(void)scanner;
+
+	/* Avoid compiler warnings. */
+	(void)err;
 
 	/* Kernel name. */
 	const char* kernel_name = NULL;
@@ -305,7 +310,7 @@ size_t clo_scan_blelloch_get_localmem_usage(CloScan* scanner, cl_uint i,
 		NULL, dev, 1, &realws, &gws, &lws_max, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-	/* Determine kernel name. */
+	/* Determine local mem usage. */
 	switch (i) {
 		case CLO_SCAN_BLELLOCH_KIDX_WGSCAN:
 			local_mem = clo_scan_get_sum_size(scanner) * lws_max * 2;

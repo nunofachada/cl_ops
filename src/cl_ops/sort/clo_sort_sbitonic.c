@@ -173,10 +173,12 @@ static void clo_sort_sbitonic_finalize(CloSort* sorter) {
  *
  * @copydetails ::CloSort::get_num_kernels()
  * */
-static cl_uint clo_sort_sbitonic_get_num_kernels(CloSort* sorter) {
+static cl_uint clo_sort_sbitonic_get_num_kernels(
+	CloSort* sorter, GError** err) {
 
 	/* Avoid compiler warnings. */
 	(void)sorter;
+	(void)err;
 
 	/* Return number of kernels. */
 	return 1;
@@ -189,13 +191,14 @@ static cl_uint clo_sort_sbitonic_get_num_kernels(CloSort* sorter) {
  * @copydetails ::CloSort::get_kernel_name()
  * */
 const char* clo_sort_sbitonic_get_kernel_name(
-	CloSort* sorter, cl_uint i) {
+	CloSort* sorter, cl_uint i, GError** err) {
 
 	/* i must be zero because there is only one kernel. */
 	g_return_val_if_fail(i == 0, NULL);
 
 	/* Avoid compiler warnings. */
 	(void)sorter;
+	(void)err;
 
 	/* Return kernel name. */
 	return CLO_SORT_SBITONIC_KNAME;

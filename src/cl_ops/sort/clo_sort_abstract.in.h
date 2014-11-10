@@ -100,20 +100,25 @@ typedef struct clo_sort_impl_def {
 	 * implementation.
 	 *
 	 * @param[in] sorter Sorter object.
+	 * @param[out] err Return location for a GError, or `NULL` if error
+	 * reporting is to be ignored.
 	 * @return Maximum number of kernels used by the sort
 	 * implementation.
 	 * */
-	cl_uint (*get_num_kernels)(CloSort* sorter);
+	cl_uint (*get_num_kernels)(CloSort* sorter, GError** err);
 
 	/**
 	 * Get name of the i^th kernel used by the sort implementation.
 	 *
 	 * @param[in] sorter Sorter object.
 	 * @param[in] i i^th kernel used by the sort implementation.
+	 * @param[out] err Return location for a GError, or `NULL` if error
+	 * reporting is to be ignored.
 	 * @return The name of the i^th kernel used by the sort
 	 * implementation.
 	 * */
-	const char* (*get_kernel_name)(CloSort* sorter, cl_uint i);
+	const char* (*get_kernel_name)(CloSort* sorter, cl_uint i,
+		GError** err);
 
 	/**
 	 * Get local memory usage of i^th kernel used by the sort
@@ -185,10 +190,11 @@ void* clo_sort_get_data(CloSort* sorter);
 void clo_sort_set_data(CloSort* sorter, void* data);
 
 /* Get the maximum number of kernels used by the sort implementation. */
-cl_uint clo_sort_get_num_kernels(CloSort* sorter);
+cl_uint clo_sort_get_num_kernels(CloSort* sorter, GError** err);
 
 /* Get name of the i^th kernel used by the sort implementation. */
-const char* clo_sort_get_kernel_name(CloSort* sorter, cl_uint i);
+const char* clo_sort_get_kernel_name(
+	CloSort* sorter, cl_uint i, GError** err);
 
 /* Get local memory usage of i^th kernel used by the sort implementation
  * for the given maximum local worksize and number of elements to

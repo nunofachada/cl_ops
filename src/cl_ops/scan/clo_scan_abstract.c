@@ -503,15 +503,17 @@ void clo_scan_set_data(CloScan* scanner, void* data) {
  * @public @memberof clo_scan
  *
  * @param[in] scanner Scanner object.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
  * @return Maximum number of kernels used by the scan implementation.
  * */
-cl_uint clo_scan_get_num_kernels(CloScan* scanner) {
+cl_uint clo_scan_get_num_kernels(CloScan* scanner, GError** err) {
 
 	/* Make sure scanner object is not NULL. */
 	g_return_val_if_fail(scanner != NULL, 0);
 
 	/* Return number of kernels. */
-	return scanner->impl_def.get_num_kernels(scanner);
+	return scanner->impl_def.get_num_kernels(scanner, err);
 }
 
 /**
@@ -521,15 +523,18 @@ cl_uint clo_scan_get_num_kernels(CloScan* scanner) {
  *
  * @param[in] scanner Scanner object.
  * @param[in] i i^th kernel used by the scan implementation.
+ * @param[out] err Return location for a GError, or `NULL` if error
+ * reporting is to be ignored.
  * @return The name of the i^th kernel used by the scan implementation.
  * */
-const char* clo_scan_get_kernel_name(CloScan* scanner, cl_uint i) {
+const char* clo_scan_get_kernel_name(
+	CloScan* scanner, cl_uint i, GError** err) {
 
 	/* Make sure scanner object is not NULL. */
 	g_return_val_if_fail(scanner != NULL, NULL);
 
 	/* Return kernel name. */
-	return scanner->impl_def.get_kernel_name(scanner, i);
+	return scanner->impl_def.get_kernel_name(scanner, i, err);
 }
 
 /**

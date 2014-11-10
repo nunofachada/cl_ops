@@ -47,6 +47,10 @@ typedef struct {
 } clo_sort_satradix_data;
 
 
+/* Array of kernel names. */
+static const char* clo_sort_satradix_knames[] =
+	CLO_SORT_SATRADIX_KERNELNAMES;
+
 /**
  * @internal
  * Get scanner object used for radix sort.
@@ -198,19 +202,19 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 			&err_internal);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-		ccl_event_set_name(evt, "copy_satradix");
+		ccl_event_set_name(evt, "satradix_copy");
 		ccl_event_wait_list_add(&ewl, evt, NULL);
 	}
 
 	/* Get kernels. */
 	krnl_lsrt = ccl_program_get_kernel(
-		prg, "satradix_localsort", &err_internal);
+		prg, CLO_SORT_SATRADIX_KNAME_LOCALSORT, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	krnl_hist = ccl_program_get_kernel(
-		prg, "satradix_histogram", &err_internal);
+		prg, CLO_SORT_SATRADIX_KNAME_HISTOGRAM, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	krnl_scat = ccl_program_get_kernel(
-		prg, "satradix_scatter", &err_internal);
+		prg, CLO_SORT_SATRADIX_KNAME_SCATTER, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine size of aux. buffers. */
@@ -253,7 +257,7 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 			ccl_arg_priv(start_bit, cl_uint),
 			NULL);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-		ccl_event_set_name(evt, "localsort_satradix");
+		ccl_event_set_name(evt, "satradix_localsort");
 
 		/* Histogram. */
 		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_hist, cq_exec, 1,
@@ -266,7 +270,7 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 			ccl_arg_priv(array_len, cl_uint),
 			NULL);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-		ccl_event_set_name(evt, "histogram_satradix");
+		ccl_event_set_name(evt, "satradix_histogram");
 
 		/* Scan. */
 		clo_scan_with_device_data(scanner, cq_exec, cq_comm, counters,
@@ -283,7 +287,7 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 			ccl_arg_priv(start_bit, cl_uint),
 			NULL);
 		ccl_if_err_propagate_goto(err, err_internal, error_handler);
-		ccl_event_set_name(evt, "scatter_satradix");
+		ccl_event_set_name(evt, "satradix_scatter");
 	}
 
 	/* Add last event to wait list to return. */
@@ -454,16 +458,37 @@ static void clo_sort_satradix_finalize(CloSort* sorter) {
  *
  * @copydetails ::CloSort::get_num_kernels()
  * */
-static cl_uint clo_sort_satradix_get_num_kernels(CloSort* sorter) {
+static cl_uint clo_sort_satradix_get_num_kernels(
+	CloSort* sorter, GError** err) {
 
-	/* Avoid compiler warnings. */
-	(void)sorter;
+	/* Scanner object associated with the satradix sort. */
+	CloScan* scanner = NULL;
+	/* Internal error handling object. */
+	GError* err_internal = NULL;
+	/* Number of kernels. */
+	cl_uint num_kernels = 0;
+
+	/* Get associated scan implementation. */
+	scanner = clo_sort_satradix_get_scanner(sorter, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Determine number of kernels: satradix kernels + scan kernels. */
+	num_kernels = CLO_SORT_SATRADIX_NUM_KERNELS
+		+ clo_scan_get_num_kernels(scanner, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+
+finish:
 
 	/* Return number of kernels. */
-	return 3;
-
-	/** @todo Take into account the number of scan kernel.
-	 * We have to ask the scan implementation about it. */
+	return num_kernels;
 
 }
 
@@ -473,14 +498,57 @@ static cl_uint clo_sort_satradix_get_num_kernels(CloSort* sorter) {
  * @copydetails ::CloSort::get_kernel_name()
  * */
 const char* clo_sort_satradix_get_kernel_name(
-	CloSort* sorter, cl_uint i) {
+	CloSort* sorter, cl_uint i, GError** err) {
 
-	/* Avoid compiler warnings. */
-	(void)sorter;
-	(void)i;
+	/* Scanner object associated with the satradix sort. */
+	CloScan* scanner = NULL;
+	/* Number of kernels. */
+	cl_uint num_kernels = 0;
+	/* Kernel name. */
+	const char* kernel_name = NULL;
+	/* Internal error handling object. */
+	GError* err_internal = NULL;
 
+	/* Get number of kernels. */
+	num_kernels =
+		clo_sort_satradix_get_num_kernels(sorter, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Check that it's within bounds. */
+	g_return_val_if_fail(i < num_kernels, NULL);
+
+	/* Get associated scan implementation. */
+	scanner = clo_sort_satradix_get_scanner(sorter, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Check if the requested kernel name is from the satradix sort or
+	 * from the scan implementation. */
+	if (i < CLO_SORT_SATRADIX_NUM_KERNELS) {
+
+		/* It's a satradix kernel. */
+		kernel_name = clo_sort_satradix_knames[i];
+
+	} else {
+
+		/* It's a scan kernel. */
+		kernel_name = clo_scan_get_kernel_name(scanner,
+			i - CLO_SORT_SATRADIX_NUM_KERNELS, &err_internal);
+		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	}
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+	kernel_name = NULL;
+
+finish:
 	/* Return kernel name. */
-	return NULL;
+	return kernel_name;
 }
 
 /**
@@ -492,15 +560,65 @@ const char* clo_sort_satradix_get_kernel_name(
 size_t clo_sort_satradix_get_localmem_usage(CloSort* sorter, cl_uint i,
 	size_t lws_max, size_t numel, GError** err) {
 
-	/* Avoid compiler warnings. */
-	(void)sorter;
-	(void)i;
-	(void)lws_max;
-	(void)numel;
-	(void)err;
+	/* Scanner object associated with the satradix sort. */
+	CloScan* scanner = NULL;
+	/* Number of kernels. */
+	cl_uint num_kernels = 0;
+	/* Local memory usage. */
+	size_t local_mem_usage;
+	/* Internal error handling object. */
+	GError* err_internal = NULL;
+
+	/* Get number of kernels. */
+	num_kernels =
+		clo_sort_satradix_get_num_kernels(sorter, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Check that it's within bounds. */
+	g_return_val_if_fail(i < num_kernels, 0);
+
+	/* Get associated scan implementation. */
+	scanner = clo_sort_satradix_get_scanner(sorter, &err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Check if the local memory usage is for a satradix kernel or
+	 * for a scan kernel. */
+	switch (i) {
+		/// @todo Return proper local memory requirements for
+		/// satradix kernels
+		case CLO_SORT_SATRADIX_KIDX_LOCALSORT:
+			/* It's for the satradix localsort kernel. */
+			local_mem_usage = 0;
+			break;
+		case CLO_SORT_SATRADIX_KIDX_HISTOGRAM:
+			/* It's for the satradix histogram kernel. */
+			local_mem_usage = 0;
+			break;
+		case CLO_SORT_SATRADIX_KIDX_SCATTER:
+			/* It's for the satradix scatter kernel. */
+			local_mem_usage = 0;
+			break;
+		default:
+			/* It's for a scan kernel. */
+			local_mem_usage = clo_scan_get_localmem_usage(scanner,
+				i - CLO_SORT_SATRADIX_NUM_KERNELS, lws_max, numel,
+				&err_internal);
+			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	}
+
+	/* If we got here, everything is OK. */
+	g_assert(err == NULL || *err == NULL);
+	goto finish;
+
+error_handler:
+	/* If we got here there was an error, verify that it is so. */
+	g_assert(err == NULL || *err != NULL);
+	local_mem_usage = 0;
+
+finish:
 
 	/* Return local memory usage. */
-	return 0;
+	return local_mem_usage;
 
 }
 
