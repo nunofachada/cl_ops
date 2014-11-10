@@ -210,10 +210,10 @@ void clo_scan_destroy(CloScan* scan) {
  * will be automatically determined.
  * @param[out] err Return location for a GError, or `NULL` if error
  * reporting is to be ignored.
- * @return An event wait list which contains events which must
- * terminate before scanning is considered complete.
+ * @return An event which must terminate before scanning is considered
+ * complete.
  * */
-CCLEventWaitList clo_scan_with_device_data(CloScan* scanner,
+CCLEvent* clo_scan_with_device_data(CloScan* scanner,
 	CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
 	CCLBuffer* data_out, size_t numel, size_t lws_max, GError** err) {
 
@@ -322,9 +322,14 @@ cl_bool clo_scan_with_host_data(CloScan* scanner,
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Perform scan with device data. */
-	ewl = scanner->impl_def.scan_with_device_data(scanner, cq_exec,
+	evt = scanner->impl_def.scan_with_device_data(scanner, cq_exec,
 		cq_comm, data_in_dev, data_out_dev, numel, lws_max,
 		&err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Explicitly wait for scan to terminate. */
+	ccl_event_wait_list_add(&ewl, evt, NULL);
+	ccl_event_wait(&ewl, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data back to host. */

@@ -249,12 +249,12 @@ void clo_sort_destroy(CloSort* sorter) {
  * will be automatically determined.
  * @param[out] err Return location for a GError, or `NULL` if error
  * reporting is to be ignored.
- * @return An event wait list which contains events which must
- * terminate before sorting is considered complete.
+ * @return An event which must terminate before sort is considered
+ * complete.
  * */
-CCLEventWaitList clo_sort_with_device_data(CloSort* sorter,
-	CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
-	CCLBuffer* data_out, size_t numel, size_t lws_max, GError** err) {
+CCLEvent* clo_sort_with_device_data(CloSort* sorter, CCLQueue* cq_exec,
+	CCLQueue* cq_comm, CCLBuffer* data_in, CCLBuffer* data_out,
+	size_t numel, size_t lws_max, GError** err) {
 
 	/* Make sure scanner object is not NULL. */
 	g_return_val_if_fail(sorter != NULL, NULL);
@@ -378,9 +378,14 @@ cl_bool clo_sort_with_host_data(CloSort* sorter, CCLQueue* cq_exec,
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Perform sort with device data. */
-	ewl = sorter->impl_def.sort_with_device_data(sorter, cq_exec,
+	evt = sorter->impl_def.sort_with_device_data(sorter, cq_exec,
 		cq_comm, data_in_dev, data_out_dev, numel, lws_max,
 		&err_internal);
+	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+
+	/* Explicitly wait for sort to terminate. */
+	ccl_event_wait_list_add(&ewl, evt, NULL);
+	ccl_event_wait(&ewl, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data back to host. */

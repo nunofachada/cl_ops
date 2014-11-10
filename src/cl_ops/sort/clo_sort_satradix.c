@@ -114,7 +114,7 @@ finish:
  *
  * @copydetails ::CloSort::sort_with_device_data()
  * */
-static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
+static CCLEvent* clo_sort_satradix_sort_with_device_data(
 	CloSort* sorter, CCLQueue* cq_exec, CCLQueue* cq_comm,
 	CCLBuffer* data_in, CCLBuffer* data_out, size_t numel,
 	size_t lws_max, GError** err) {
@@ -290,9 +290,6 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 		ccl_event_set_name(evt, "satradix_scatter");
 	}
 
-	/* Add last event to wait list to return. */
-	ccl_event_wait_list_add(&ewl, evt, NULL);
-
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);
 	goto finish;
@@ -300,6 +297,7 @@ static CCLEventWaitList clo_sort_satradix_sort_with_device_data(
 error_handler:
 	/* If we got here there was an error, verify that it is so. */
 	g_assert(err == NULL || *err != NULL);
+	evt = NULL;
 
 finish:
 
@@ -310,7 +308,7 @@ finish:
 	ccl_buffer_destroy(counters_sum);
 
 	/* Return. */
-	return ewl;
+	return evt;
 
 }
 

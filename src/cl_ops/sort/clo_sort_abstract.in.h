@@ -87,10 +87,10 @@ typedef struct clo_sort_impl_def {
 	 * will be automatically determined.
 	 * @param[out] err Return location for a GError, or `NULL` if error
 	 * reporting is to be ignored.
-	 * @return An event wait list which contains events which must
-	 * terminate before sorting is considered complete.
+	 * @return An event which must terminate before sort is considered
+	 * complete.
 	 * */
-	CCLEventWaitList (*sort_with_device_data)(CloSort* sorter,
+	CCLEvent* (*sort_with_device_data)(CloSort* sorter,
 		CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
 		CCLBuffer* data_out, size_t numel, size_t lws_max,
 		GError** err);
@@ -155,9 +155,9 @@ CloSort* clo_sort_new(const char* type, const char* options,
 void clo_sort_destroy(CloSort* sorter);
 
 /* Perform sort using device data. */
-CCLEventWaitList clo_sort_with_device_data(CloSort* sorter,
-	CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
-	CCLBuffer* data_out, size_t numel, size_t lws_max, GError** err);
+CCLEvent* clo_sort_with_device_data(CloSort* sorter, CCLQueue* cq_exec,
+	CCLQueue* cq_comm, CCLBuffer* data_in, CCLBuffer* data_out,
+	size_t numel, size_t lws_max, GError** err);
 
 /* Perform sort using host data. Device buffers will be created and
  * destroyed by sort implementation. */

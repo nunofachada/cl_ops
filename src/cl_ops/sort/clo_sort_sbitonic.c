@@ -28,7 +28,7 @@
  *
  * @copydetails ::CloSort::sort_with_device_data()
  * */
-static CCLEventWaitList clo_sort_sbitonic_sort_with_device_data(
+static CCLEvent* clo_sort_sbitonic_sort_with_device_data(
 	CloSort* sorter, CCLQueue* cq_exec, CCLQueue* cq_comm,
 	CCLBuffer* data_in, CCLBuffer* data_out, size_t numel,
 	size_t lws_max, GError** err) {
@@ -46,9 +46,9 @@ static CCLEventWaitList clo_sort_sbitonic_sort_with_device_data(
 	cl_uint tot_stages;
 
 	/* OpenCL object wrappers. */
-	CCLDevice* dev;
-	CCLKernel* krnl;
-	CCLEvent* evt;
+	CCLDevice* dev = NULL;
+	CCLKernel* krnl = NULL;
+	CCLEvent* evt = NULL;
 
 	/* Event wait list. */
 	CCLEventWaitList ewl = NULL;
@@ -117,9 +117,6 @@ static CCLEventWaitList clo_sort_sbitonic_sort_with_device_data(
 		}
 	}
 
-	/* Add last event to wait list to return. */
-	ccl_event_wait_list_add(&ewl, evt, NULL);
-
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);
 	goto finish;
@@ -127,11 +124,12 @@ static CCLEventWaitList clo_sort_sbitonic_sort_with_device_data(
 error_handler:
 	/* If we got here there was an error, verify that it is so. */
 	g_assert(err == NULL || *err != NULL);
+	evt = NULL;
 
 finish:
 
 	/* Return. */
-	return ewl;
+	return evt;
 
 }
 

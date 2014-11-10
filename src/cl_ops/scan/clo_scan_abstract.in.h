@@ -69,7 +69,7 @@ typedef struct clo_scan_impl_def {
 	 *
 	 * @copydetails ::clo_scan_with_device_data()
 	 * */
-	CCLEventWaitList (*scan_with_device_data)(CloScan* scanner,
+	CCLEvent* (*scan_with_device_data)(CloScan* scanner,
 		CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
 		CCLBuffer* data_out, size_t numel, size_t lws_max,
 		GError** err);
@@ -133,7 +133,7 @@ CloScan* clo_scan_new(const char* type, const char* options,
 void clo_scan_destroy(CloScan* scan);
 
 /* Perform scan using device data. */
-CCLEventWaitList clo_scan_with_device_data(
+CCLEvent* clo_scan_with_device_data(
 	CloScan* scanner, CCLQueue* cq_exec, CCLQueue* cq_comm,
 	CCLBuffer* data_in, CCLBuffer* data_out, size_t numel,
 	size_t lws_max, GError** err);

@@ -28,7 +28,7 @@
  *
  * @copydetails ::CloSort::sort_with_device_data()
  * */
-static CCLEventWaitList clo_sort_gselect_sort_with_device_data(
+static CCLEvent* clo_sort_gselect_sort_with_device_data(
 	CloSort* sorter, CCLQueue* cq_exec, CCLQueue* cq_comm,
 	CCLBuffer* data_in, CCLBuffer* data_out, size_t numel,
 	size_t lws_max, GError** err) {
@@ -43,10 +43,10 @@ static CCLEventWaitList clo_sort_gselect_sort_with_device_data(
 	size_t lws, gws;
 
 	/* OpenCL object wrappers. */
-	CCLContext* ctx;
-	CCLDevice* dev;
-	CCLKernel* krnl;
-	CCLEvent* evt;
+	CCLContext* ctx = NULL;
+	CCLDevice* dev = NULL;
+	CCLKernel* krnl = NULL;
+	CCLEvent* evt = NULL;
 
 	/* Event wait list. */
 	CCLEventWaitList ewl = NULL;
@@ -123,9 +123,6 @@ static CCLEventWaitList clo_sort_gselect_sort_with_device_data(
 		ccl_event_set_name(evt, "gselect_copy");
 	}
 
-	/* Add last event to wait list to return. */
-	ccl_event_wait_list_add(&ewl, evt, NULL);
-
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);
 	goto finish;
@@ -133,6 +130,7 @@ static CCLEventWaitList clo_sort_gselect_sort_with_device_data(
 error_handler:
 	/* If we got here there was an error, verify that it is so. */
 	g_assert(err == NULL || *err != NULL);
+	evt = NULL;
 
 finish:
 
@@ -140,7 +138,7 @@ finish:
 	if ((copy_back) && (data_out != NULL)) ccl_buffer_destroy(data_out);
 
 	/* Return event wait list. */
-	return ewl;
+	return evt;
 
 }
 

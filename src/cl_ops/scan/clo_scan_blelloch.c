@@ -77,7 +77,7 @@ static void clo_scan_blelloch_finalize(CloScan* scan) {
  *
  * @copydetails ::clo_scan_impl::scan_with_device_data()
  * */
-static CCLEventWaitList clo_scan_blelloch_scan_with_device_data(
+static CCLEvent* clo_scan_blelloch_scan_with_device_data(
 	CloScan* scanner, CCLQueue* cq_exec, CCLQueue* cq_comm,
 	CCLBuffer* data_in, CCLBuffer* data_out, size_t numel,
 	size_t lws_max, GError** err) {
@@ -86,17 +86,14 @@ static CCLEventWaitList clo_scan_blelloch_scan_with_device_data(
 	size_t lws;
 
 	/* OpenCL object wrappers. */
-	CCLContext* ctx;
-	CCLProgram* prg;
-	CCLDevice* dev;
-	CCLKernel* krnl_wgscan;
-	CCLKernel* krnl_wgsumsscan;
-	CCLKernel* krnl_addwgsums;
-	CCLBuffer* dev_wgsums;
-	CCLEvent* evt;
-
-	/* Event wait list. */
-	CCLEventWaitList ewl = NULL;
+	CCLContext* ctx = NULL;
+	CCLProgram* prg = NULL;
+	CCLDevice* dev = NULL;
+	CCLKernel* krnl_wgscan = NULL;
+	CCLKernel* krnl_wgsumsscan = NULL;
+	CCLKernel* krnl_addwgsums = NULL;
+	CCLBuffer* dev_wgsums = NULL;
+	CCLEvent* evt = NULL;
 
 	/* Internal error reporting object. */
 	GError* err_internal = NULL;
@@ -199,9 +196,6 @@ static CCLEventWaitList clo_scan_blelloch_scan_with_device_data(
 
 	}
 
-	/* Add last event to wait list to return. */
-	ccl_event_wait_list_add(&ewl, evt, NULL);
-
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);
 	goto finish;
@@ -209,6 +203,7 @@ static CCLEventWaitList clo_scan_blelloch_scan_with_device_data(
 error_handler:
 	/* If we got here there was an error, verify that it is so. */
 	g_assert(err == NULL || *err != NULL);
+	evt = NULL;
 
 finish:
 
@@ -216,7 +211,7 @@ finish:
 	if (dev_wgsums) ccl_buffer_destroy(dev_wgsums);
 
 	/* Return event wait list. */
-	return ewl;
+	return evt;
 
 }
 
