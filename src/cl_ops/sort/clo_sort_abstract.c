@@ -373,8 +373,7 @@ cl_bool clo_sort_with_host_data(CloSort* sorter, CCLQueue* cq_exec,
 
 	/* Explicitly wait for transfer (some OpenCL implementations don't
 	 * respect CL_TRUE in data transfers). */
-	ccl_event_wait_list_add(&ewl, evt, NULL);
-	ccl_event_wait(&ewl, &err_internal);
+	ccl_event_wait(ccl_ewl(&ewl, evt, NULL), &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Perform sort with device data. */
@@ -383,21 +382,15 @@ cl_bool clo_sort_with_host_data(CloSort* sorter, CCLQueue* cq_exec,
 		&err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
-	/* Explicitly wait for sort to terminate. */
-	ccl_event_wait_list_add(&ewl, evt, NULL);
-	ccl_event_wait(&ewl, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
-
 	/* Transfer data back to host. */
 	evt = ccl_buffer_enqueue_read(data_read_dev, cq_comm, CL_FALSE, 0,
-		data_size, data_out, &ewl, &err_internal);
+		data_size, data_out, ccl_ewl(&ewl, evt, NULL), &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	ccl_event_set_name(evt, "read_gselect");
 
 	/* Explicitly wait for transfer (some OpenCL implementations don't
 	 * respect CL_TRUE in data transfers). */
-	ccl_event_wait_list_add(&ewl, evt, NULL);
-	ccl_event_wait(&ewl, &err_internal);
+	ccl_event_wait(ccl_ewl(&ewl, evt, NULL), &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* If we got here, everything is OK. */

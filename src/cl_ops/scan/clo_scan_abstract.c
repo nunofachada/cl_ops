@@ -317,8 +317,7 @@ cl_bool clo_scan_with_host_data(CloScan* scanner,
 
 	/* Explicitly wait for transfer (some OpenCL implementations don't
 	 * respect CL_TRUE in data transfers). */
-	ccl_event_wait(
-		ccl_event_wait_list_add(&ewl, evt, NULL), &err_internal);
+	ccl_event_wait(ccl_ewl(&ewl, evt, NULL), &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Perform scan with device data. */
@@ -329,15 +328,14 @@ cl_bool clo_scan_with_host_data(CloScan* scanner,
 
 	/* Transfer data back to host. */
 	evt = ccl_buffer_enqueue_read(data_out_dev, cq_comm, CL_FALSE, 0,
-		data_out_size, data_out,
-		ccl_event_wait_list_add(&ewl, evt, NULL), &err_internal);
+		data_out_size, data_out, ccl_ewl(&ewl, evt, NULL),
+		&err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 	ccl_event_set_name(evt, "clo_scan_read");
 
 	/* Explicitly wait for transfer (some OpenCL implementations don't
 	 * respect CL_TRUE in data transfers). */
-	ccl_event_wait(
-		ccl_event_wait_list_add(&ewl, evt, NULL), &err_internal);
+	ccl_event_wait(ccl_ewl(&ewl, evt, NULL), &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* If we got here, everything is OK. */
