@@ -17,16 +17,16 @@
 
 /**
  * @file
- * Test sorting algorithms.
+ * Sorting algorithms benchmark.
  */
 
-#include "clo_sort_test.h"
+#include "clo_sort_bench.h"
 
-#define CLO_SORT_TEST_TYPE "uint"
-#define CLO_SORT_TEST_RUNS 1
-#define CLO_SORT_TEST_MAXPO2 24
-#define CLO_SORT_TEST_ALGORITHM "sbitonic"
-#define CLO_SORT_TEST_ALG_OPTS ""
+#define CLO_SORT_BENCHMARK_TYPE "uint"
+#define CLO_SORT_BENCHMARK_RUNS 1
+#define CLO_SORT_BENCHMARK_MAXPO2 24
+#define CLO_SORT_BENCHMARK_ALGORITHM "sbitonic"
+#define CLO_SORT_BENCHMARK_ALG_OPTS ""
 
 /** A description of the program. */
 #define CLO_SORT_DESCRIPTION "Test sorting algorithms"
@@ -35,24 +35,24 @@
 /* Command line arguments and respective default values. */
 static gchar *algorithm = NULL;
 static gchar *alg_options = NULL;
-static guint32 runs = CLO_SORT_TEST_RUNS;
+static guint32 runs = CLO_SORT_BENCHMARK_RUNS;
 static size_t lws = 0;
 static int dev_idx = -1;
 static guint32 rng_seed = CLO_DEFAULT_SEED;
 static gchar* type = NULL;
-static guint32 maxpo2 = CLO_SORT_TEST_MAXPO2;
+static guint32 maxpo2 = CLO_SORT_BENCHMARK_MAXPO2;
 static gchar* out = NULL;
 static gchar* compiler_opts = NULL;
 
 /* Valid command line options. */
 static GOptionEntry entries[] = {
 	{"algorithm",    'a', 0, G_OPTION_ARG_STRING,   &algorithm,
-		"Sorting algorithm to use (default is " CLO_SORT_TEST_ALGORITHM ")",
+		"Sorting algorithm to use (default is " CLO_SORT_BENCHMARK_ALGORITHM ")",
 		"ALGORITHM"},
 	{"alg-opts",     'g', 0, G_OPTION_ARG_STRING,   &alg_options,
 		"Algorithm options",                 "STRING"},
 	{"runs",         'r', 0, G_OPTION_ARG_INT,      &runs,
-		"Number of runs (default is " G_STRINGIFY(CLO_SORT_TEST_RUNS) ")",
+		"Number of runs (default is " G_STRINGIFY(CLO_SORT_BENCHMARK_RUNS) ")",
 		"RUNS"},
 	{"localsize",    'l', 0, G_OPTION_ARG_INT,      &lws,
 		"Maximum local work size (default is auto-select)",
@@ -64,10 +64,10 @@ static GOptionEntry entries[] = {
 		"Seed for random number generator (default is " G_STRINGIFY(CLO_DEFAULT_SEED) ")",
 		"SEED"},
 	{"type",         't', 0, G_OPTION_ARG_STRING,   &type,
-		"Type of elements to sort (default " CLO_SORT_TEST_TYPE ")",
+		"Type of elements to sort (default " CLO_SORT_BENCHMARK_TYPE ")",
 		"TYPE"},
 	{"maxpo2",       'n', 0, G_OPTION_ARG_INT,      &maxpo2,
-		"Log2 of the maximum number of elements to sort, e.g. 2^N (default N=" G_STRINGIFY(CLO_SORT_TEST_MAXPO2) ")",
+		"Log2 of the maximum number of elements to sort, e.g. 2^N (default N=" G_STRINGIFY(CLO_SORT_BENCHMARK_MAXPO2) ")",
 		"N"},
 	{"out",          'o', 0, G_OPTION_ARG_STRING,   &out,
 		"File where to output sorting benchmarks (default is no file output)",
@@ -131,11 +131,11 @@ int main(int argc, char **argv)
 	ccl_if_err_goto(err, error_handler);
 
 	clotype_elem = clo_type_by_name(
-		type != NULL ? type : CLO_SORT_TEST_TYPE, &err);
+		type != NULL ? type : CLO_SORT_BENCHMARK_TYPE, &err);
 	ccl_if_err_goto(err, error_handler);
 
-	if (algorithm == NULL) algorithm = g_strdup(CLO_SORT_TEST_ALGORITHM);
-	if (alg_options == NULL) alg_options = g_strdup(CLO_SORT_TEST_ALG_OPTS);
+	if (algorithm == NULL) algorithm = g_strdup(CLO_SORT_BENCHMARK_ALGORITHM);
+	if (alg_options == NULL) alg_options = g_strdup(CLO_SORT_BENCHMARK_ALG_OPTS);
 
 	/* Determine size in bytes of each element to sort. */
 	bytes = clo_type_sizeof(clotype_elem);
@@ -187,7 +187,7 @@ int main(int argc, char **argv)
 
 			/* Initialize host buffer. */
 			for (unsigned int i = 0;  i < num_elems; i++) {
-				clo_test_rand(
+				clo_bench_rand(
 					rng_host, clotype_elem, host_data + bytes * i);
 			}
 
@@ -215,7 +215,7 @@ int main(int argc, char **argv)
 			for (unsigned int i = 0;  i < num_elems - 1; i++) {
 
 				/* Perform comparison. */
-				if (clo_test_compare(clotype_elem, host_data + bytes*i,
+				if (clo_bench_compare(clotype_elem, host_data + bytes*i,
 						host_data + bytes*(i + 1)) > 0) {
 
 					sorted_ok = FALSE;

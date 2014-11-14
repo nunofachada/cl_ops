@@ -17,31 +17,31 @@
 
 /**
  * @file
- * Test scan implementation.
+ * Scan benchmark implementation.
  */
 
-#include "clo_scan_test.h"
+#include "clo_scan_bench.h"
 
-#define CLO_SCAN_TEST_RUNS 1
-#define CLO_SCAN_TEST_INITELEMS 4
-#define CLO_SCAN_TEST_NUMDOUB 24
-#define CLO_SCAN_TEST_TYPE "uint"
-#define CLO_SCAN_TEST_TYPE_SUM "ulong"
-#define CLO_SCAN_TEST_ALGORITHM "blelloch"
-#define CLO_SCAN_TEST_ALG_OPTS ""
+#define CLO_SCAN_BENCHMARK_RUNS 1
+#define CLO_SCAN_BENCHMARK_INITELEMS 4
+#define CLO_SCAN_BENCHMARK_NUMDOUB 24
+#define CLO_SCAN_BENCHMARK_TYPE "uint"
+#define CLO_SCAN_BENCHMARK_TYPE_SUM "ulong"
+#define CLO_SCAN_BENCHMARK_ALGORITHM "blelloch"
+#define CLO_SCAN_BENCHMARK_ALG_OPTS ""
 
 /** A description of the program. */
 #define CLO_SCAN_DESCRIPTION "Test CL-Ops scan implementations"
 
 /* Command line arguments and respective default values. */
-static guint32 runs = CLO_SCAN_TEST_RUNS;
+static guint32 runs = CLO_SCAN_BENCHMARK_RUNS;
 static size_t lws = 0;
 static int dev_idx = -1;
 static guint32 rng_seed = CLO_DEFAULT_SEED;
 static gchar* type = NULL;
 static gchar* type_sum = NULL;
-static guint32 init_elems = CLO_SCAN_TEST_INITELEMS;
-static guint32 num_doub = CLO_SCAN_TEST_NUMDOUB;
+static guint32 init_elems = CLO_SCAN_BENCHMARK_INITELEMS;
+static guint32 num_doub = CLO_SCAN_BENCHMARK_NUMDOUB;
 static gchar* out = NULL;
 static gboolean no_check = FALSE;
 static gchar* compiler_opts = NULL;
@@ -51,7 +51,7 @@ static gchar* alg_options = NULL;
 /* Valid command line options. */
 static GOptionEntry entries[] = {
 	{"runs",         'r', 0, G_OPTION_ARG_INT,    &runs,
-		"Number of runs (default is " G_STRINGIFY(CLO_SCAN_TEST_RUNS) ")",
+		"Number of runs (default is " G_STRINGIFY(CLO_SCAN_BENCHMARK_RUNS) ")",
 		"RUNS"},
 	{"localsize",    'l', 0, G_OPTION_ARG_INT,    &lws,
 		"Maximum local work size (default is auto-select)",
@@ -63,21 +63,21 @@ static GOptionEntry entries[] = {
 		"Seed for random number generator (default is " G_STRINGIFY(CLO_DEFAULT_SEED) ")",
 		"SEED"},
 	{"type",         't', 0, G_OPTION_ARG_STRING, &type,
-		"Type of elements to scan (default " CLO_SCAN_TEST_TYPE ")",
+		"Type of elements to scan (default " CLO_SCAN_BENCHMARK_TYPE ")",
 		"TYPE"},
 	{"type-sum",     'y', 0, G_OPTION_ARG_STRING, &type_sum,
-		"Type of elements in scan result (default " CLO_SCAN_TEST_TYPE_SUM ")",
+		"Type of elements in scan result (default " CLO_SCAN_BENCHMARK_TYPE_SUM ")",
 		"TYPE"},
 	{"init-elems",   'i', 0, G_OPTION_ARG_INT,    &init_elems,
-		"The starting number of elements to scan (default is " G_STRINGIFY(CLO_SCAN_TEST_INITELEMS) ")",
+		"The starting number of elements to scan (default is " G_STRINGIFY(CLO_SCAN_BENCHMARK_INITELEMS) ")",
 		"INIT"},
 	{"num-doub",     'n', 0, G_OPTION_ARG_INT,    &num_doub,
-		"Number of times min-elems is doubled (default is " G_STRINGIFY(CLO_SCAN_TEST_NUMDOUB) ")",
+		"Number of times min-elems is doubled (default is " G_STRINGIFY(CLO_SCAN_BENCHMARK_NUMDOUB) ")",
 		"DOUB"},
 	{"compiler",     'c', 0, G_OPTION_ARG_STRING, &compiler_opts,
 		"Compiler options",                 "STRING"},
 	{"algorithm",    'a', 0, G_OPTION_ARG_STRING, &algorithm,
-		"Scan algorithm to use (default is '" CLO_SCAN_TEST_ALGORITHM "')",
+		"Scan algorithm to use (default is '" CLO_SCAN_BENCHMARK_ALGORITHM "')",
 		"STRING"},
 	{"alg-opts",     'p', 0, G_OPTION_ARG_STRING, &alg_options,
 		"Algorithm options",                 "STRING"},
@@ -145,14 +145,14 @@ int main(int argc, char **argv) {
 	ccl_if_err_goto(err, error_handler);
 
 	clotype_elem = clo_type_by_name(
-		type != NULL ? type : CLO_SCAN_TEST_TYPE, &err);
+		type != NULL ? type : CLO_SCAN_BENCHMARK_TYPE, &err);
 	ccl_if_err_goto(err, error_handler);
 	clotype_sum = clo_type_by_name(
-		type_sum != NULL ? type_sum : CLO_SCAN_TEST_TYPE_SUM, &err);
+		type_sum != NULL ? type_sum : CLO_SCAN_BENCHMARK_TYPE_SUM, &err);
 	ccl_if_err_goto(err, error_handler);
 
-	if (algorithm == NULL) algorithm = g_strdup(CLO_SCAN_TEST_ALGORITHM);
-	if (alg_options == NULL) alg_options = g_strdup(CLO_SCAN_TEST_ALG_OPTS);
+	if (algorithm == NULL) algorithm = g_strdup(CLO_SCAN_BENCHMARK_ALGORITHM);
+	if (alg_options == NULL) alg_options = g_strdup(CLO_SCAN_BENCHMARK_ALG_OPTS);
 
 	/* Determine size in bytes of each element to sort. */
 	bytes = clo_type_sizeof(clotype_elem);

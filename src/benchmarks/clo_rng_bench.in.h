@@ -15,19 +15,16 @@
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
- /**
+/**
  * @file
- * Header for common test functions test.
+ * Header for RNG benchmark.
  */
 
-#ifndef _CLO_TEST_H_
-#define _CLO_TEST_H_
+#ifndef _CLO_RNG_BENCHMARK_H_
+#define _CLO_RNG_BENCHMARK_H_
 
-#include "clo_common.h"
+#include "clo_rng.h"
 
-cl_int clo_test_compare(CloType type, cl_uchar* a, cl_uchar* b);
-
-void clo_test_rand(GRand* rng, CloType type, void* location);
+#define CLO_RNG_BENCHMARK_SRC "@RNG_TEST_SRC@"
 
 #endif
-

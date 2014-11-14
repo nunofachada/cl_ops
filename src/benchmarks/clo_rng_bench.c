@@ -17,52 +17,52 @@
 
 /**
  * @file
- * Test RNG implementation.
+ * RNG implementation benchmark.
  */
 
-#include "clo_rng_test.h"
-#include "clo_test.h"
+#include "clo_rng_bench.h"
+#include "clo_bench.h"
 
-#define CLO_RNG_TEST_FILE_PREFIX "out"
-#define CLO_RNG_TEST_OUTPUT "file-tsv"
-#define CLO_RNG_TEST_GWS 262144
-#define CLO_RNG_TEST_LWS 256
-#define CLO_RNG_TEST_RUNS 10
-#define CLO_RNG_TEST_BITS 32
-#define CLO_RNG_TEST_BUFF_SIZE 1073741824 /* One gigabyte.*/
-#define CLO_RNG_TEST_DEFAULT "lcg"
+#define CLO_RNG_BENCHMARK_FILE_PREFIX "out"
+#define CLO_RNG_BENCHMARK_OUTPUT "file-tsv"
+#define CLO_RNG_BENCHMARK_GWS 262144
+#define CLO_RNG_BENCHMARK_LWS 256
+#define CLO_RNG_BENCHMARK_RUNS 10
+#define CLO_RNG_BENCHMARK_BITS 32
+#define CLO_RNG_BENCHMARK_BUFF_SIZE 1073741824 /* One gigabyte.*/
+#define CLO_RNG_BENCHMARK_DEFAULT "lcg"
 
 /** A description of the program. */
-#define CLO_RNG_TEST_DESCRIPTION "Test RNGs"
+#define CLO_RNG_BENCHMARK_DESCRIPTION "Test RNGs"
 
 /* Command line arguments and respective default values. */
 static gchar *rng = NULL;
 static gchar *output = NULL;
-static size_t gws = CLO_RNG_TEST_GWS;
-static size_t lws = CLO_RNG_TEST_LWS;
-static unsigned int runs = CLO_RNG_TEST_RUNS;
+static size_t gws = CLO_RNG_BENCHMARK_GWS;
+static size_t lws = CLO_RNG_BENCHMARK_LWS;
+static unsigned int runs = CLO_RNG_BENCHMARK_RUNS;
 static int dev_idx = -1;
 static guint32 rng_seed = CLO_DEFAULT_SEED;
 static gchar *gid_hash = NULL;
-static unsigned int bits = CLO_RNG_TEST_BITS;
+static unsigned int bits = CLO_RNG_BENCHMARK_BITS;
 static unsigned int maxint = 0;
 
 /* Valid command line options. */
 static GOptionEntry entries[] = {
 	{"rng",          'r', 0, G_OPTION_ARG_STRING, &rng,
-		"Random number generator: " CLO_RNG_IMPLS " (default is " CLO_RNG_TEST_DEFAULT ")",
+		"Random number generator: " CLO_RNG_IMPLS " (default is " CLO_RNG_BENCHMARK_DEFAULT ")",
 		"RNG"},
 	{"output",       'o', 0, G_OPTION_ARG_STRING, &output,
-		"Output: file-tsv, file-dh, stdout-bin, stdout-uint (default: " CLO_RNG_TEST_OUTPUT ")",
+		"Output: file-tsv, file-dh, stdout-bin, stdout-uint (default: " CLO_RNG_BENCHMARK_OUTPUT ")",
 		"OUTPUT"},
 	{"globalsize",   'g', 0, G_OPTION_ARG_INT,    &gws,
-		"Global work size (default is " G_STRINGIFY(CLO_RNG_TEST_GWS) ")",
+		"Global work size (default is " G_STRINGIFY(CLO_RNG_BENCHMARK_GWS) ")",
 		"SIZE"},
 	{"localsize",    'l', 0, G_OPTION_ARG_INT,    &lws,
-		"Local work size (default is " G_STRINGIFY(CLO_RNG_TEST_LWS) ")",
+		"Local work size (default is " G_STRINGIFY(CLO_RNG_BENCHMARK_LWS) ")",
 		"SIZE"},
 	{"runs",         'n', 0, G_OPTION_ARG_INT,    &runs,
-		"Random numbers per workitem (default is " G_STRINGIFY(CLO_RNG_TEST_RUNS) ", 0 means continuous generation)",
+		"Random numbers per workitem (default is " G_STRINGIFY(CLO_RNG_BENCHMARK_RUNS) ", 0 means continuous generation)",
 		"SIZE"},
 	{"device",       'd', 0, G_OPTION_ARG_INT,    &dev_idx,
 		"Device index",
@@ -74,7 +74,7 @@ static GOptionEntry entries[] = {
 		"Use workitem GID-based seeds instead of MT derived seeds from host. The option value is the hash to apply to seeds (KNUTH, XS1 or source code modifying variable x, e.g. x = x << 2).",
 		"HASH"},
 	{"bits",         'b', 0, G_OPTION_ARG_INT,    &bits,
-		"Number of bits in unsigned integers to produce (default " G_STRINGIFY(CLO_RNG_TEST_BITS) ")",
+		"Number of bits in unsigned integers to produce (default " G_STRINGIFY(CLO_RNG_BENCHMARK_BITS) ")",
 		NULL},
 	{"max",          'm', 0, G_OPTION_ARG_INT,    &maxint,
 		"Maximum integer to produce, overrides --bits option",
@@ -128,13 +128,13 @@ int main(int argc, char **argv) {
 	CloRngSeedType seed_type;
 
 	/* Parse command line options. */
-	context = g_option_context_new (" - " CLO_RNG_TEST_DESCRIPTION);
+	context = g_option_context_new (" - " CLO_RNG_BENCHMARK_DESCRIPTION);
 	g_option_context_add_main_entries(context, entries, NULL);
 	g_option_context_parse(context, &argc, &argv, &err);
 	ccl_if_err_goto(err, error_handler);
 
-	if (output == NULL) output = g_strdup(CLO_RNG_TEST_OUTPUT);
-	if (rng == NULL) rng = g_strdup(CLO_RNG_TEST_DEFAULT);
+	if (output == NULL) output = g_strdup(CLO_RNG_BENCHMARK_OUTPUT);
+	if (rng == NULL) rng = g_strdup(CLO_RNG_BENCHMARK_DEFAULT);
 
 	/* Determine seed type. */
 	if (gid_hash == NULL) {
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
 
 	/* Build compiler options. */
 	compiler_opts = g_strconcat(
-		maxint ? " -D CLO_RNG_TEST_MAXINT" : "",
+		maxint ? " -D CLO_RNG_BENCHMARK_MAXINT" : "",
 		NULL);
 
 	/* Create command queue. */
@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
 
 	/* Get RNG kernels source. */
 	src = g_strconcat(
-		clo_rng_get_source(rng_ocl), CLO_RNG_TEST_SRC, NULL);
+		clo_rng_get_source(rng_ocl), CLO_RNG_BENCHMARK_SRC, NULL);
 
 	/* Create and build program. */
 	prg = ccl_program_new_from_source(ctx, src, &err);
@@ -225,7 +225,7 @@ int main(int argc, char **argv) {
 		/* Generated random numbers are to be output to file. */
 		if (!g_strcmp0(output, "file-dh")) {
 			output_filename = g_strconcat(
-				CLO_RNG_TEST_FILE_PREFIX, "_", rng, "_",
+				CLO_RNG_BENCHMARK_FILE_PREFIX, "_", rng, "_",
 				gid_hash ? "gid_" : "host_",
 				gid_hash ? gid_hash : "mt",
 				".dh.txt", NULL);
@@ -233,7 +233,7 @@ int main(int argc, char **argv) {
 			output_sep_line = "";
 		} else if (!g_strcmp0(output, "file-tsv")) {
 			output_filename = g_strconcat(
-				CLO_RNG_TEST_FILE_PREFIX, "_", rng, "_",
+				CLO_RNG_BENCHMARK_FILE_PREFIX, "_", rng, "_",
 				gid_hash ? "gid_" : "host_",
 				gid_hash ? gid_hash : "mt",
 				".tsv", NULL);
@@ -250,11 +250,11 @@ int main(int argc, char **argv) {
 			"Unable to create output file '%s'.", output_filename);
 
 		/* Create large file buffer to avoid trashing disk. */
-		output_buffer = g_slice_alloc(CLO_RNG_TEST_BUFF_SIZE * sizeof(char));
+		output_buffer = g_slice_alloc(CLO_RNG_BENCHMARK_BUFF_SIZE * sizeof(char));
 
 		/* Set file buffer. */
 		status = setvbuf(
-			output_pointer, output_buffer, _IOFBF, CLO_RNG_TEST_BUFF_SIZE);
+			output_pointer, output_buffer, _IOFBF, CLO_RNG_BENCHMARK_BUFF_SIZE);
 		ccl_if_err_create_goto(err, CLO_ERROR, status != 0,
 			CLO_ERROR_STREAM_WRITE, error_handler,
 			"Unable to set output file buffer.");
@@ -373,7 +373,7 @@ cleanup:
 	if (output_pointer) fclose(output_pointer);
 
 	/* Free file output buffer. */
-	if (output_buffer) g_slice_free1(CLO_RNG_TEST_BUFF_SIZE * sizeof(char), output_buffer);
+	if (output_buffer) g_slice_free1(CLO_RNG_BENCHMARK_BUFF_SIZE * sizeof(char), output_buffer);
 
 	/* Free filename strings. */
 	if (output_filename) g_free(output_filename);

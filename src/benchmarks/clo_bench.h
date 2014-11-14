@@ -17,14 +17,17 @@
 
 /**
  * @file
- * Header for RNG test.
+ * Header for common benchmark functions.
  */
 
-#ifndef _CLO_RNG_TEST_H_
-#define _CLO_RNG_TEST_H_
+#ifndef _CLO_BENCHMARK_H_
+#define _CLO_BENCHMARK_H_
 
-#include "clo_rng.h"
+#include "clo_common.h"
 
-#define CLO_RNG_TEST_SRC "@RNG_TEST_SRC@"
+cl_int clo_bench_compare(CloType type, cl_uchar* a, cl_uchar* b);
+
+void clo_bench_rand(GRand* rng, CloType type, void* location);
 
 #endif
+

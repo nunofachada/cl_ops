@@ -17,28 +17,22 @@
 
 /**
  * @file
- * Header for scan test.
+ * Kernel for RNGs benchmark
  */
 
-#ifndef _CLO_SCAN_TEST_H
-#define _CLO_SCAN_TEST_H
+__kernel void clo_rng_test(
+		__global rng_state *seeds,
+		__global uint *result,
+		const uint bits) {
 
-#include "clo_scan_abstract.h"
-#include "clo_test.h"
+	/* Grid position for this work-item. */
+	uint gid = get_global_id(0);
 
-#define CLO_SCAN_HOST_GET(host_data, i, bytes) \
-	((unsigned long) \
-	(bytes == 1) ? ((unsigned char*) host_data)[i] : \
-	((bytes == 2) ? ((unsigned short*) host_data)[i] : \
-	((bytes == 4) ? ((unsigned int*) host_data)[i] : \
-	((unsigned long*) host_data)[i])))
-
-#define CLO_SCAN_MAXU(bytes) \
-	((unsigned long) \
-	(bytes == 1) ? 0xFF : \
-	((bytes == 2) ? G_MAXUSHORT : \
-	((bytes == 4) ? G_MAXUINT : \
-	(G_MAXULONG))))
-
+#ifdef CLO_RNG_BENCHMARK_MAXINT
+	result[gid] = clo_rng_next_int(seeds, bits);
+#else
+	result[gid] = clo_rng_next(seeds, gid) >> (32 - bits);
 #endif
+
+}
 

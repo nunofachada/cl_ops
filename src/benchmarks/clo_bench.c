@@ -15,14 +15,19 @@
  * along with CL-Ops.  If not, see <http://www.gnu.org/licenses/>.
  * */
 
-#include "clo_test.h"
+/**
+ * @file
+ * Common benchmark function implementations.
+ */
+
+#include "clo_bench.h"
 
 #define CLO_TYPE_CMP(type, a, b) \
 	((*((type*) a) > *((type*) b)) \
 		? 1 \
 		: ((*((type*) a) == *((type*) b)) ? 0 : -1))
 
-cl_int clo_test_compare(CloType type, cl_uchar* a, cl_uchar* b) {
+cl_int clo_bench_compare(CloType type, cl_uchar* a, cl_uchar* b) {
 
 	g_return_val_if_fail(a != NULL, CL_INT_MAX);
 	g_return_val_if_fail(b != NULL, CL_INT_MAX);
@@ -58,7 +63,7 @@ cl_int clo_test_compare(CloType type, cl_uchar* a, cl_uchar* b) {
 
 }
 
-void clo_test_rand(GRand* rng, CloType type, void* location) {
+void clo_bench_rand(GRand* rng, CloType type, void* location) {
 
 	g_return_if_fail(location != NULL);
 

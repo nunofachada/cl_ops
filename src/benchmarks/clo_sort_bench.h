@@ -18,14 +18,14 @@
 
 /**
  * @file
- * Header sorting algorithms test.
+ * Header sorting algorithms benchmark.
  */
 
-#ifndef _CLO_SORT_TEST_H_
-#define _CLO_SORT_TEST_H_
+#ifndef _CLO_SORT_BENCHMARK_H_
+#define _CLO_SORT_BENCHMARK_H_
 
 #include "clo_sort_abstract.h"
-#include "clo_test.h"
+#include "clo_bench.h"
 
 #endif
 
