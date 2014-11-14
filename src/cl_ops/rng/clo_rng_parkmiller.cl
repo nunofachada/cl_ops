@@ -51,7 +51,7 @@ uint clo_rng_next(__global rng_state *states, uint index) {
 	states[index] = state;
 
 	/* Return value */
-	return (uint) ((int2) state).x;
+	return ((uint) ((int2) state).x) + ((uint) ((int2) state).y);
 
 }
 
