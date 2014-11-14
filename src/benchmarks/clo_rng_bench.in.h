@@ -25,6 +25,6 @@
 
 #include "clo_rng.h"
 
-#define CLO_RNG_BENCHMARK_SRC "@RNG_TEST_SRC@"
+#define CLO_RNG_BENCHMARK_SRC "@RNG_BENCHMARK_SRC@"
 
 #endif

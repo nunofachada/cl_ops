@@ -79,6 +79,7 @@ static struct ocl_rng_info rng_infos[] = {
 	{"xorshift64", CLO_RNG_SRC_XORSHIFT64, 8},
 	{"xorshift128", CLO_RNG_SRC_XORSHIFT128, 16},
 	{"mwc64x", CLO_RNG_SRC_MWC64X, 8},
+	{"parkmiller", CLO_RNG_SRC_PARKMILLER, 8},
 	{NULL, NULL, 0}
 };
 

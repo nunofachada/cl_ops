@@ -33,13 +33,14 @@
 #define CLO_RNG_SRC_XORSHIFT64 "@RNG_SRC_XORSHIFT64@"
 #define CLO_RNG_SRC_XORSHIFT128 "@RNG_SRC_XORSHIFT128@"
 #define CLO_RNG_SRC_MWC64X "@RNG_SRC_MWC64X@"
+#define CLO_RNG_SRC_PARKMILLER "@RNG_SRC_PARKMILLER@"
 #define CLO_RNG_SRC "@RNG_SRC@"
 
 /* Device seed initialization kernel. */
 #define CLO_RNG_SRC_INIT "@RNG_SRC_INIT@"
 
 /* Available RNGs */
-#define CLO_RNG_IMPLS "lcg, xorshift64, xorshift128, mwc64x"
+#define CLO_RNG_IMPLS "lcg, xorshift64, xorshift128, mwc64x, parkmiller"
 
 /**
  * @defgroup CLO_RNG Random number generators

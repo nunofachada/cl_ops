@@ -16,46 +16,43 @@
  * <http://www.gnu.org/licenses/>.
  * */
 
-
 /**
  * @file
- * GPU implementation of a random number generator based on a
- * Multiply-With-Carry (MWC) generator, developed by David B. Thomas
- * from Imperial College London. More information at
- * http://cas.ee.ic.ac.uk/people/dt10/research/rngs-gpu-mwc64x.html.
+ * Implementation of Park-Miller random number generator.
+ *
+ * "Random number generators: good ones are hard to find",
+ * S. K. Park and K. W. Miller. Communications of the ACM, Vol. 31,
+ * Issue 10, Oct. 1988, pp 1192-1201.
  */
 
-/* For the LCG RNG, the size of each seed is two integers. */
-typedef uint2 rng_state;
+/* For the Park-Miller RNG, the size of each seed is long. */
+typedef long rng_state;
 
 /**
- * Returns the next pseudorandom value using a MWC random number
- * generator.
+ * Returns the next pseudorandom value using a Park-Miller random
+ * number generator with 64 bit state.
  *
  * @param[in,out] states Array of RNG states.
  * @param[in] index Index of relevant state to use and update.
- * @return The next pseudorandom value using a MWC random number
- * generator.
+ * @return The next pseudorandom value using a Park-Miller random
+ * number generator with 64 bit state.
  */
 uint clo_rng_next(__global rng_state *states, uint index) {
 
-    enum { A=4294883355U };
+	/* Get current state */
+	rng_state state = states[index];
 
-	/* Unpack the state. */
-	uint x = states[index].x, c = states[index].y;
+	/* Update state */
+	int const a = 16807;
+	int const m = 2147483647;
+	state = (state * a) % m;
 
-	/* Calculate the result */
-	uint res = x^c;
+	/* Keep state */
+	states[index] = state;
 
-	/* Step the RNG */
-	uint hi = mul_hi(x,A);
-	x = x * A + c;
-	c = hi + (x < c);
+	/* Return value */
+	return (uint) ((int2) state).x;
 
-	/* Pack the state back up */
-	states[index] = (rng_state) (x, c);
-
-	/* Return the next result */
-	return res;
 }
+
 

@@ -20,7 +20,7 @@
  * Kernel for RNGs benchmark
  */
 
-__kernel void clo_rng_test(
+__kernel void clo_rng_bench(
 		__global rng_state *seeds,
 		__global uint *result,
 		const uint bits) {

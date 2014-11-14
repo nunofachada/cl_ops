@@ -290,7 +290,7 @@ int main(int argc, char **argv) {
 	timer = g_timer_new();
 
 	/* Get test kernel. */
-	test_rng = ccl_program_get_kernel(prg, "clo_rng_test", &err);
+	test_rng = ccl_program_get_kernel(prg, "clo_rng_bench", &err);
 	ccl_if_err_goto(err, error_handler);
 
 	/*  Set test kernel arguments. */
