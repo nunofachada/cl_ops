@@ -54,27 +54,9 @@ struct clo_rng {
 };
 
 /**
- * @internal
- * A RNG algorithm information: name, kernel constant and seed size in
- * bytes.
- * */
-struct ocl_rng_info {
-
-	/** RNG algorithm name. */
-	const char* name;
-
-	/** RNG algorithm source. */
-	const char* src;
-
-	/** Seed size in butes. */
-	size_t seed_size;
-};
-
-/**
- * @internal
  * Information about the random number generation algorithms.
  * */
-static struct ocl_rng_info rng_infos[] = {
+const struct clo_rng_info clo_rng_infos[] = {
 	{"lcg", CLO_RNG_SRC_LCG, 8},
 	{"xorshift64", CLO_RNG_SRC_XORSHIFT64, 8},
 	{"xorshift128", CLO_RNG_SRC_XORSHIFT128, 16},
@@ -296,8 +278,8 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 	GError* err_internal = NULL;
 
 	/* Search in the list of known scan classes. */
-	for (guint i = 0; rng_infos[i].name != NULL; ++i) {
-		if (g_strcmp0(type, rng_infos[i].name) == 0) {
+	for (guint i = 0; clo_rng_infos[i].name != NULL; ++i) {
+		if (g_strcmp0(type, clo_rng_infos[i].name) == 0) {
 			/* If found, return an new instance.*/
 
 			/* Deal with seeds. */
@@ -310,8 +292,8 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 						"parameter.");
 					/* Initialize seeds in device using GID. */
 					dev_seeds = clo_rng_device_seed_init(ctx, cq, hash,
-						seeds_count, rng_infos[i].seed_size, main_seed,
-						&err_internal);
+						seeds_count, clo_rng_infos[i].seed_size,
+						main_seed, &err_internal);
 					ccl_if_err_propagate_goto(err, err_internal,
 						error_handler);
 					/* Get out of switch. */
@@ -325,8 +307,8 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 					/* Initialize seeds in host and copy them to
 					 * device. */
 					dev_seeds = clo_rng_host_seed_init(ctx, cq,
-						seeds_count, rng_infos[i].seed_size, main_seed,
-						&err_internal);
+						seeds_count, clo_rng_infos[i].seed_size,
+						main_seed, &err_internal);
 					ccl_if_err_propagate_goto(err, err_internal,
 						error_handler);
 					/* Get out of switch. */
@@ -345,12 +327,12 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 					ccl_if_err_propagate_goto(err, err_internal,
 						error_handler);
 					ccl_if_err_create_goto(*err, CLO_ERROR,
-						ext_buf_size < seeds_count * rng_infos[i].seed_size,
+						ext_buf_size < seeds_count * clo_rng_infos[i].seed_size,
 						CLO_ERROR_ARGS, error_handler,
 						"The '%s' RNG type requires a buffer of at " \
 						"least %d bytes. The size of the proviced " \
 						"external device seeds buffer is only %d bytes.",
-						type, (int) (seeds_count * rng_infos[i].seed_size),
+						type, (int) (seeds_count * clo_rng_infos[i].seed_size),
 						(int) ext_buf_size);
 					/* Keep external device seeds as the RNG seeds.
 					 * Increase reference count, client will have to
@@ -367,13 +349,13 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 						"seeds parameter.");
 					/* Create device buffer and copy seeds to device. */
 					dev_seeds = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
-						seeds_count * rng_infos[i].seed_size, NULL,
+						seeds_count * clo_rng_infos[i].seed_size, NULL,
 						&err_internal);
 					ccl_if_err_propagate_goto(err, err_internal,
 						error_handler);
 					ccl_buffer_enqueue_write(dev_seeds , cq, CL_TRUE, 0,
-						seeds_count * rng_infos[i].seed_size, seeds,
-						NULL, &err_internal);
+						seeds_count * clo_rng_infos[i].seed_size,
+						seeds, NULL, &err_internal);
 					ccl_if_err_propagate_goto(err, err_internal,
 						error_handler);
 					/* Get out of switch. */
@@ -390,13 +372,14 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 
 			/* Construct source code. */
 			rng->src = g_strconcat(CLO_RNG_SRC_WORKITEM,
-				rng_infos[i].src, CLO_RNG_SRC, NULL);
+				clo_rng_infos[i].src, CLO_RNG_SRC, NULL);
 
 			/* Set seeds buffer. */
 			rng->seeds_device = dev_seeds;
 
 			/* Set seed buffer size in device. */
-			rng->size_in_device = seeds_count * rng_infos[i].seed_size;
+			rng->size_in_device =
+				seeds_count * clo_rng_infos[i].seed_size;
 
 		}
 	}

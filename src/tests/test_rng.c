@@ -27,12 +27,31 @@
 #include <cl_ops.h>
 
 /**
- * Tests sampler wrapper class reference counting.
+ * Tests
  * */
-static void impl_test() {
-
+static void seed_dev_gid_test() {
 	return;
+}
 
+/**
+ * Tests
+ * */
+static void seed_host_mt_test() {
+	return;
+}
+
+/**
+ * Tests
+ * */
+static void seed_ext_dev_test() {
+	return;
+}
+
+/**
+ * Tests
+ * */
+static void seed_ext_host_test() {
+	return;
 }
 
 /**
@@ -46,8 +65,20 @@ int main(int argc, char** argv) {
 	g_test_init(&argc, &argv, NULL);
 
 	g_test_add_func(
-		"/rng/impl",
-		impl_test);
+		"/rng/seed-dev-gid",
+		seed_dev_gid_test);
+
+	g_test_add_func(
+		"/rng/seed-host-mt",
+		seed_host_mt_test);
+
+	g_test_add_func(
+		"/rng/seed-ext-dev",
+		seed_ext_dev_test);
+
+	g_test_add_func(
+		"/rng/seed-ext-host",
+		seed_ext_host_test);
 
 	return g_test_run();
 }

@@ -43,6 +43,27 @@
 #define CLO_RNG_IMPLS "lcg, xorshift64, xorshift128, mwc64x, parkmiller"
 
 /**
+ * A RNG algorithm information: name, kernel constant and seed size in
+ * bytes.
+ * */
+struct clo_rng_info {
+
+	/** RNG algorithm name. */
+	const char* name;
+
+	/** RNG algorithm source. */
+	const char* src;
+
+	/** Seed size in butes. */
+	const size_t seed_size;
+};
+
+/**
+ * Information about the random number generation algorithms.
+ * */
+extern const struct clo_rng_info clo_rng_infos[];
+
+/**
  * @defgroup CLO_RNG Random number generators
  *
  * This module provides several random number generators.
