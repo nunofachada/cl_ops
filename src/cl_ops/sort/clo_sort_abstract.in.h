@@ -55,9 +55,10 @@ typedef struct clo_sort_impl_def {
 	/**
 	 * Sort algorithm initializer function.
 	 *
-	 * @param[in] sorter
-	 * @param[in] options
-	 * @param[out] err
+	 * @param[in] sorter Sorter object.
+	 * @param[in] options Algorithm options.
+	 * @param[out] err Return location for a GError, or `NULL` if error
+	 * reporting is to be ignored.
 	 * @return Sort algorithm source code.
 	 * */
 	const char* (*init)(CloSort* sorter, const char* options,
@@ -73,22 +74,7 @@ typedef struct clo_sort_impl_def {
 	/**
 	 * Perform sort using device data.
 	 *
-	 * @param[in] sorter Sorter object.
-	 * @param[in] cq_exec A valid command queue wrapper for kernel
-	 * execution, cannot be `NULL`.
-	 * @param[in] cq_comm A command queue wrapper for data transfers.
-	 * If `NULL`, `cq_exec` will be used for data transfers.
-	 * @param[in] data_in Data to be sorted.
-	 * @param[out] data_out Location where to place sorted data. If
-	 * `NULL`, data will be sorted in-place or copied back from auxiliar
-	 * device buffer, depending on the sort implementation.
-	 * @param[in] numel Number of elements in `data_in`.
-	 * @param[in] lws_max Max. local worksize. If 0, the local worksize
-	 * will be automatically determined.
-	 * @param[out] err Return location for a GError, or `NULL` if error
-	 * reporting is to be ignored.
-	 * @return An event which must terminate before sort is considered
-	 * complete.
+	 * @copydetails clo_sort::clo_sort_with_device_data()
 	 * */
 	CCLEvent* (*sort_with_device_data)(CloSort* sorter,
 		CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
@@ -99,23 +85,14 @@ typedef struct clo_sort_impl_def {
 	 * Get the maximum number of kernels used by the sort
 	 * implementation.
 	 *
-	 * @param[in] sorter Sorter object.
-	 * @param[out] err Return location for a GError, or `NULL` if error
-	 * reporting is to be ignored.
-	 * @return Maximum number of kernels used by the sort
-	 * implementation.
+	 * @copydetails clo_sort::clo_sort_get_num_kernels()
 	 * */
 	cl_uint (*get_num_kernels)(CloSort* sorter, GError** err);
 
 	/**
 	 * Get name of the i^th kernel used by the sort implementation.
 	 *
-	 * @param[in] sorter Sorter object.
-	 * @param[in] i i^th kernel used by the sort implementation.
-	 * @param[out] err Return location for a GError, or `NULL` if error
-	 * reporting is to be ignored.
-	 * @return The name of the i^th kernel used by the sort
-	 * implementation.
+	 * @copydetails clo_sort::clo_sort_get_kernel_name()
 	 * */
 	const char* (*get_kernel_name)(CloSort* sorter, cl_uint i,
 		GError** err);
@@ -125,17 +102,7 @@ typedef struct clo_sort_impl_def {
 	 * implementation for the given maximum local worksize and number
 	 * of elements to sort.
 	 *
-	 * @param[in] sorter Sorter object.
-	 * @param[in] i i^th kernel used by the sort implementation.
-	 * @param[in] lws_max Max. local worksize. If 0, the local worksize
-	 * is automatically determined and the returned memory usage
-	 * corresponds to this value.
-	 * @param[in] numel Number of elements to sort.
-	 * @param[out] err Return location for a GError, or `NULL` if error
-	 * reporting is to be ignored.
-	 * @return The local memory usage of i^th kernel used by the sort
-	 * implementation for the given maximum local worksize and number of
-	 * elements to sort.
+	 * @copydetails clo_sort::clo_sort_get_localmem_usage()
 	 * */
 	size_t (*get_localmem_usage)(CloSort* sorter, cl_uint i,
 		size_t lws_max, size_t numel, GError** err);

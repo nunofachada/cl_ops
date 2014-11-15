@@ -53,7 +53,6 @@ static const char* clo_sort_abitnonic_knames[] =
 /**
  * @internal
  * Determine abitonic sort strategy for the given parameters.
- *
  * */
 static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 	CCLProgram* prg, CCLDevice* dev, clo_sort_abitonic_data data,
@@ -313,9 +312,8 @@ finish:
 }
 
 /**
+ * @internal
  * Perform sort using device data.
- *
- * @copydetails ::CloSort::sort_with_device_data()
  * */
 static CCLEvent* clo_sort_abitonic_sort_with_device_data(
 	CloSort* sorter, CCLQueue* cq_exec, CCLQueue* cq_comm,
@@ -452,10 +450,9 @@ finish:
 }
 
 /**
+ * @internal
  * Initializes an advanced bitonic sorter object and returns the
  * respective source code.
- *
- * @copydetails ::CloSort::init()
  * */
 static const char* clo_sort_abitonic_init(
 	CloSort* sorter, const char* options, GError** err) {
@@ -570,9 +567,8 @@ finish:
 
 
 /**
+ * @internal
  * Finalizes an advanced bitonic sorter object.
- *
- * @copydetails ::CloSort::finalize()
  * */
 static void clo_sort_abitonic_finalize(CloSort* sorter) {
 
@@ -583,9 +579,8 @@ static void clo_sort_abitonic_finalize(CloSort* sorter) {
 }
 
 /**
+ * @internal
  * Get the maximum number of kernels used by the sort implementation.
- *
- * @copydetails ::CloSort::get_num_kernels()
  * */
 static cl_uint clo_sort_abitonic_get_num_kernels(
 	CloSort* sorter, GError** err) {
@@ -600,11 +595,10 @@ static cl_uint clo_sort_abitonic_get_num_kernels(
 }
 
 /**
+ * @internal
  * Get name of the i^th kernel used by the sort implementation.
- *
- * @copydetails ::CloSort::get_kernel_name()
  * */
-const char* clo_sort_abitonic_get_kernel_name(
+static const char* clo_sort_abitonic_get_kernel_name(
 	CloSort* sorter, cl_uint i, GError** err) {
 
 	/* Check that i is within bounds. */
@@ -619,13 +613,12 @@ const char* clo_sort_abitonic_get_kernel_name(
 }
 
 /**
+ * @internal
  * Get local memory usage of i^th kernel used by the sort implementation
  * for the given maximum local worksize and number of elements to sort.
- *
- * @copydetails ::CloSort::get_localmem_usage()
  * */
-size_t clo_sort_abitonic_get_localmem_usage(CloSort* sorter, cl_uint i,
-	size_t lws_max, size_t numel, GError** err) {
+static size_t clo_sort_abitonic_get_localmem_usage(CloSort* sorter,
+	cl_uint i, size_t lws_max, size_t numel, GError** err) {
 
 	/* Check that it's within bounds. */
 	g_return_val_if_fail(i < CLO_SORT_ABITONIC_NUM_KERNELS, 0);

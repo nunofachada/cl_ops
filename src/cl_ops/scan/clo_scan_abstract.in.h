@@ -67,7 +67,7 @@ typedef struct clo_scan_impl_def {
 	/**
 	 * Perform scan using device data.
 	 *
-	 * @copydetails ::clo_scan_with_device_data()
+	 * @copydetails clo_scan::clo_scan_with_device_data()
 	 * */
 	CCLEvent* (*scan_with_device_data)(CloScan* scanner,
 		CCLQueue* cq_exec, CCLQueue* cq_comm, CCLBuffer* data_in,
@@ -78,23 +78,14 @@ typedef struct clo_scan_impl_def {
 	 * Get the maximum number of kernels used by the scan
 	 * implementation.
 	 *
-	 * @param[in] scanner Scanner object.
-	 * @param[out] err Return location for a GError, or `NULL` if error
-	 * reporting is to be ignored.
-	 * @return Maximum number of kernels used by the scan
-	 * implementation.
+	 * @copydetails clo_scan::clo_scan_get_num_kernels()
 	 * */
 	cl_uint (*get_num_kernels)(CloScan* scanner, GError** err);
 
 	/**
 	 * Get name of the i^th kernel used by the scan implementation.
 	 *
-	 * @param[in] scanner Scanner object.
-	 * @param[in] i i^th kernel used by the scan implementation.
-	 * @param[out] err Return location for a GError, or `NULL` if error
-	 * reporting is to be ignored.
-	 * @return The name of the i^th kernel used by the scan
-	 * implementation.
+	 * @copydetails clo_scan::clo_scan_get_kernel_name()
 	 * */
 	const char* (*get_kernel_name)(
 		CloScan* scanner, cl_uint i, GError** err);
@@ -104,17 +95,7 @@ typedef struct clo_scan_impl_def {
 	 * implementation for the given maximum local worksize and number
 	 * of elements to scan.
 	 *
-	 * @param[in] scanner Scanner object.
-	 * @param[in] i i^th kernel used by the scan implementation.
-	 * @param[in] lws_max Max. local worksize. If 0, the local worksize
-	 * is automatically determined and the returned memory usage
-	 * corresponds to this value.
-	 * @param[in] numel Number of elements to scan.
-	 * @param[out] err Return location for a GError, or `NULL` if error
-	 * reporting is to be ignored.
-	 * @return The local memory usage of i^th kernel used by the scan
-	 * implementation for the given maximum local worksize and number of
-	 * elements to scan.
+	 * @copydetails clo_scan::clo_scan_get_localmem_usage()
 	 * */
 	size_t (*get_localmem_usage)(CloScan* scanner, cl_uint i,
 		size_t lws_max, size_t numel, GError** err);

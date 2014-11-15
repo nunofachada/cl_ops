@@ -24,10 +24,9 @@
 #include "cl_ops/clo_scan_blelloch.h"
 
 /**
+ * @internal
  * Initializes the Blelloch scan object and returns the appropriate
  * program wrapper.
- *
- * @copydetails ::clo_scan_impl::init()
  * */
 static const char* clo_scan_blelloch_init(CloScan* scanner,
 	const char* options, GError** err) {
@@ -63,9 +62,8 @@ finish:
 }
 
 /**
+ * @internal
  * Finalize blelloch scan object.
- *
- * @copydetails ::clo_scan_impl::finalize()
  * */
 static void clo_scan_blelloch_finalize(CloScan* scan) {
 	(void)scan;
@@ -73,9 +71,8 @@ static void clo_scan_blelloch_finalize(CloScan* scan) {
 }
 
 /**
+ * @internal
  * Perform scan using device data.
- *
- * @copydetails ::clo_scan_impl::scan_with_device_data()
  * */
 static CCLEvent* clo_scan_blelloch_scan_with_device_data(
 	CloScan* scanner, CCLQueue* cq_exec, CCLQueue* cq_comm,
@@ -216,9 +213,8 @@ finish:
 }
 
 /**
+ * @internal
  * Get the maximum number of kernels used by the scan implementation.
- *
- * @copydetails ::CloScan::get_num_kernels()
  * */
 static cl_uint clo_scan_blelloch_get_num_kernels(
 	CloScan* scanner, GError** err) {
@@ -233,11 +229,10 @@ static cl_uint clo_scan_blelloch_get_num_kernels(
 }
 
 /**
+ * @internal
  * Get name of the i^th kernel used by the scan implementation.
- *
- * @copydetails ::CloScan::get_kernel_name()
  * */
-const char* clo_scan_blelloch_get_kernel_name(
+static const char* clo_scan_blelloch_get_kernel_name(
 	CloScan* scanner, cl_uint i, GError** err) {
 
 	/* Check that i is within bounds. */
@@ -273,13 +268,12 @@ const char* clo_scan_blelloch_get_kernel_name(
 }
 
 /**
+ * @internal
  * Get local memory usage of i^th kernel used by the scan implementation
  * for the given maximum local worksize and number of elements to scan.
- *
- * @copydetails ::CloScan::get_localmem_usage()
  * */
-size_t clo_scan_blelloch_get_localmem_usage(CloScan* scanner, cl_uint i,
-	size_t lws_max, size_t numel, GError** err) {
+static size_t clo_scan_blelloch_get_localmem_usage(CloScan* scanner,
+	cl_uint i, size_t lws_max, size_t numel, GError** err) {
 
 	/* Check that i is within bounds. */
 	g_return_val_if_fail(i < CLO_SCAN_BLELLOCH_NUM_KERNELS, 0);
