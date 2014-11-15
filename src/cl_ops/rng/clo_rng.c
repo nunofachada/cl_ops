@@ -314,11 +314,6 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 					/* Get out of switch. */
 					break;
 				case CLO_RNG_SEED_EXT_DEV:
-					/* Check that seeds parameter is NULL. */
-					ccl_if_err_create_goto(*err, CLO_ERROR,
-						seeds != NULL, CLO_ERROR_ARGS, error_handler,
-						"The EXT_DEV seed type expects a NULL seeds "\
-						"parameter.");
 					/* Check that external device buffer has the
 					 * required size. */
 					ext_buf_size = ccl_memobj_get_info_scalar(
