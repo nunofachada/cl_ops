@@ -21,7 +21,7 @@
  * Global memory selection sort host implementation.
  */
 
-#include "clo_sort_gselect.h"
+#include "cl_ops/clo_sort_gselect.h"
 
 /**
  * Perform sort using device data.

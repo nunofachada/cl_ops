@@ -21,7 +21,7 @@
  * Blelloch scan definitions.
  * */
 
-#include "clo_scan_blelloch.h"
+#include "cl_ops/clo_scan_blelloch.h"
 
 /**
  * Initializes the Blelloch scan object and returns the appropriate

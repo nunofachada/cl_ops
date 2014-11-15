@@ -21,8 +21,8 @@
  * Satish et al Radix Sort host implementation.
  */
 
-#include "clo_sort_satradix.h"
-#include "clo_scan_abstract.h"
+#include "cl_ops/clo_sort_satradix.h"
+#include "cl_ops/clo_scan_abstract.h"
 
 /* The default scan implementation. */
 #define CLO_SORT_SATRADIX_SCAN_DEFAULT "blelloch"

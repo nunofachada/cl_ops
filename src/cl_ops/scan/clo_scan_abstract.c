@@ -21,8 +21,8 @@
  * Parallel prefix sum (scan) abstract definitions.
  * */
 
-#include "clo_scan_abstract.h"
-#include "clo_scan_blelloch.h"
+#include "cl_ops/clo_scan_abstract.h"
+#include "cl_ops/clo_scan_blelloch.h"
 
 /**
  * @addtogroup CLO_SCAN

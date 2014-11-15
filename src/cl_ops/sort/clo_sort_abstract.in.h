@@ -24,7 +24,7 @@
 #ifndef _CLO_SORT_ABSTRACT_H_
 #define _CLO_SORT_ABSTRACT_H_
 
-#include "clo_common.h"
+#include "cl_ops/clo_common.h"
 
 /* Available sort algoritms. */
 #define CLO_SORT_IMPLS "sbitonic, abitonic, gselect, satradix"

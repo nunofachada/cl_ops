@@ -21,7 +21,6 @@
  */
 
 #include "clo_rng_bench.h"
-#include "clo_bench.h"
 
 #define CLO_RNG_BENCHMARK_FILE_PREFIX "out"
 #define CLO_RNG_BENCHMARK_OUTPUT "file-tsv"

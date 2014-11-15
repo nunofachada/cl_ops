@@ -22,7 +22,7 @@
  * @author Nuno Fachada
  */
 
-#include "clo_common.h"
+#include "cl_ops/clo_common.h"
 
 /* Check if given type is a known type. */
 #define CLO_IS_TYPE(type) (type >= CLO_CHAR) && (type <= CLO_DOUBLE)

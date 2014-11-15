@@ -24,7 +24,7 @@
 #ifndef _CLO_SCAN_BLELLOCH_H_
 #define _CLO_SCAN_BLELLOCH_H_
 
-#include "clo_scan_abstract.h"
+#include "cl_ops/clo_scan_abstract.h"
 
 /** The blelloch's scan kernels source. */
 #define CLO_SCAN_BLELLOCH_SRC "@BLELLOCH_SRC@"

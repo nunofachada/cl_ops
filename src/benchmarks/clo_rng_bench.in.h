@@ -23,7 +23,7 @@
 #ifndef _CLO_RNG_BENCHMARK_H_
 #define _CLO_RNG_BENCHMARK_H_
 
-#include "clo_rng.h"
+#include "clo_bench.h"
 
 #define CLO_RNG_BENCHMARK_SRC "@RNG_BENCHMARK_SRC@"
 

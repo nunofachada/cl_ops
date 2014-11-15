@@ -75,9 +75,9 @@ endif()
 # ########################### #
 # SET LIBRARY INCLUDE FOLDERS #
 # ########################### #
-include_directories(${GLIB_INCLUDE_DIRS} ${OPENCL_INCLUDE_DIRS}
-	${CF4OCL2_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/src/${PROJECT_NAME}
-	${CMAKE_BINARY_DIR}/${PROJECT_NAME})
+include_directories(${CMAKE_SOURCE_DIR}/src/${PROJECT_NAME}
+	${CMAKE_BINARY_DIR} ${GLIB_INCLUDE_DIRS}
+	${OPENCL_INCLUDE_DIRS} ${CF4OCL2_INCLUDE_DIRS})
 
 # ###################### #
 # DEFINE INSTALL FOLDERS #

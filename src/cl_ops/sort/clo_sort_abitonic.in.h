@@ -24,7 +24,7 @@
 #ifndef _CLO_SORT_ABITONIC_H_
 #define _CLO_SORT_ABITONIC_H_
 
-#include "clo_sort_abstract.h"
+#include "cl_ops/clo_sort_abstract.h"
 
 /** The advanced bitonic sort kernels source. */
 #define CLO_SORT_ABITONIC_SRC "@ABITONIC_SRC@"

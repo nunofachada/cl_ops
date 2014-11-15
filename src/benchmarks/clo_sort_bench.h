@@ -24,7 +24,6 @@
 #ifndef _CLO_SORT_BENCHMARK_H_
 #define _CLO_SORT_BENCHMARK_H_
 
-#include "clo_sort_abstract.h"
 #include "clo_bench.h"
 
 #endif

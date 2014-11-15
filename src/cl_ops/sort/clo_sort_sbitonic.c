@@ -21,7 +21,7 @@
  * Simple bitonic sort host implementation.
  */
 
-#include "clo_sort_sbitonic.h"
+#include "cl_ops/clo_sort_sbitonic.h"
 
 /**
  * Perform sort using device data.

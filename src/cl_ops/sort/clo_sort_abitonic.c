@@ -21,7 +21,7 @@
  * Advanced bitonic sort host implementation.
  */
 
-#include "clo_sort_abitonic.h"
+#include "cl_ops/clo_sort_abitonic.h"
 
 typedef struct {
 

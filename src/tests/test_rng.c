@@ -26,11 +26,109 @@
 
 #include <cl_ops.h>
 
+#define CLO_RNG_TEST_KERNEL "clo_rng_test"
+#define CLO_RNG_TEST_SRC \
+	"__kernel void " CLO_RNG_TEST_KERNEL "(" \
+	"		__global rng_state* seeds, __global ulong* output) {" \
+	"	uint gid = get_global_id(0);" \
+	"	uint x = clo_rng_next_int(seeds, UINT_MAX);" \
+	"	output[gid] = (ulong) x;" \
+	"}"
+
+#define CLO_RNG_TEST_NUM_SEEDS 10000
+#define CLO_RNG_TEST_INIT_SEED 1234
+#define CLO_RNG_TEST_HASH "(x * 3 + 1)"
+
+
 /**
  * Tests
  * */
 static void seed_dev_gid_test() {
-	return;
+
+	/* Test variables. */
+	CCLContext* ctx = NULL;
+	CCLDevice* dev = NULL;
+	CCLQueue* cq = NULL;
+	CCLProgram* prg = NULL;
+	CCLKernel* krnl = NULL;
+	CCLBuffer* seeds_dev = NULL;
+	CCLBuffer* output_dev = NULL;
+	GError* err = NULL;
+	CloRng* rng = NULL;
+	size_t lws = 0;
+	size_t ws = CLO_RNG_TEST_NUM_SEEDS;
+	gchar* src;
+
+	/* Get context and device. */
+	ctx = ccl_context_new_any(&err);
+	g_assert_no_error(err);
+
+	dev = ccl_context_get_device(ctx, 0, &err);
+	g_assert_no_error(err);
+
+	/* Create command queue. */
+	cq = ccl_queue_new(ctx, dev, 0, &err);
+	g_assert_no_error(err);
+
+	/* Test all RNGs. */
+	for (cl_uint i = 0; clo_rng_infos[i].name != NULL; ++i) {
+
+		/* Create RNG object. */
+		rng = clo_rng_new(clo_rng_infos[i].name, CLO_RNG_SEED_DEV_GID,
+			NULL, CLO_RNG_TEST_NUM_SEEDS, CLO_RNG_TEST_INIT_SEED,
+			CLO_RNG_TEST_HASH, ctx, cq, &err);
+		g_assert_no_error(err);
+
+		/* Get RNG seeds device buffer. */
+		seeds_dev = clo_rng_get_device_seeds(rng);
+
+		/* Get RNG kernels source. */
+		src = g_strconcat(
+			clo_rng_get_source(rng), CLO_RNG_TEST_SRC, NULL);
+
+		/* Create and build program. */
+		prg = ccl_program_new_from_source(ctx, src, &err);
+		g_assert_no_error(err);
+
+		ccl_program_build(prg, NULL, &err);
+		g_assert_no_error(err);
+
+		/* Create output buffer. */
+		output_dev = ccl_buffer_new(ctx, CL_MEM_WRITE_ONLY,
+			CLO_RNG_TEST_NUM_SEEDS * sizeof(cl_ulong), NULL, &err);
+		g_assert_no_error(err);
+
+		/* Get kernel from program. */
+		krnl = ccl_program_get_kernel(prg, CLO_RNG_TEST_KERNEL, &err);
+		g_assert_no_error(err);
+
+		/* Get a "nice" local worksize. */
+		ccl_kernel_suggest_worksizes(
+			krnl, dev, 1, &ws, NULL, &lws, &err);
+		g_assert_no_error(err);
+
+		/* Execute kernel. */
+		ccl_kernel_set_args_and_enqueue_ndrange(
+			krnl, cq, 1, NULL, &ws, &lws, NULL, &err,
+			seeds_dev, output_dev, NULL);
+		g_assert_no_error(err);
+
+		/* Release this iteration stuff. */
+		g_free(src);
+		ccl_buffer_destroy(output_dev);
+		ccl_program_destroy(prg);
+		clo_rng_destroy(rng);
+
+	}
+
+	/* Destroy queue and context. */
+	ccl_queue_destroy(cq);
+	ccl_context_destroy(ctx);
+
+	/* Confirm that memory allocated by wrappers has been properly
+	 * freed. */
+	g_assert(ccl_wrapper_memcheck());
+
 }
 
 /**

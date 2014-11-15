@@ -23,7 +23,7 @@
 #ifndef _CLO_BENCHMARK_H_
 #define _CLO_BENCHMARK_H_
 
-#include "clo_common.h"
+#include <cl_ops.h>
 
 cl_int clo_bench_compare(CloType type, cl_uchar* a, cl_uchar* b);
 

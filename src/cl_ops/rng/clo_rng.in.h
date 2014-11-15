@@ -24,7 +24,7 @@
 #ifndef _CLO_RNG_H_
 #define _CLO_RNG_H_
 
-#include "clo_common.h"
+#include "cl_ops/clo_common.h"
 #include <string.h>
 
 /* Kernels source code. */

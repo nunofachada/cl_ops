@@ -24,7 +24,7 @@
 #ifndef _CLO_SORT_GSELECT_H_
 #define _CLO_SORT_GSELECT_H_
 
-#include "clo_sort_abstract.h"
+#include "cl_ops/clo_sort_abstract.h"
 
 /** The global selection sort kernels source. */
 #define CLO_SORT_GSELECT_SRC "@GSELECT_SRC@"

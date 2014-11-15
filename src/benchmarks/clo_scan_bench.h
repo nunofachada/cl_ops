@@ -23,7 +23,6 @@
 #ifndef _CLO_SCAN_BENCHMARK_H
 #define _CLO_SCAN_BENCHMARK_H
 
-#include "clo_scan_abstract.h"
 #include "clo_bench.h"
 
 #define CLO_SCAN_HOST_GET(host_data, i, bytes) \

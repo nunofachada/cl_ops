@@ -21,7 +21,7 @@
  * CL-Ops RNG class definitions.
  * */
 
-#include "clo_rng.h"
+#include "cl_ops/clo_rng.h"
 
 /**
  * @addtogroup CLO_RNG

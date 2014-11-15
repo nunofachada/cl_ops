@@ -24,7 +24,7 @@
 #ifndef _CLO_SCAN_ABSTRACT_H_
 #define _CLO_SCAN_ABSTRACT_H_
 
-#include "clo_common.h"
+#include "cl_ops/clo_common.h"
 
 /**
  * @defgroup CLO_SCAN Parallel prefix sum (scan)

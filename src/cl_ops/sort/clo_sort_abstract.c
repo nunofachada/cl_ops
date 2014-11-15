@@ -21,11 +21,11 @@
  * Abstract definitions for a sort algorithm.
  * */
 
-#include "clo_sort_abstract.h"
-#include "clo_sort_sbitonic.h"
-#include "clo_sort_abitonic.h"
-#include "clo_sort_gselect.h"
-#include "clo_sort_satradix.h"
+#include "cl_ops/clo_sort_abstract.h"
+#include "cl_ops/clo_sort_sbitonic.h"
+#include "cl_ops/clo_sort_abitonic.h"
+#include "cl_ops/clo_sort_gselect.h"
+#include "cl_ops/clo_sort_satradix.h"
 
 /**
  * @addtogroup CLO_SORT
