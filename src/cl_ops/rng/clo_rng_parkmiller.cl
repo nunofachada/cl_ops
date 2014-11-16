@@ -25,8 +25,8 @@
  * Issue 10, Oct. 1988, pp 1192-1201.
  */
 
-/* For the Park-Miller RNG, the size of each seed is long. */
-typedef long rng_state;
+/* For the Park-Miller RNG, the size of each seed is int. */
+typedef int rng_state;
 
 /**
  * Returns the next pseudorandom value using a Park-Miller random
@@ -44,14 +44,14 @@ uint clo_rng_next(__global rng_state *states, uint index) {
 
 	/* Update state */
 	int const a = 16807;
-	int const m = 2147483647;
-	state = (state * a) % m;
+	int const m = CL_INT_MAX; /* 2147483647 */
+	state = (((long) state) * a) % m;
 
 	/* Keep state */
 	states[index] = state;
 
 	/* Return value */
-	return ((uint) ((int2) state).x) + ((uint) ((int2) state).y);
+	return as_uint(state) << 1; /* Put something in the sign bit, but will only return pairs */
 
 }
 
