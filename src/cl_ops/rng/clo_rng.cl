@@ -28,7 +28,7 @@
  * @param[in] n Returned integer is less than this value.
  * @return Returns next integer from 0 (including) to n (not including).
  */
-uint clo_rng_next_int(__global rng_state *states, uint n) {
+uint clo_rng_next_int(__global clo_statetype *states, uint n) {
 
 	/* Get state index */
 	uint index = GID1();
@@ -46,7 +46,7 @@ uint clo_rng_next_int(__global rng_state *states, uint n) {
  * @return Returns next two integers from 0 (including) to n (not
  * including).
  */
-uint2 clo_rng_next_int2(__global rng_state *states, uint n) {
+uint2 clo_rng_next_int2(__global clo_statetype *states, uint n) {
 
 	/* Get state index */
 	uint2 index = GID2();
@@ -65,7 +65,7 @@ uint2 clo_rng_next_int2(__global rng_state *states, uint n) {
  * @return Returns next four integers from 0 (including) to n (not
  * including).
  */
-uint4 clo_rng_next_int4(__global rng_state *states, uint n) {
+uint4 clo_rng_next_int4(__global clo_statetype *states, uint n) {
 
 	/* Get state index */
 	uint4 index = GID4();
@@ -86,7 +86,7 @@ uint4 clo_rng_next_int4(__global rng_state *states, uint n) {
  * @return Returns next eight integers from 0 (including) to n (not
  * including).
  */
-uint8 clo_rng_next_int8(__global rng_state *states, uint n) {
+uint8 clo_rng_next_int8(__global clo_statetype *states, uint n) {
 
 	/* Get state index */
 	uint8 index = GID8();

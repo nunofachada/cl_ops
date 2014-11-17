@@ -31,7 +31,7 @@
 #define CLO_RNG_TEST_KERNEL "clo_rng_test"
 #define CLO_RNG_TEST_SRC \
 	"__kernel void " CLO_RNG_TEST_KERNEL "(" \
-	"		__global rng_state* seeds, __global ulong* output) {" \
+	"		__global clo_statetype* seeds, __global ulong* output) {" \
 	"	uint gid = get_global_id(0);" \
 	"	uint x = clo_rng_next_int(seeds, UINT_MAX);" \
 	"	output[gid] = (ulong) x;" \

@@ -71,6 +71,7 @@ const struct clo_rng_info clo_rng_infos[] = {
  *
  * @param[in] ctx Context wrapper object.
  * @param[in] cq Command-queue wrapper object.
+ * @param[in] rng_src Source of the selected RNG.
  * @param[in] hash Seed hash macro code. If `NULL` defaults to no hash.
  * @param[in] seeds_count Number of seeds.
  * @param[in] seed_size Size of each seed.
@@ -80,8 +81,9 @@ const struct clo_rng_info clo_rng_infos[] = {
  * @return Buffer of in-device seeds.
  * */
 static CCLBuffer* clo_rng_device_seed_init(CCLContext* ctx,
-	CCLQueue* cq, const char* hash, size_t seeds_count,
-	size_t seed_size, cl_ulong main_seed, GError** err) {
+	CCLQueue* cq, const char* rng_src, const char* hash,
+	size_t seeds_count, size_t seed_size, cl_ulong main_seed,
+	GError** err) {
 
 	/* Program wrapper object. */
 	CCLProgram* prg;
@@ -94,9 +96,6 @@ static CCLBuffer* clo_rng_device_seed_init(CCLContext* ctx,
 	/* Source code to prepend to init kernel. */
 	gchar* init_src = NULL;
 
-	/* Determine size of seed vector. */
-	size_t seeds_vec_size = seed_size * seeds_count / sizeof(cl_ulong);
-
 	/* Determine effective seed hash macro code. */
 	if ((hash) && (*hash))
 		hash_eff = hash;
@@ -104,12 +103,12 @@ static CCLBuffer* clo_rng_device_seed_init(CCLContext* ctx,
 		hash_eff = "x";
 
 	/* Construct seeds init source code. */
-	init_src = g_strconcat("#define CLO_RNG_HASH(x) ", hash_eff, "\n"
-		CLO_RNG_SRC_INIT, NULL);
+	init_src = g_strconcat("#define CLO_RNG_HASH(x) ", hash_eff, "\n",
+		rng_src, CLO_RNG_SRC_INIT, NULL);
 
 	/* Create in-device seeds buffer. */
 	seeds = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
-		seeds_vec_size * sizeof(cl_ulong), NULL, &err_internal);
+		seeds_count * seed_size, NULL, &err_internal);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Create seed initialization program. */
@@ -122,7 +121,7 @@ static CCLBuffer* clo_rng_device_seed_init(CCLContext* ctx,
 
 	/* Enqueue seed initialization kernel. */
 	ccl_program_enqueue_kernel(prg, "clo_rng_init", cq, 1, 0,
-		&seeds_vec_size, NULL, NULL, &err_internal,
+		&seeds_count, NULL, NULL, &err_internal,
 		ccl_arg_priv(main_seed, cl_ulong), seeds, NULL);
 	ccl_if_err_propagate_goto(err, err_internal, error_handler);
 
@@ -291,9 +290,10 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 						"The DEV_GID seed type expects a NULL seeds "\
 						"parameter.");
 					/* Initialize seeds in device using GID. */
-					dev_seeds = clo_rng_device_seed_init(ctx, cq, hash,
-						seeds_count, clo_rng_infos[i].seed_size,
-						main_seed, &err_internal);
+					dev_seeds = clo_rng_device_seed_init(ctx, cq,
+						clo_rng_infos[i].src, hash, seeds_count,
+						clo_rng_infos[i].seed_size, main_seed,
+						&err_internal);
 					ccl_if_err_propagate_goto(err, err_internal,
 						error_handler);
 					/* Get out of switch. */

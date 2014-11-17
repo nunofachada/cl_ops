@@ -26,7 +26,10 @@
  */
 
 /* For the LCG RNG, the size of each seed is ulong. */
-typedef ulong rng_state;
+typedef ulong clo_statetype;
+
+/* Ulong is ulong... */
+#define clo_ulong2statetype(seed) (seed)
 
 /**
  * Returns the next pseudorandom value using a LCG random number
@@ -37,13 +40,13 @@ typedef ulong rng_state;
  * @return The next pseudorandom value using a LCG random number
  * generator.
  */
-uint clo_rng_next(__global rng_state *states, uint index) {
+uint clo_rng_next(__global clo_statetype *states, uint index) {
 
 	/* Assume 32 bits */
 	uint bits = 32;
 
 	/* Get current state */
-	rng_state state = states[index];
+	clo_statetype state = states[index];
 
 	/* Update state */
 	state = (state * 0x5DEECE66DL + 0xBL) & ((1L << 48) - 1);

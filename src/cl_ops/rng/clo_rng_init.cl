@@ -46,7 +46,7 @@
  * */
 __kernel void clo_rng_init(
 		const ulong main_seed,
-		__global ulong *seeds) {
+		__global clo_statetype *seeds) {
 
 	/* Get initial seed for this workitem. */
 	ulong seed = get_global_id(0) + main_seed;
@@ -55,7 +55,7 @@ __kernel void clo_rng_init(
 	CLO_RNG_HASH(seed);
 
 	/* Update seeds array. */
-	seeds[get_global_id(0)] = seed;
+	seeds[get_global_id(0)] = clo_ulong2statetype(seed);
 
 }
 

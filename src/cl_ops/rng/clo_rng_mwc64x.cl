@@ -26,7 +26,10 @@
  */
 
 /* For the LCG RNG, the size of each seed is two integers. */
-typedef uint2 rng_state;
+typedef uint2 clo_statetype;
+
+/* Convert a ulong to a uint2*/
+#define clo_ulong2statetype(seed) as_uint2(seed)
 
 /**
  * Returns the next pseudorandom value using a MWC random number
@@ -37,7 +40,7 @@ typedef uint2 rng_state;
  * @return The next pseudorandom value using a MWC random number
  * generator.
  */
-uint clo_rng_next(__global rng_state *states, uint index) {
+uint clo_rng_next(__global clo_statetype *states, uint index) {
 
     enum { A=4294883355U };
 
@@ -53,7 +56,7 @@ uint clo_rng_next(__global rng_state *states, uint index) {
 	c = hi + (x < c);
 
 	/* Pack the state back up */
-	states[index] = (rng_state) (x, c);
+	states[index] = (clo_statetype) (x, c);
 
 	/* Return the next result */
 	return res;

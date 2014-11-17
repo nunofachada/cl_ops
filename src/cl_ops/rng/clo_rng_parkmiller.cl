@@ -26,7 +26,9 @@
  */
 
 /* For the Park-Miller RNG, the size of each seed is int. */
-typedef int rng_state;
+typedef int clo_statetype;
+
+#define clo_ulong2statetype(seed) as_int((uint) (0xFFFFFFFF & seed))
 
 /**
  * Returns the next pseudorandom value using a Park-Miller random
@@ -37,14 +39,14 @@ typedef int rng_state;
  * @return The next pseudorandom value using a Park-Miller random
  * number generator with 64 bit state.
  */
-uint clo_rng_next(__global rng_state *states, uint index) {
+uint clo_rng_next(__global clo_statetype *states, uint index) {
 
 	/* Get current state */
-	rng_state state = states[index];
+	clo_statetype state = states[index];
 
 	/* Update state */
 	int const a = 16807;
-	int const m = CL_INT_MAX; /* 2147483647 */
+	int const m = INT_MAX; /* 2147483647 */
 	state = (((long) state) * a) % m;
 
 	/* Keep state */

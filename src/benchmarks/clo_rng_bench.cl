@@ -21,7 +21,7 @@
  */
 
 __kernel void clo_rng_bench(
-		__global rng_state *seeds,
+		__global clo_statetype *seeds,
 		__global uint *result,
 		const uint bits) {
 

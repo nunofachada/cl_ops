@@ -24,7 +24,9 @@
  */
 
 /* For the Xor-Shift64 RNG, the size of each seed is ulong. */
-typedef ulong rng_state;
+typedef ulong clo_statetype;
+
+#define clo_ulong2statetype(seed) (seed)
 
 /**
  * Returns the next pseudorandom value using a xorshift random
@@ -35,10 +37,10 @@ typedef ulong rng_state;
  * @return The next pseudorandom value using a xorshift random number
  * generator with 64 bit state.
  */
-uint clo_rng_next(__global rng_state *states, uint index) {
+uint clo_rng_next(__global clo_statetype *states, uint index) {
 
 	/* Get current state */
-	rng_state state = states[index];
+	clo_statetype state = states[index];
 
 	/* Update state */
 	state ^= (state << 21);
