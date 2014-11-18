@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
 	/* How long will it take? */
 	GTimer* timer = NULL;
 
-	CloRng* rng_ocl;
+	CloRng* rng_ocl = NULL;
 
 	CloRngSeedType seed_type;
 
