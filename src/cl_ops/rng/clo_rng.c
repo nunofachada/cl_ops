@@ -62,6 +62,7 @@ const struct clo_rng_info clo_rng_infos[] = {
 	{"xorshift128", CLO_RNG_SRC_XORSHIFT128, 16},
 	{"mwc64x", CLO_RNG_SRC_MWC64X, 8},
 	{"parkmiller", CLO_RNG_SRC_PARKMILLER, 4},
+	{"tauslcg", CLO_RNG_SRC_TAUSLCG, 16},
 	{NULL, NULL, 0}
 };
 
