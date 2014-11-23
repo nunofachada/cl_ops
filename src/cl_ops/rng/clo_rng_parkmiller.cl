@@ -29,15 +29,16 @@
 typedef int clo_statetype;
 
 #define clo_ulong2statetype(seed) as_int((uint) (0xFFFFFFFF & seed))
+///@todo Initial seed can't be zero
 
 /**
- * Returns the next pseudorandom value using a Park-Miller random
- * number generator with 64 bit state.
+ * Returns the next pseudorandom value using the minimal standard
+ * Park-Miller random number generator.
  *
  * @param[in,out] states Array of RNG states.
  * @param[in] index Index of relevant state to use and update.
- * @return The next pseudorandom value using a Park-Miller random
- * number generator with 64 bit state.
+ * @return The next pseudorandom value using the minimal standard
+ * Park-Miller random number generator.
  */
 uint clo_rng_next(__global clo_statetype *states, uint index) {
 
@@ -47,7 +48,7 @@ uint clo_rng_next(__global clo_statetype *states, uint index) {
 	/* Update state */
 	int const a = 16807;
 	int const m = INT_MAX; /* 2147483647 */
-	state = (((long) state) * a) % m;
+	state = (((long) state) * a) % m; /// @todo Maybe we can use a mask as in LCG (31 bit mask in this case)
 
 	/* Keep state */
 	states[index] = state;

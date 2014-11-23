@@ -33,6 +33,8 @@ typedef uint4 clo_statetype;
 
 /* Convert ulong into uint4 */
 #define clo_ulong2statetype(seed) as_uint4((ulong2) (seed, seed))
+/// @todo The initial state are that the three Tausworthe state
+/// components should be greater than 128.
 
 /**
  * A Single Step of the Combined Tausworthe Generator.
@@ -73,10 +75,12 @@ uint clo_rng_next(__global clo_statetype *states, uint index) {
 	/* Keep x value. */
 	uint x = state.x;
 
-	/* Update state using stream skipping (is this the correct term). */
+	/* Update state using stream skipping (is this the correct term?). */
 	state.x = taus_step(state.y, 13, 19, 12, 4294967294U);
 	state.y = taus_step(state.z,  2, 25,  4, 4294967288U);
 	state.z = taus_step(state.w,  3, 11, 17, 4294967294U);
+	/* Bellow is "an event quicker generator" from numerical receipts
+	 * in C. */
 	state.w = lcg_step(x, 1664525, 1013904223U);
 
 	/* Keep state */

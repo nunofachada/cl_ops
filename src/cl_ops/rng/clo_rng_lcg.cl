@@ -20,7 +20,7 @@
  * @file
  * GPU implementation of a linear congruential pseudorandom
  * number generator (LCG), as defined by D. H. Lehmer and described by
- * Donald E. Knuth in The Art of Computer Programming, Volume 3:
+ * Donald E. Knuth in The Art of Computer Programming, Volume 2:
  * Seminumerical Algorithms, section 3.2.1. It is a similar
  * implementation to Java Random class.
  */
