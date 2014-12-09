@@ -368,7 +368,7 @@ CloRng* clo_rng_new(const char* type, CloRngSeedType seed_type,
 
 			/* Construct source code. */
 			rng->src = g_strconcat(CLO_RNG_SRC_WORKITEM,
-				clo_rng_infos[i].src, CLO_RNG_SRC, NULL);
+				clo_rng_infos[i].src, CLO_RNG_SRC_API, NULL);
 
 			/* Set seeds buffer. */
 			rng->seeds_device = dev_seeds;

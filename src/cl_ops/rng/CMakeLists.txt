@@ -1,32 +1,15 @@
 # Add RNG source to aggregated library sources list
 set(CLO_LIB_SRCS_CURRENT clo_rng.c PARENT_SCOPE)
 
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_rng_workitem.cl RNG_SRC_WORKITEM_RAW HEX)
-string(REGEX REPLACE "(..)" "\\\\x\\1" RNG_SRC_WORKITEM ${RNG_SRC_WORKITEM_RAW})
+set(RNG_SRCS api init workitem lcg xorshift64 xorshift128 mwc64x parkmiller tauslcg)
 
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_rng_lcg.cl RNG_SRC_LCG_RAW HEX)
-string(REGEX REPLACE "(..)" "\\\\x\\1" RNG_SRC_LCG ${RNG_SRC_LCG_RAW})
+foreach(RNG_SRC ${RNG_SRCS})
 
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_rng_xorshift64.cl RNG_SRC_XORSHIFT64_RAW HEX)
-string(REGEX REPLACE "(..)" "\\\\x\\1" RNG_SRC_XORSHIFT64 ${RNG_SRC_XORSHIFT64_RAW})
+	string(TOUPPER ${RNG_SRC} UP)
+	file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_rng_${RNG_SRC}.cl RNG_SRC_${UP}_RAW HEX)
+	string(REGEX REPLACE "(..)" "\\\\x\\1" RNG_SRC_${UP} ${RNG_SRC_${UP}_RAW})
 
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_rng_xorshift128.cl RNG_SRC_XORSHIFT128_RAW HEX)
-string(REGEX REPLACE "(..)" "\\\\x\\1" RNG_SRC_XORSHIFT128 ${RNG_SRC_XORSHIFT128_RAW})
-
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_rng_mwc64x.cl RNG_SRC_MWC64X_RAW HEX)
-string(REGEX REPLACE "(..)" "\\\\x\\1" RNG_SRC_MWC64X ${RNG_SRC_MWC64X_RAW})
-
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_rng_parkmiller.cl RNG_SRC_PARKMILLER_RAW HEX)
-string(REGEX REPLACE "(..)" "\\\\x\\1" RNG_SRC_PARKMILLER ${RNG_SRC_PARKMILLER_RAW})
-
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_rng_tauslcg.cl RNG_SRC_TAUSLCG_RAW HEX)
-string(REGEX REPLACE "(..)" "\\\\x\\1" RNG_SRC_TAUSLCG ${RNG_SRC_TAUSLCG_RAW})
-
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_rng.cl RNG_SRC_RAW HEX)
-string(REGEX REPLACE "(..)" "\\\\x\\1" RNG_SRC ${RNG_SRC_RAW})
-
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/clo_rng_init.cl RNG_SRC_INIT_RAW HEX)
-string(REGEX REPLACE "(..)" "\\\\x\\1" RNG_SRC_INIT ${RNG_SRC_INIT_RAW})
+endforeach()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/clo_rng.in.h
 	${CMAKE_BINARY_DIR}/${PROJECT_NAME}/clo_rng.h @ONLY)

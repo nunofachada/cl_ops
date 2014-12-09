@@ -35,7 +35,7 @@
 #define CLO_RNG_SRC_MWC64X "@RNG_SRC_MWC64X@"
 #define CLO_RNG_SRC_PARKMILLER "@RNG_SRC_PARKMILLER@"
 #define CLO_RNG_SRC_TAUSLCG "@RNG_SRC_TAUSLCG@"
-#define CLO_RNG_SRC "@RNG_SRC@"
+#define CLO_RNG_SRC_API "@RNG_SRC_API@"
 
 /* Device seed initialization kernel. */
 #define CLO_RNG_SRC_INIT "@RNG_SRC_INIT@"
