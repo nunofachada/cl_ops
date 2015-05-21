@@ -41,8 +41,13 @@ typedef uint4 clo_statetype;
  *
  * @todo This will be faster if its a macro
  *
- * s1, s2, s3, and m are all constants, and z is part of the private
- * per-thread generator state.
+ * @param[in] z Part of the private per-thread generator state.
+ * @param[in] s1 Constant.
+ * @param[in] s2 Constant.
+ * @param[in] s3 Constant.
+ * @param[in] m Constant.
+ *
+ * @return Result of the Taus step.
  * */
 uint taus_step(uint z, int s1, int s2, int s3, uint m) {
 	uint b = (((z << s1) ^ z) >> s2);
@@ -54,7 +59,11 @@ uint taus_step(uint z, int s1, int s2, int s3, uint m) {
  *
  * @todo This will be faster if its a macro
  *
- * a and c are constants.
+ * @param[in] z Variable.
+ * @param[in] a Constant.
+ * @param[in] c Constant.
+ *
+ * @return Result of the LCG step.
  * */
 uint lcg_step(uint z, uint a, uint c) {
 	return a * z + c;
