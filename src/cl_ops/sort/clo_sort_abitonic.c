@@ -22,6 +22,7 @@
  */
 
 #include "cl_ops/clo_sort_abitonic.h"
+#include "common/_g_err_macros.h"
 
 typedef struct {
 
@@ -148,7 +149,7 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 	size_t lws_max_sfs = lws_max;
 	ccl_kernel_suggest_worksizes(
 		NULL, dev, 1, &big_gws, NULL, &lws_max_sfs, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine effective maximum in-kernel "stage finish" step. */
 	data.max_inkrnl_sfs = MIN(
@@ -162,13 +163,13 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 			steps[step - 1].krnl_name = CLO_SORT_ABITONIC_KNAME_ANY;
 			steps[step - 1].krnl = ccl_program_get_kernel(
 				prg, CLO_SORT_ABITONIC_KNAME_ANY, &err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].gws = numel_nlpo2 / 2;
 			steps[step - 1].lws = lws_max;
 			ccl_kernel_suggest_worksizes(steps[step - 1].krnl, dev, 1,
 				&(steps[step - 1].gws), NULL, &(steps[step - 1].lws),
 				&err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].set_step = TRUE;
 			steps[step - 1].num_steps = 1;
 		} else if (step > data.max_inkrnl_sfs) {
@@ -219,7 +220,7 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 				default:
 					g_assert_not_reached();
 			}
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 			steps[step - 1].gws = numel_nlpo2 / (1 << step_margin);
 			steps[step - 1].lws = MIN(lws_max_sfs, steps[step - 1].gws);
 			steps[step - 1].set_step = TRUE;
@@ -259,7 +260,7 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 				ccl_kernel_suggest_worksizes(NULL, dev, 1,
 					&(steps[step - 1].gws), NULL,
 					&(steps[step - 1].lws), &err_internal);
-				ccl_if_err_propagate_goto(
+				g_if_err_propagate_goto(
 					err, err_internal, error_handler);
 
 				if ((priv_steps <= data.max_inkrnl_stps)
@@ -270,7 +271,7 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 					steps[step - 1].krnl_name = krnl_name;
 					steps[step - 1].krnl = ccl_program_get_kernel(
 						prg, krnl_name, &err_internal);
-					ccl_if_err_propagate_goto(
+					g_if_err_propagate_goto(
 						err, err_internal, error_handler);
 					steps[step - 1].set_step = FALSE;
 					steps[step - 1].num_steps = step;
@@ -283,14 +284,14 @@ static clo_sort_abitonic_step* clo_sort_abitonic_get_strategy(
 				steps[step - 1].krnl_name = CLO_SORT_ABITONIC_KNAME_ANY;
 				steps[step - 1].krnl = ccl_program_get_kernel(
 					prg, CLO_SORT_ABITONIC_KNAME_ANY, &err_internal);
-				ccl_if_err_propagate_goto(
+				g_if_err_propagate_goto(
 					err, err_internal, error_handler);
 				steps[step - 1].gws = numel_nlpo2 / 2;
 				steps[step - 1].lws = lws_max;
 				ccl_kernel_suggest_worksizes(steps[step - 1].krnl, dev,
 					1, &(steps[step - 1].gws), NULL,
 					&(steps[step - 1].lws), &err_internal);
-				ccl_if_err_propagate_goto(err, err_internal, error_handler);
+				g_if_err_propagate_goto(err, err_internal, error_handler);
 				steps[step - 1].set_step = TRUE;
 				steps[step - 1].num_steps = 1;
 				steps[step - 1].local_mem = 0;
@@ -355,7 +356,7 @@ static CCLEvent* clo_sort_abitonic_sort_with_device_data(
 
 	/* Get device where sort will occurr. */
 	dev = ccl_queue_get_device(cq_exec, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine which buffer to use. */
 	if (data_out == NULL) {
@@ -367,7 +368,7 @@ static CCLEvent* clo_sort_abitonic_sort_with_device_data(
 		evt = ccl_buffer_enqueue_copy(data_in, data_out, cq_comm, 0, 0,
 			clo_sort_get_element_size(sorter) * numel, NULL,
 			&err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 
 		ccl_event_set_name(evt, "abit_copy");
 		ccl_event_wait_list_add(&ewl, evt, NULL);
@@ -379,7 +380,7 @@ static CCLEvent* clo_sort_abitonic_sort_with_device_data(
 	/* Obtain sorting strategy, e.g., which kernels to use in each step. */
 	steps = clo_sort_abitonic_get_strategy(
 		prg, dev, data, lws_max, numel, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Set kernel arguments. */
 	for (cl_uint i = 0; i < tot_stages; ++i) {
@@ -421,7 +422,7 @@ static CCLEvent* clo_sort_abitonic_sort_with_device_data(
 			evt = ccl_kernel_enqueue_ndrange(stp_strat.krnl, cq_exec, 1,
 				NULL, &stp_strat.gws, &stp_strat.lws, NULL,
 				&err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 			ccl_event_set_name(evt, stp_strat.krnl_name);
 
 			/* Update step. */
@@ -496,7 +497,7 @@ static const char* clo_sort_abitonic_init(
 			for (num_toks = 0; opt[num_toks] != NULL; num_toks++);
 
 			/* If number of tokens is not 2 (key and value), throw error. */
-			ccl_if_err_create_goto(*err, CLO_ERROR, num_toks != 2,
+			g_if_err_create_goto(*err, CLO_ERROR, num_toks != 2,
 				CLO_ERROR_ARGS, error_handler,
 				"Invalid option '%s' for abitonic sort.", opts[i]);
 
@@ -506,14 +507,14 @@ static const char* clo_sort_abitonic_init(
 			/* Check key/value option. */
 			if (g_strcmp0("minps", opt[0]) == 0) {
 				/* Minimum in-kernel private memory steps key option. */
-				ccl_if_err_create_goto(*err, CLO_ERROR,
+				g_if_err_create_goto(*err, CLO_ERROR,
 					(value > 4) || (value < 1), CLO_ERROR_ARGS,
 					error_handler,
 					"Option 'minps' must be between 1 and 4.");
 				data->min_inkrnl_stps = value;
 			} else if (g_strcmp0("maxps", opt[0]) == 0) {
 				/* Maximum in-kernel private memory steps key option. */
-				ccl_if_err_create_goto(*err, CLO_ERROR,
+				g_if_err_create_goto(*err, CLO_ERROR,
 					(value > 4) || (value < 1), CLO_ERROR_ARGS,
 					error_handler,
 					"Option 'maxps' must be between 1 and 4.");
@@ -522,7 +523,7 @@ static const char* clo_sort_abitonic_init(
 				/* Maximum in-kernel "stage finish" step. */
 				data->max_inkrnl_sfs = value;
 			} else {
-				ccl_if_err_create_goto(*err, CLO_ERROR, TRUE,
+				g_if_err_create_goto(*err, CLO_ERROR, TRUE,
 					CLO_ERROR_ARGS, error_handler,
 					"Invalid option key '%s' for abitonic sort.",
 					opt[0]);
@@ -533,7 +534,7 @@ static const char* clo_sort_abitonic_init(
 			opt = NULL;
 
 		}
-		ccl_if_err_create_goto(*err, CLO_ERROR,
+		g_if_err_create_goto(*err, CLO_ERROR,
 			data->max_inkrnl_stps < data->min_inkrnl_stps,
 			CLO_ERROR_ARGS, error_handler,
 			"'minps' (%d) must be less or equal than 'maxps' (%d).",
@@ -651,13 +652,13 @@ static size_t clo_sort_abitonic_get_localmem_usage(CloSort* sorter,
 	 * first device in the context). */
 	dev = ccl_context_get_device(
 		clo_sort_get_context(sorter), 0, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine local worksize. */
 	lws = lws_max;
 	ccl_kernel_suggest_worksizes(
 		NULL, dev, 1, &gws, NULL, &lws, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Force program stop, this should not yield errors. */
 	if (err_internal != NULL) g_error("%s", err_internal->message);

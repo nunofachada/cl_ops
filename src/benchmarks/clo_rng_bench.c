@@ -21,6 +21,7 @@
  */
 
 #include "clo_rng_bench.h"
+#include "common/_g_err_macros.h"
 
 #define CLO_RNG_BENCHMARK_FILE_PREFIX "out"
 #define CLO_RNG_BENCHMARK_OUTPUT "file-tsv"
@@ -130,7 +131,7 @@ int main(int argc, char **argv) {
 	context = g_option_context_new (" - " CLO_RNG_BENCHMARK_DESCRIPTION);
 	g_option_context_add_main_entries(context, entries, NULL);
 	g_option_context_parse(context, &argc, &argv, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	if (output == NULL) output = g_strdup(CLO_RNG_BENCHMARK_OUTPUT);
 	if (rng == NULL) rng = g_strdup(CLO_RNG_BENCHMARK_DEFAULT);
@@ -142,25 +143,25 @@ int main(int argc, char **argv) {
 		seed_type = CLO_RNG_SEED_DEV_GID;
 	}
 
-	ccl_if_err_create_goto(err, CLO_ERROR,
+	g_if_err_create_goto(err, CLO_ERROR,
 		g_strcmp0(output, "file-tsv") && g_strcmp0(output, "file-dh") && g_strcmp0(output, "stdout-bin") && g_strcmp0(output, "stdout-uint"),
 		CLO_ERROR_ARGS, error_handler,
 		"Unknown output '%s'.", output);
-	ccl_if_err_create_goto(err, CLO_ERROR,
+	g_if_err_create_goto(err, CLO_ERROR,
 		(bits > 32) || (bits < 1),
 		CLO_ERROR_ARGS, error_handler,
 		"Number of bits must be between 1 and 32.");
-	ccl_if_err_create_goto(err, CLO_ERROR,
+	g_if_err_create_goto(err, CLO_ERROR,
 		(runs == 0) && (!g_ascii_strncasecmp("file", output, 4)),
 		CLO_ERROR_ARGS, error_handler,
 		"Continuous generation can only be performed to stdout.");
 
 	/* Setup OpenCL context and get device. */
 	ctx = ccl_context_new_from_menu_full(&dev_idx, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	dev = ccl_context_get_device(ctx, 0, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	/* Build compiler options. */
 	compiler_opts = g_strconcat(
@@ -169,12 +170,12 @@ int main(int argc, char **argv) {
 
 	/* Create command queue. */
 	queue = ccl_queue_new(ctx, dev, 0, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	/* Create RNG object. */
 	rng_ocl = clo_rng_new(rng, seed_type, NULL, gws, rng_seed, gid_hash,
 		ctx, queue, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	/* Get RNG seeds device buffer. */
 	seeds_dev = clo_rng_get_device_seeds(rng_ocl);
@@ -185,10 +186,10 @@ int main(int argc, char **argv) {
 
 	/* Create and build program. */
 	prg = ccl_program_new_from_source(ctx, src, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	ccl_program_build(prg, compiler_opts, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	/* Create host results buffer */
 	result_host = g_slice_alloc(sizeof(cl_uint) * gws);
@@ -196,7 +197,7 @@ int main(int argc, char **argv) {
 	/* Create device results buffer. */
 	result_dev = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
 		gws * sizeof(cl_int), NULL, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	/* Setup options depending whether the generated random numbers are
 	 * to be output to stdout or to a file. */
@@ -244,7 +245,7 @@ int main(int argc, char **argv) {
 
 		/* Open file. */
 		output_pointer = fopen(output_filename, "w");
-		ccl_if_err_create_goto(err, CLO_ERROR, output_pointer == NULL,
+		g_if_err_create_goto(err, CLO_ERROR, output_pointer == NULL,
 			CLO_ERROR_OPENFILE, error_handler,
 			"Unable to create output file '%s'.", output_filename);
 
@@ -254,7 +255,7 @@ int main(int argc, char **argv) {
 		/* Set file buffer. */
 		status = setvbuf(
 			output_pointer, output_buffer, _IOFBF, CLO_RNG_BENCHMARK_BUFF_SIZE);
-		ccl_if_err_create_goto(err, CLO_ERROR, status != 0,
+		g_if_err_create_goto(err, CLO_ERROR, status != 0,
 			CLO_ERROR_STREAM_WRITE, error_handler,
 			"Unable to set output file buffer.");
 
@@ -290,7 +291,7 @@ int main(int argc, char **argv) {
 
 	/* Get test kernel. */
 	test_rng = ccl_program_get_kernel(prg, "clo_rng_bench", &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	/*  Set test kernel arguments. */
 	cl_uint value = maxint ? maxint : bits;
@@ -303,12 +304,12 @@ int main(int argc, char **argv) {
 		/* Run kernel. */
 		ccl_kernel_enqueue_ndrange(
 			test_rng, queue, 1, NULL, &gws, &lws, NULL, &err);
-		ccl_if_err_goto(err, error_handler);
+		g_if_err_goto(err, error_handler);
 
 		/* Read data. */
 		ccl_buffer_enqueue_read(result_dev, queue, CL_TRUE, 0,
 			gws * sizeof(cl_uint), result_host, NULL, &err);
-		ccl_if_err_goto(err, error_handler);
+		g_if_err_goto(err, error_handler);
 
 		/* Write data to output. */
 		if (output_raw) {

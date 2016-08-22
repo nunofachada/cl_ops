@@ -21,6 +21,7 @@
  */
 
 #include "clo_scan_bench.h"
+#include "common/_g_err_macros.h"
 
 #define CLO_SCAN_BENCHMARK_RUNS 1
 #define CLO_SCAN_BENCHMARK_INITELEMS 4
@@ -142,14 +143,14 @@ int main(int argc, char **argv) {
 	context = g_option_context_new (" - " CLO_SCAN_DESCRIPTION);
 	g_option_context_add_main_entries(context, entries, NULL);
 	g_option_context_parse(context, &argc, &argv, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	clotype_elem = clo_type_by_name(
 		type != NULL ? type : CLO_SCAN_BENCHMARK_TYPE, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 	clotype_sum = clo_type_by_name(
 		type_sum != NULL ? type_sum : CLO_SCAN_BENCHMARK_TYPE_SUM, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	if (algorithm == NULL) algorithm = g_strdup(CLO_SCAN_BENCHMARK_ALGORITHM);
 	if (alg_options == NULL) alg_options = g_strdup(CLO_SCAN_BENCHMARK_ALG_OPTS);
@@ -163,20 +164,20 @@ int main(int argc, char **argv) {
 
 	/* Get the context wrapper and the chosen device. */
 	ctx = ccl_context_new_from_menu_full(&dev_idx, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 	dev = ccl_context_get_device(ctx, 0, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	/* Get scan object. */
 	scanner = clo_scan_new(algorithm, alg_options, ctx, clotype_elem,
 		clotype_sum, compiler_opts, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	/* Create command queues. */
 	cq_exec = ccl_queue_new(ctx, dev, CL_QUEUE_PROFILING_ENABLE, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 	cq_comm = ccl_queue_new(ctx, dev, 0, &err);
-	ccl_if_err_goto(err, error_handler);
+	g_if_err_goto(err, error_handler);
 
 	/* Print options. */
 	printf("\n   =========================== Selected options ============================\n\n");
@@ -225,13 +226,13 @@ int main(int argc, char **argv) {
 			/* Perform scan. */
 			clo_scan_with_host_data(scanner, cq_exec, cq_comm,
 				host_data, host_data_scanned, num_elems, lws, &err);
-			ccl_if_err_goto(err, error_handler);
+			g_if_err_goto(err, error_handler);
 
 			/* Perform profiling. */
 			prof = ccl_prof_new();
 			ccl_prof_add_queue(prof, "q_exec", cq_exec);
 			ccl_prof_calc(prof, &err);
-			ccl_if_err_goto(err, error_handler);
+			g_if_err_goto(err, error_handler);
 
 			/* Save time to benchmarks. */
 			benchmarks[N - 1][r] =  ccl_prof_get_duration(prof);
@@ -239,7 +240,7 @@ int main(int argc, char **argv) {
 
 			/* Wait on host thread for data transfer queue to finish... */
 			ccl_queue_finish(cq_comm, &err);
-			ccl_if_err_goto(err, error_handler);
+			g_if_err_goto(err, error_handler);
 
 			/* Check if scan was well performed. */
 			if (no_check) {

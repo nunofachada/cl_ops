@@ -21,6 +21,7 @@
  */
 
 #include "clo_bench.h"
+#include "common/_g_err_macros.h"
 
 #define CLO_TYPE_CMP(type, a, b) \
 	((*((type*) a) > *((type*) b)) \

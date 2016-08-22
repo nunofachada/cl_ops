@@ -22,6 +22,7 @@
  * */
 
 #include "cl_ops/clo_scan_blelloch.h"
+#include "common/_g_err_macros.h"
 
 /**
  * @internal
@@ -39,7 +40,7 @@ static const char* clo_scan_blelloch_init(CloScan* scanner,
 
 	/* For now ignore specific blelloch scan options and throw error
 	 * if any option is given. */
-	ccl_if_err_create_goto(*err, CLO_ERROR,
+	g_if_err_create_goto(*err, CLO_ERROR,
 		(options != NULL) && (strlen(options) > 0), CLO_ERROR_ARGS,
 		error_handler, "Invalid options for blelloch scan.");
 
@@ -114,23 +115,23 @@ static CCLEvent* clo_scan_blelloch_scan_with_device_data(
 
 	/* Get device where scan will occurr. */
 	dev = ccl_queue_get_device(cq_exec, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get the context wrapper. */
 	ctx = ccl_queue_get_context(cq_exec, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get the wgscan kernel wrapper. */
 	krnl_wgscan = ccl_program_get_kernel(
 		prg, CLO_SCAN_BLELLOCH_KNAME_WGSCAN, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine worksizes. */
 	lws = lws_max;
 	size_t realws = numel / 2;
 	ccl_kernel_suggest_worksizes(krnl_wgscan, dev, 1, &realws,
 		&gws_wgscan, &lws, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 	gws_wgscan = MIN(gws_wgscan, lws * lws);
 	ws_wgsumsscan = (gws_wgscan / lws) / 2;
 	gws_addwgsums = CLO_GWS_MULT(numel, lws);
@@ -142,7 +143,7 @@ static CCLEvent* clo_scan_blelloch_scan_with_device_data(
 	/* Create temporary buffer. */
 	dev_wgsums = ccl_buffer_new(ctx, CL_MEM_READ_WRITE,
 		(gws_wgscan / lws) * size_sum, NULL, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Set wgscan kernel arguments. */
 	ccl_kernel_set_args(krnl_wgscan, data_in, data_out, dev_wgsums,
@@ -153,7 +154,7 @@ static CCLEvent* clo_scan_blelloch_scan_with_device_data(
 	/* Perform workgroup-wise scan on complete array. */
 	evt = ccl_kernel_enqueue_ndrange(krnl_wgscan, cq_exec, 1, NULL,
 		&gws_wgscan, &lws, NULL, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 	ccl_event_set_name(evt, "clo_scan_blelloch_wgscan");
 
 	g_debug("N: %d, GWS1: %d, WS2: %d, GWS3: %d | LWS: %d | BPWG=%d | Enter? %s",
@@ -166,10 +167,10 @@ static CCLEvent* clo_scan_blelloch_scan_with_device_data(
 		/* Get the remaining kernel wrappers. */
 		krnl_wgsumsscan = ccl_program_get_kernel(
 			prg, CLO_SCAN_BLELLOCH_KNAME_WGSUMSSCAN, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		krnl_addwgsums = ccl_program_get_kernel(
 			prg, CLO_SCAN_BLELLOCH_KNAME_ADDWGSUMS, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 
 		/* Perform scan on workgroup sums array. */
 		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_wgsumsscan,
@@ -178,7 +179,7 @@ static CCLEvent* clo_scan_blelloch_scan_with_device_data(
 			/* Argument list. */
 			dev_wgsums, ccl_arg_full(NULL, size_sum * lws * 2),
 			NULL);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		ccl_event_set_name(evt, "clo_scan_blelloch_wgsumsscan");
 
 		/* Add the workgroup-wise sums to the respective workgroup
@@ -188,7 +189,7 @@ static CCLEvent* clo_scan_blelloch_scan_with_device_data(
 			/* Argument list. */
 			dev_wgsums, data_out, ccl_arg_priv(blocks_per_wg, cl_uint),
 			NULL);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		ccl_event_set_name(evt, "clo_scan_blelloch_addwgsums");
 
 	}
@@ -291,13 +292,13 @@ static size_t clo_scan_blelloch_get_localmem_usage(CloScan* scanner,
 	 * first device in the context). */
 	dev = ccl_context_get_device(
 		clo_scan_get_context(scanner), 0, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine worksizes. */
 	realws = numel / 2;
 	ccl_kernel_suggest_worksizes(
 		NULL, dev, 1, &realws, &gws, &lws_max, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine local mem usage. */
 	switch (i) {

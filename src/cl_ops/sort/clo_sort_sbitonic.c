@@ -22,6 +22,7 @@
  */
 
 #include "cl_ops/clo_sort_sbitonic.h"
+#include "common/_g_err_macros.h"
 
 /**
  * @internal
@@ -61,19 +62,19 @@ static CCLEvent* clo_sort_sbitonic_sort_with_device_data(
 
 	/* Get device where sort will occurr. */
 	dev = ccl_queue_get_device(cq_exec, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get the kernel wrapper. */
 	krnl = ccl_program_get_kernel(clo_sort_get_program(sorter),
 		"sbitonic", &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine worksizes. */
 	gws = clo_nlpo2(numel) / 2;
 	lws = lws_max;
 	ccl_kernel_suggest_worksizes(
 		krnl, dev, 1, &gws, NULL, &lws, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine number of bitonic sort stages. */
 	tot_stages = (cl_uint) clo_tzc(gws * 2);
@@ -89,7 +90,7 @@ static CCLEvent* clo_sort_sbitonic_sort_with_device_data(
 			clo_sort_get_element_size(sorter) * numel, NULL,
 			&err_internal);
 
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		ccl_event_set_name(evt, "sbitonic_copy");
 		ccl_event_wait_list_add(&ewl, evt, NULL);
 	}
@@ -110,7 +111,7 @@ static CCLEvent* clo_sort_sbitonic_sort_with_device_data(
 
 			evt = ccl_kernel_enqueue_ndrange(krnl, cq_exec, 1, NULL,
 				&gws, &lws, &ewl, &err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 			ccl_event_set_name(evt, "sbitonic_ndrange");
 
 		}
@@ -206,7 +207,7 @@ static size_t clo_sort_sbitonic_get_localmem_usage(CloSort* sorter,
 	cl_uint i, size_t lws_max, size_t numel, GError** err) {
 
 	/* i must be zero because there is only one kernel. */
-	g_return_val_if_fail(i == 0, NULL);
+	g_return_val_if_fail(i == 0, 0);
 
 	/* Avoid compiler warnings. */
 	(void)sorter;

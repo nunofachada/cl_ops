@@ -23,6 +23,7 @@
 
 #include "cl_ops/clo_sort_satradix.h"
 #include "cl_ops/clo_scan_abstract.h"
+#include "common/_g_err_macros.h"
 
 /* The default scan implementation. */
 #define CLO_SORT_SATRADIX_SCAN_DEFAULT "blelloch"
@@ -81,18 +82,18 @@ static CloScan* clo_sort_satradix_get_scanner(
 		ctx = clo_sort_get_context(sorter);
 		prg = clo_sort_get_program(sorter);
 		dev = ccl_program_get_device(prg, 0, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 
 		/* Get sorter compiler options, which will also be used for
 		 * the scanner. */
 		compiler_opts = ccl_program_get_build_info_array(
 			prg, dev, CL_PROGRAM_BUILD_OPTIONS, char*, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 
 		/* Create scanner object. */
 		data->scanner = clo_scan_new(data->scan_type, data->scan_opts,
 			ctx, CLO_UINT, CLO_UINT, compiler_opts, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 	}
 
 	/* If we got here, everything is OK. */
@@ -176,7 +177,7 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 
 	/* Get device where sort will occurr. */
 	dev = ccl_queue_get_device(cq_exec, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine the effective local worksize for the several radix
 	 * sort kernels... */
@@ -184,7 +185,7 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 	numel_eff = clo_nlpo2(numel);
 	ccl_kernel_suggest_worksizes(
 		NULL, dev, 1, &numel_eff, NULL, &lws_sort, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 	/* ...and it can't be smaller than the radix itself. */
 	lws_sort = MAX(lws_sort, data.radix);
 
@@ -209,7 +210,7 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 		evt = ccl_buffer_enqueue_copy(data_in, data_out, cq_comm, 0, 0,
 			clo_sort_get_element_size(sorter) * numel_eff, NULL,
 			&err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 
 		ccl_event_set_name(evt, "satradix_copy");
 		ccl_event_wait_list_add(&ewl, evt, NULL);
@@ -222,13 +223,13 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 
 	krnl_lsrt = ccl_program_get_kernel(
 		prg, CLO_SORT_SATRADIX_KNAME_LOCALSORT, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 	krnl_hist = ccl_program_get_kernel(
 		prg, CLO_SORT_SATRADIX_KNAME_HISTOGRAM, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 	krnl_scat = ccl_program_get_kernel(
 		prg, CLO_SORT_SATRADIX_KNAME_SCATTER, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine size of aux. buffers. */
 	aux_buf_size = num_wgs * data.radix * sizeof(cl_uint);
@@ -241,23 +242,23 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 	data_aux = ccl_buffer_new(
 		ctx, CL_MEM_READ_WRITE, numel_eff * clo_sort_get_element_size(sorter),
 		NULL, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	offsets = ccl_buffer_new(
 		ctx, CL_MEM_READ_WRITE, aux_buf_size, NULL, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	counters = ccl_buffer_new(
 		ctx, CL_MEM_READ_WRITE, aux_buf_size, NULL, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	counters_sum = ccl_buffer_new(
 		ctx, CL_MEM_READ_WRITE, aux_buf_size, NULL, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get scanner object. */
 	scanner = clo_sort_satradix_get_scanner(sorter, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Perform sort. */
 	for (cl_uint i = 0; i < total_digits; ++i) {
@@ -277,7 +278,7 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 			ccl_arg_local(array_len, cl_uint),
 			ccl_arg_priv(start_bit, cl_uint),
 			NULL);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		ccl_event_set_name(evt, "satradix_localsort");
 
 		/* Histogram. */
@@ -290,13 +291,13 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 			ccl_arg_priv(start_bit, cl_uint),
 			ccl_arg_priv(array_len, cl_uint),
 			NULL);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		ccl_event_set_name(evt, "satradix_histogram");
 
 		/* Scan. */
 		clo_scan_with_device_data(scanner, cq_exec, cq_comm, counters,
 			counters_sum, num_wgs * data.radix, lws_max, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 
 		/* Scatter. */
 		evt = ccl_kernel_set_args_and_enqueue_ndrange(krnl_scat,
@@ -307,7 +308,7 @@ static CCLEvent* clo_sort_satradix_sort_with_device_data(
 			ccl_arg_local(data.radix, cl_uint),
 			ccl_arg_priv(start_bit, cl_uint),
 			NULL);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		ccl_event_set_name(evt, "satradix_scatter");
 	}
 
@@ -376,7 +377,7 @@ static const char* clo_sort_satradix_init(
 			for (num_toks = 0; opt[num_toks] != NULL; num_toks++);
 
 			/* If number of tokens is not 2 (key and value), throw error. */
-			ccl_if_err_create_goto(*err, CLO_ERROR, num_toks != 2,
+			g_if_err_create_goto(*err, CLO_ERROR, num_toks != 2,
 				CLO_ERROR_ARGS, error_handler,
 				"Invalid option '%s' for abitonic sort.", opts[i]);
 
@@ -385,7 +386,7 @@ static const char* clo_sort_satradix_init(
 				/* Get option value. */
 				data->radix = atoi(opt[1]);
 				/* Radix. */
-				ccl_if_err_create_goto(*err, CLO_ERROR,
+				g_if_err_create_goto(*err, CLO_ERROR,
 					clo_ones32(data->radix) != 1, CLO_ERROR_ARGS,
 					error_handler,
 					"Radix must be a power of 2.");
@@ -405,7 +406,7 @@ static const char* clo_sort_satradix_init(
 
 
 			} else {
-				ccl_if_err_create_goto(*err, CLO_ERROR, TRUE,
+				g_if_err_create_goto(*err, CLO_ERROR, TRUE,
 					CLO_ERROR_ARGS, error_handler,
 					"Invalid option key '%s' for satradix sort.",
 					opt[0]);
@@ -487,12 +488,12 @@ static cl_uint clo_sort_satradix_get_num_kernels(
 
 	/* Get associated scan implementation. */
 	scanner = clo_sort_satradix_get_scanner(sorter, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine number of kernels: satradix kernels + scan kernels. */
 	num_kernels = CLO_SORT_SATRADIX_NUM_KERNELS
 		+ clo_scan_get_num_kernels(scanner, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);
@@ -528,14 +529,14 @@ static const char* clo_sort_satradix_get_kernel_name(
 	/* Get number of kernels. */
 	num_kernels =
 		clo_sort_satradix_get_num_kernels(sorter, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Check that it's within bounds. */
 	g_return_val_if_fail(i < num_kernels, NULL);
 
 	/* Get associated scan implementation. */
 	scanner = clo_sort_satradix_get_scanner(sorter, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Check if the requested kernel name is from the satradix sort or
 	 * from the scan implementation. */
@@ -549,7 +550,7 @@ static const char* clo_sort_satradix_get_kernel_name(
 		/* It's a scan kernel. */
 		kernel_name = clo_scan_get_kernel_name(scanner,
 			i - CLO_SORT_SATRADIX_NUM_KERNELS, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	}
 
@@ -591,7 +592,7 @@ static size_t clo_sort_satradix_get_localmem_usage(CloSort* sorter,
 	/* Get number of kernels. */
 	num_kernels =
 		clo_sort_satradix_get_num_kernels(sorter, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Check that it's within bounds. */
 	g_return_val_if_fail(i < num_kernels, 0);
@@ -599,7 +600,7 @@ static size_t clo_sort_satradix_get_localmem_usage(CloSort* sorter,
 	/* Get device where sort will occurr. */
 	dev = ccl_context_get_device(
 		clo_sort_get_context(sorter), 0, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get radix sort parameters. */
 	clo_sort_satradix_data data =
@@ -611,7 +612,7 @@ static size_t clo_sort_satradix_get_localmem_usage(CloSort* sorter,
 	numel_eff = clo_nlpo2(numel);
 	ccl_kernel_suggest_worksizes(
 		NULL, dev, 1, &numel_eff, NULL, &lws_sort, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* ...and it can't be smaller than the radix itself. */
 	lws_sort = MAX(lws_sort, data.radix);
@@ -649,12 +650,12 @@ static size_t clo_sort_satradix_get_localmem_usage(CloSort* sorter,
 			/* Get associated scan implementation. */
 			scanner = clo_sort_satradix_get_scanner(
 				sorter, &err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 			/* Determine scan kernel local memory usage. */
 			local_mem_usage = clo_scan_get_localmem_usage(scanner,
 				i - CLO_SORT_SATRADIX_NUM_KERNELS, lws_sort,
 				num_wgs * data.radix, &err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 	}
 
 	/* If we got here, everything is OK. */

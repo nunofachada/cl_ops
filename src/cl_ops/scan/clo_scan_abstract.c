@@ -23,7 +23,7 @@
 
 #include "cl_ops/clo_scan_abstract.h"
 #include "cl_ops/clo_scan_blelloch.h"
-
+#include "common/_g_err_macros.h"
 /**
  * @addtogroup CLO_SCAN
  * @{
@@ -127,15 +127,15 @@ CloScan* clo_scan_new(const char* type, const char* options,
 			/* Initialize scanner implementation. */
 			src = scanner->impl_def.init(
 				scanner, options, &err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 
 			/* Create and build scanner program. */
 			prg = ccl_program_new_from_source(
 				scanner->ctx, src, &err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 
 			ccl_program_build(prg, compiler_opts_final, &err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 
 			/* Set scanner program. */
 			scanner->prg = prg;
@@ -143,7 +143,7 @@ CloScan* clo_scan_new(const char* type, const char* options,
 	}
 
 	/* Check if an implementation was indeed found. */
-	ccl_if_err_create_goto(*err, CLO_ERROR, scanner == NULL,
+	g_if_err_create_goto(*err, CLO_ERROR, scanner == NULL,
 		CLO_ERROR_IMPL_NOT_FOUND, error_handler,
 		"The requested scan implementation, '%s', was not found.",
 		type);
@@ -287,11 +287,11 @@ cl_bool clo_scan_with_host_data(CloScan* scanner,
 	if (cq_exec == NULL) {
 		/* Get first device in queue. */
 		dev = ccl_context_get_device(scanner->ctx, 0, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		/* Create queue. */
 		intern_queue = ccl_queue_new(
 			scanner->ctx, dev, 0, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		cq_exec = intern_queue;
 	}
 
@@ -303,40 +303,40 @@ cl_bool clo_scan_with_host_data(CloScan* scanner,
 	data_in_dev = ccl_buffer_new(
 		scanner->ctx, CL_MEM_READ_ONLY, data_in_size, NULL,
 		&err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 	data_out_dev = ccl_buffer_new(
 		scanner->ctx, CL_MEM_READ_WRITE, data_out_size, NULL,
 		&err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data to device. */
 	evt = ccl_buffer_enqueue_write(data_in_dev, cq_comm, CL_FALSE, 0,
 		data_in_size, data_in, NULL, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 	ccl_event_set_name(evt, "clo_scan_write");
 
 	/* Explicitly wait for transfer (some OpenCL implementations don't
 	 * respect CL_TRUE in data transfers). */
 	ccl_event_wait(ccl_ewl(&ewl, evt, NULL), &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Perform scan with device data. */
 	evt = scanner->impl_def.scan_with_device_data(scanner, cq_exec,
 		cq_comm, data_in_dev, data_out_dev, numel, lws_max,
 		&err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data back to host. */
 	evt = ccl_buffer_enqueue_read(data_out_dev, cq_comm, CL_FALSE, 0,
 		data_out_size, data_out, ccl_ewl(&ewl, evt, NULL),
 		&err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 	ccl_event_set_name(evt, "clo_scan_read");
 
 	/* Explicitly wait for transfer (some OpenCL implementations don't
 	 * respect CL_TRUE in data transfers). */
 	ccl_event_wait(ccl_ewl(&ewl, evt, NULL), &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);

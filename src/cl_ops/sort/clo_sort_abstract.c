@@ -26,6 +26,7 @@
 #include "cl_ops/clo_sort_abitonic.h"
 #include "cl_ops/clo_sort_gselect.h"
 #include "cl_ops/clo_sort_satradix.h"
+#include "common/_g_err_macros.h"
 
 /**
  * @addtogroup CLO_SORT
@@ -135,7 +136,7 @@ CloSort* clo_sort_new(const char* type, const char* options,
 			/* Initialize specific sort implementation and get source
 			 * code. */
 			src = sorter->impl_def.init(sorter, options, &err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 
 			/* Build sort macros which define element and key types,
 			 * comparison type and how to obtain a key from the
@@ -171,16 +172,16 @@ CloSort* clo_sort_new(const char* type, const char* options,
 			src_full[1] = src;
 			sorter->prg = ccl_program_new_from_sources(
 				ctx, 2, src_full, NULL, &err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 
 			ccl_program_build(
 				sorter->prg, compiler_opts, &err_internal);
-			ccl_if_err_propagate_goto(err, err_internal, error_handler);
+			g_if_err_propagate_goto(err, err_internal, error_handler);
 
 		}
 	}
 
-	ccl_if_err_create_goto(*err, CLO_ERROR, sorter == NULL,
+	g_if_err_create_goto(*err, CLO_ERROR, sorter == NULL,
 		CLO_ERROR_IMPL_NOT_FOUND, error_handler,
 		"The requested sort implementation, '%s', was not found.",
 		type);
@@ -332,10 +333,10 @@ cl_bool clo_sort_with_host_data(CloSort* sorter, CCLQueue* cq_exec,
 	if (cq_exec == NULL) {
 		/* Get first device in context. */
 		dev = ccl_context_get_device(ctx, 0, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		/* Create queue. */
 		intern_queue = ccl_queue_new(ctx, dev, 0, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		cq_exec = intern_queue;
 	}
 
@@ -346,7 +347,7 @@ cl_bool clo_sort_with_host_data(CloSort* sorter, CCLQueue* cq_exec,
 	/* Create device data in buffer. */
 	data_in_dev = ccl_buffer_new(
 		ctx, CL_MEM_READ_ONLY, data_size, NULL, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Create device data out buffer if sort does not occur in place. */
 	if (!sorter->impl_def.in_place) {
@@ -354,7 +355,7 @@ cl_bool clo_sort_with_host_data(CloSort* sorter, CCLQueue* cq_exec,
 		 * not NULL). */
 		data_aux_dev = ccl_buffer_new(
 			ctx, CL_MEM_WRITE_ONLY, data_size, NULL, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		/* Set data out to data aux. */
 		data_out_dev = data_aux_dev;
 		/* Sorted data will be read from data aux. */
@@ -368,30 +369,30 @@ cl_bool clo_sort_with_host_data(CloSort* sorter, CCLQueue* cq_exec,
 	/* Transfer data to device. */
 	evt = ccl_buffer_enqueue_write(data_in_dev, cq_comm, CL_FALSE, 0,
 		data_size, data_in, NULL, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 	ccl_event_set_name(evt, "write_gselect");
 
 	/* Explicitly wait for transfer (some OpenCL implementations don't
 	 * respect CL_TRUE in data transfers). */
 	ccl_event_wait(ccl_ewl(&ewl, evt, NULL), &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Perform sort with device data. */
 	evt = sorter->impl_def.sort_with_device_data(sorter, cq_exec,
 		cq_comm, data_in_dev, data_out_dev, numel, lws_max,
 		&err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Transfer data back to host. */
 	evt = ccl_buffer_enqueue_read(data_read_dev, cq_comm, CL_FALSE, 0,
 		data_size, data_out, ccl_ewl(&ewl, evt, NULL), &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 	ccl_event_set_name(evt, "read_gselect");
 
 	/* Explicitly wait for transfer (some OpenCL implementations don't
 	 * respect CL_TRUE in data transfers). */
 	ccl_event_wait(ccl_ewl(&ewl, evt, NULL), &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* If we got here, everything is OK. */
 	g_assert(err == NULL || *err == NULL);

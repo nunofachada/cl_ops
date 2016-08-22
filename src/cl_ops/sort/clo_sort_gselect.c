@@ -22,6 +22,7 @@
  */
 
 #include "cl_ops/clo_sort_gselect.h"
+#include "common/_g_err_macros.h"
 
 /**
  * @internal
@@ -63,19 +64,19 @@ static CCLEvent* clo_sort_gselect_sort_with_device_data(
 
 	/* Get device where sort will occurr. */
 	dev = ccl_queue_get_device(cq_exec, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Get the kernel wrapper. */
 	krnl = ccl_program_get_kernel(clo_sort_get_program(sorter),
 		"gselect", &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Determine worksizes. */
 	gws = numel;
 	lws = lws_max;
 	ccl_kernel_suggest_worksizes(
 		krnl, dev, 1, &gws, NULL, &lws, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	/* Check if data_out is set. */
 	if (data_out == NULL) {
@@ -83,7 +84,7 @@ static CCLEvent* clo_sort_gselect_sort_with_device_data(
 
 		/* Get context. */
 		ctx = ccl_queue_get_context(cq_comm, &err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 
 		/* Set copy-back flag to true. */
 		copy_back = CL_TRUE;
@@ -92,7 +93,7 @@ static CCLEvent* clo_sort_gselect_sort_with_device_data(
 		data_out = ccl_buffer_new(ctx, CL_MEM_WRITE_ONLY,
 			numel * clo_sort_get_element_size(sorter), NULL,
 			&err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 
 	} else {
 
@@ -108,7 +109,7 @@ static CCLEvent* clo_sort_gselect_sort_with_device_data(
 	/* Perform global memory selection sort. */
 	evt = ccl_kernel_enqueue_ndrange(
 		krnl, cq_exec, 1, NULL, &gws, &lws, NULL, &err_internal);
-	ccl_if_err_propagate_goto(err, err_internal, error_handler);
+	g_if_err_propagate_goto(err, err_internal, error_handler);
 	ccl_event_set_name(evt, "gselect_ndrange");
 
 	/* If copy-back flag is set, copy sorted data back to original
@@ -118,7 +119,7 @@ static CCLEvent* clo_sort_gselect_sort_with_device_data(
 		evt = ccl_buffer_enqueue_copy(data_out, data_in, cq_comm, 0, 0,
 			numel * clo_sort_get_element_size(sorter), &ewl,
 			&err_internal);
-		ccl_if_err_propagate_goto(err, err_internal, error_handler);
+		g_if_err_propagate_goto(err, err_internal, error_handler);
 		ccl_event_set_name(evt, "gselect_copy");
 	}
 
@@ -215,7 +216,7 @@ static size_t clo_sort_gselect_get_localmem_usage(CloSort* sorter,
 	cl_uint i, size_t lws_max, size_t numel, GError** err) {
 
 	/* i must be zero because there is only one kernel. */
-	g_return_val_if_fail(i == 0, NULL);
+	g_return_val_if_fail(i == 0, 0);
 
 	/* Avoid compiler warnings. */
 	(void)sorter;
