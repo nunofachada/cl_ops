@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 	for (unsigned int N = 4; N <= maxpo2; N++) {
 
 		unsigned int num_elems = 1 << N;
-		gboolean sorted_ok;
+		gboolean sorted_ok = TRUE;
 
 		for (unsigned int r = 0; r < runs; r++) {
 

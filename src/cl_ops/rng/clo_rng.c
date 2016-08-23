@@ -88,7 +88,7 @@ static CCLBuffer* clo_rng_device_seed_init(CCLContext* ctx,
 	GError** err) {
 
 	/* Program wrapper object. */
-	CCLProgram* prg;
+	CCLProgram* prg = NULL;
 	/* Buffer of in-device seeds. */
 	CCLBuffer* seeds = NULL;
 	/* Internal error handling object. */

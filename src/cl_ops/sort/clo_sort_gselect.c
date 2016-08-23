@@ -56,7 +56,7 @@ static CCLEvent* clo_sort_gselect_sort_with_device_data(
 
 	/* Flag indicating if sorted data is to be copied back to original
 	 * buffer, simulating an in-place sort. */
-	cl_bool copy_back;
+	cl_bool copy_back = CL_FALSE;
 
 	/* If data transfer queue is NULL, use exec queue for data
 	 * transfers. */
