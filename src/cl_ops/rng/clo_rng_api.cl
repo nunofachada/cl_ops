@@ -24,6 +24,8 @@
 /**
  * Returns next integer from 0 (including) to n (not including).
  *
+ * @todo Should be called clo_rng_next_uint
+ *
  * @param[in] states Array of RNG states.
  * @param[in] n Returned integer is less than this value.
  * @return Returns next integer from 0 (including) to n (not including).
