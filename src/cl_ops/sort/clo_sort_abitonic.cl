@@ -31,7 +31,8 @@
 #define ABIT_CMPXCH(data, index1, index2) \
 	data1 = data[index1]; \
 	data2 = data[index2]; \
-	if (CLO_SORT_COMPARE(data1, data2) ^ desc) { \
+	if (CLO_SORT_COMPARE( \
+			CLO_SORT_KEY_GET(data1), CLO_SORT_KEY_GET(data2)) ^ desc) { \
 		data[index1] = data2; \
 		data[index2] = data1; \
 	}
